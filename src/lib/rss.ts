@@ -9,7 +9,6 @@ export type NewsFeedItem = {
 };
 
 const DEFAULT_PROVIDER_URL = "https://api.rss2json.com/v1/api.json";
-const DEFAULT_RAW_PROXY_URL = "https://api.allorigins.win/raw";
 const DEFAULT_LOCAL_PROXY_URL = "/api/rss";
 const DEFAULT_MAX_ITEMS = 200;
 
@@ -32,7 +31,10 @@ export async function fetchNewsFeeds(feedUrls: string[], maxItems = DEFAULT_MAX_
 
 async function tryLocalProxy(feedUrl: string) {
   try {
-    const url = new URL(import.meta.env.VITE_RSS_LOCAL_PROXY_URL || DEFAULT_LOCAL_PROXY_URL, window.location.origin);
+    const proxyUrl = import.meta.env.VITE_RSS_LOCAL_PROXY_URL || (import.meta.env.DEV ? DEFAULT_LOCAL_PROXY_URL : "");
+    if (!proxyUrl) return [];
+
+    const url = new URL(proxyUrl, window.location.origin);
     url.searchParams.set("url", feedUrl);
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Local proxy failed ${response.status}`);
@@ -46,9 +48,9 @@ async function tryProvider(feedUrl: string, maxItems: number) {
   try {
     const url = new URL(import.meta.env.VITE_RSS_PROVIDER_URL || DEFAULT_PROVIDER_URL);
     url.searchParams.set("rss_url", feedUrl);
-    url.searchParams.set("count", String(maxItems));
     if (import.meta.env.VITE_RSS2JSON_API_KEY) {
       url.searchParams.set("api_key", import.meta.env.VITE_RSS2JSON_API_KEY);
+      url.searchParams.set("count", String(maxItems));
     }
 
     const response = await fetch(url);
@@ -86,7 +88,8 @@ async function tryProvider(feedUrl: string, maxItems: number) {
 
 async function tryRawProxy(feedUrl: string) {
   try {
-    const url = new URL(import.meta.env.VITE_RSS_RAW_PROXY_URL || DEFAULT_RAW_PROXY_URL);
+    if (!import.meta.env.VITE_RSS_RAW_PROXY_URL) return [];
+    const url = new URL(import.meta.env.VITE_RSS_RAW_PROXY_URL);
     url.searchParams.set("url", feedUrl);
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Proxy failed ${response.status}`);
