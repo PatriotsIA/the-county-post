@@ -25,16 +25,14 @@ Copy `.env.example` to `.env` and set:
 - `VITE_EMAILJS_SERVICE_ID`
 - `VITE_EMAILJS_TEMPLATE_ID`
 - `VITE_EMAILJS_PUBLIC_KEY`
-
-Optional feed overrides:
-- `VITE_RSS_PROVIDER_URL` (defaults to rss2json)
-- `VITE_RSS2JSON_API_KEY`
-- `VITE_RSS_RAW_PROXY_URL` (defaults to allorigins raw)
+- `VITE_NEWS_API_URL` only when the County Post News API is available. Do not set this to localhost in hosted deployments.
+- `.env` is local-only and must not be committed. `.env.example` is the committed reference.
 
 ## Data & feeds
 - Counties come from `@nickgraffis/us-counties` via `src/data/counties.ts`; routing slugs are lowercase `/:state/:county`.
-- Feed queries are built in `src/lib/county-feed-urls.ts` using Google News RSS with county/state disambiguation.
-- RSS fetching lives in `src/lib/rss.ts` (provider first, raw XML fallback).
+- Feed sections prefer the County Post News API through `src/lib/news-api.ts`.
+- If the API is not configured or unavailable, feed sections fall back to browser-side RSS through `src/lib/rss.ts` and `src/lib/fallback-feed-urls.ts`.
+- The UI should indicate the active article source per section: County News API or Fallback RSS.
 
 ## Submissions (EmailJS)
 - `src/components/SubmissionForm.tsx` posts via `sendCountyFormEmail` (`src/lib/email.ts`).

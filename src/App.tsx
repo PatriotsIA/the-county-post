@@ -1,14 +1,16 @@
-import { useMemo, useState } from "react";
-import { Link, NavLink, Route, Routes, useNavigate, useParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, NavLink, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
 import { SubmissionForm } from "./components/SubmissionForm";
 import { NewsFeedSection } from "./components/NewsFeedSection";
+import { TopTicker } from "./components/TopTicker";
 import { getCounty, getCountiesForState, getCountyMarketCities, getCountyMarketCity, searchCounties } from "./data/counties";
 import { site } from "./data/site";
 import { getStateBySlug, searchStates, states } from "./data/states";
-import { buildMarketFeedUrl } from "./lib/county-feed-urls";
-import { buildNationalTopicFeedUrls } from "./lib/national-feed-urls";
-import { buildStateFeedUrls, buildStateTopicFeedUrls, type TopicFeedKind } from "./lib/state-feed-urls";
+import { buildCountyFallbackFeedUrls, buildNationalFallbackFeedUrls, buildStateFallbackFeedUrls } from "./lib/fallback-feed-urls";
+import { fetchNewsApiPage, isNewsApiConfigured, type NewsFeedItem } from "./lib/news-api";
 import "./index.css";
+
+type TopicFeedKind = "general" | "sports" | "politics" | "economy" | "crime" | "obituaries" | "opinion";
 
 const topicSections: { kind: TopicFeedKind; title: string; kicker: string }[] = [
   { kind: "sports", title: "Sports", kicker: "Scores & highlights" },
@@ -19,12 +21,112 @@ const topicSections: { kind: TopicFeedKind; title: string; kicker: string }[] = 
   { kind: "opinion", title: "Opinion & op-eds", kicker: "Columns & analysis" },
 ];
 
+const pageTopicSections = ["general", ...topicSections.map((section) => section.kind)] as const;
+const countyPageSections = ["localNews", "localSports", "politics", "economy", "crime", "obituaries", "opinion"] as const;
+const PAGE_PREFETCH_LIMIT = 96;
+
+type NewsPageState = {
+  status: "idle" | "loading" | "loaded" | "error";
+  error: string;
+  sections: Record<string, NewsFeedItem[]>;
+};
+
+function nationalApiPath(kind: TopicFeedKind) {
+  return `/v1/feeds/national/${kind}`;
+}
+
+function stateApiPath(stateSlug: string, kind: TopicFeedKind) {
+  return `/v1/feeds/states/${stateSlug}/${kind}`;
+}
+
+function countyApiPath(stateSlug: string, countySlug: string, kind: TopicFeedKind) {
+  return `/v1/feeds/counties/${stateSlug}/${countySlug}/${kind}`;
+}
+
+function nationalPageApiPath() {
+  return "/v1/pages/national";
+}
+
+function statePageApiPath(stateSlug: string) {
+  return `/v1/pages/states/${stateSlug}`;
+}
+
+function countyPageApiPath(stateSlug: string, countySlug: string) {
+  return `/v1/pages/counties/${stateSlug}/${countySlug}`;
+}
+
+function useNewsPage(apiPath: string | undefined, sections: readonly string[], limit = PAGE_PREFETCH_LIMIT): NewsPageState {
+  const sectionsKey = sections.join(",");
+  const [state, setState] = useState<NewsPageState>({ status: apiPath ? "loading" : "idle", error: "", sections: {} });
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!apiPath) {
+      setState({ status: "idle", error: "", sections: {} });
+      return;
+    }
+    if (!isNewsApiConfigured()) {
+      setState({ status: "error", error: "News API is not configured. Set VITE_NEWS_API_URL.", sections: {} });
+      return;
+    }
+
+    setState({ status: "loading", error: "", sections: {} });
+    fetchNewsApiPage(apiPath, sectionsKey.split(",").filter(Boolean), limit)
+      .then((page) => {
+        if (cancelled) return;
+        const nextSections = Object.fromEntries(
+          Object.entries(page.sections || {}).map(([key, section]) => [key, section.items || []]),
+        );
+        setState({ status: "loaded", error: "", sections: nextSections });
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setState({
+          status: "error",
+          error: error instanceof Error ? error.message : "Unable to load news from the API.",
+          sections: {},
+        });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiPath, limit, sectionsKey]);
+
+  return state;
+}
+
+function pageSectionProps(page: NewsPageState, section: string) {
+  return {
+    initialError: page.error,
+    initialItems: page.status === "loaded" ? page.sections[section] || [] : undefined,
+    initialStatus: page.status,
+    initialSource: page.status === "loaded" ? ("api" as const) : undefined,
+  };
+}
+
 function App() {
+  const activeCounty = useActiveCounty();
+  const todayLabel = useMemo(
+    () =>
+      new Intl.DateTimeFormat("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      }).format(new Date()),
+    [],
+  );
+
   return (
     <div className="page">
+      <TopTicker county={activeCounty} />
       <header className="masthead">
         <div>
-          <p className="masthead-kicker">Established 2026</p>
+          <p className="masthead-kicker masthead-kicker-row">
+            <span>Established 2026</span>
+            <span>Today Is: {todayLabel}</span>
+          </p>
           <Link to="/" className="wordmark">
             <span className="wordmark-main">{site.name}</span>
             <span className="wordmark-sub">{site.tagline}</span>
@@ -78,9 +180,17 @@ function App() {
   );
 }
 
+function useActiveCounty() {
+  const { pathname } = useLocation();
+  const [stateSlug, countySlug] = pathname.split("/").filter(Boolean);
+  if (!stateSlug || !countySlug || stateSlug === "states") return undefined;
+  return getCounty(stateSlug, countySlug);
+}
+
 function HomePage() {
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
+  const nationalPage = useNewsPage(nationalPageApiPath(), pageTopicSections);
   const trimmedQuery = query.trim();
   const hasQuery = trimmedQuery.length > 0;
   const matches = useMemo(() => (hasQuery ? searchCounties(query, 24) : []), [hasQuery, query]);
@@ -89,7 +199,6 @@ function HomePage() {
   const bestCounty = matches[0];
   const bestState = stateMatches[0];
   const combinedResults = [...stateMatches.slice(0, 6).map((s) => ({ type: "state" as const, state: s })), ...matches.slice(0, 10).map((c) => ({ type: "county" as const, county: c }))];
-  const nationalFeedUrls = buildNationalTopicFeedUrls("general");
 
   return (
     <div className="layout-grid">
@@ -105,26 +214,6 @@ function HomePage() {
           EmailJS for reader reporting, op-eds, and public notices.
         </p>
       </section>
-
-      <NewsFeedSection
-        title="National briefing"
-        kicker="Top of the hour"
-        feedUrl={nationalFeedUrls[0]}
-        relatedUrls={[site.links.nationalNews, ...nationalFeedUrls.slice(1)]}
-      />
-      {topicSections.map((section) => {
-        const feedUrls = buildNationalTopicFeedUrls(section.kind);
-        return (
-          <NewsFeedSection
-            key={section.kind}
-            title={section.title}
-            kicker={section.kicker}
-            feedUrl={feedUrls[0]}
-            relatedUrls={feedUrls.slice(1)}
-            kind={section.kind}
-          />
-        );
-      })}
 
       <section className="card">
         <header className="section-heading">
@@ -177,6 +266,25 @@ function HomePage() {
         ) : null}
       </section>
 
+      <NewsFeedSection
+        title="National briefing"
+        kicker="Top of the hour"
+        apiPath={nationalApiPath("general")}
+        fallbackFeedUrls={buildNationalFallbackFeedUrls("general")}
+        {...pageSectionProps(nationalPage, "general")}
+      />
+      {topicSections.map((section) => (
+        <NewsFeedSection
+          key={section.kind}
+          title={section.title}
+          kicker={section.kicker}
+          apiPath={nationalApiPath(section.kind)}
+          fallbackFeedUrls={buildNationalFallbackFeedUrls(section.kind)}
+          {...pageSectionProps(nationalPage, section.kind)}
+          kind={section.kind}
+        />
+      ))}
+
       <section className="card">
         <header className="section-heading">
           <div className="section-heading-rule" aria-hidden />
@@ -225,13 +333,8 @@ function StatePage() {
   const { stateSlug } = useParams<{ stateSlug: string }>();
   const state = getStateBySlug(stateSlug);
   const [countyQuery, setCountyQuery] = useState("");
-
-  if (!state) {
-    return <NotFound />;
-  }
-
-  const counties = getCountiesForState(state.slug);
-  const stateFeedUrls = buildStateFeedUrls(state);
+  const statePage = useNewsPage(state ? statePageApiPath(state.slug) : undefined, pageTopicSections);
+  const counties = useMemo(() => (state ? getCountiesForState(state.slug) : []), [state]);
   const filteredCounties = useMemo(() => {
     const normalized = countyQuery.trim().toLowerCase();
     if (!normalized) return counties;
@@ -242,6 +345,10 @@ function StatePage() {
         (county.primaryCity || "").toLowerCase().includes(normalized),
     );
   }, [counties, countyQuery]);
+
+  if (!state) {
+    return <NotFound />;
+  }
 
   return (
     <div className="layout-grid">
@@ -301,25 +408,29 @@ function StatePage() {
       <NewsFeedSection
         title="State headlines"
         kicker="State desk"
-        feedUrl={stateFeedUrls[0]}
-        relatedUrls={stateFeedUrls.slice(1)}
+        apiPath={stateApiPath(state.slug, "general")}
+        fallbackFeedUrls={buildStateFallbackFeedUrls(state, "general")}
+        {...pageSectionProps(statePage, "general")}
         locality={{ stateName: state.name, stateAbbr: state.abbr, strict: true }}
       />
-      {topicSections.map((section) => {
-        const feedUrls = buildStateTopicFeedUrls(state, section.kind);
-        return (
-          <NewsFeedSection
-            key={section.kind}
-            title={section.title}
-            kicker={section.kicker}
-            feedUrl={feedUrls[0]}
-            relatedUrls={feedUrls.slice(1)}
-            kind={section.kind}
-            locality={{ stateName: state.name, stateAbbr: state.abbr, strict: true }}
-          />
-        );
-      })}
-      <NewsFeedSection title="National briefing" kicker="Context" feedUrl={site.links.nationalNews} />
+      {topicSections.map((section) => (
+        <NewsFeedSection
+          key={section.kind}
+          title={section.title}
+          kicker={section.kicker}
+          apiPath={stateApiPath(state.slug, section.kind)}
+          fallbackFeedUrls={buildStateFallbackFeedUrls(state, section.kind)}
+          {...pageSectionProps(statePage, section.kind)}
+          kind={section.kind}
+          locality={{ stateName: state.name, stateAbbr: state.abbr, strict: true }}
+        />
+      ))}
+      <NewsFeedSection
+        title="National briefing"
+        kicker="Context"
+        apiPath={nationalApiPath("general")}
+        fallbackFeedUrls={buildNationalFallbackFeedUrls("general")}
+      />
     </div>
   );
 }
@@ -327,16 +438,16 @@ function StatePage() {
 function CountyPage() {
   const { stateSlug, countySlug } = useParams<{ stateSlug: string; countySlug: string }>();
   const county = getCounty(stateSlug, countySlug);
+  const countyPage = useNewsPage(county ? countyPageApiPath(county.state.slug, county.slug) : undefined, countyPageSections);
 
   if (!county) {
     return <NotFound />;
   }
 
-  const marketCities = getCountyMarketCities(county, 2);
+  const marketCities = getCountyMarketCities(county, 3);
   const fallbackCity = marketCities[0] || getCountyMarketCity(county);
   const localCities = Array.from(new Set([fallbackCity, ...marketCities.slice(1), ...(county.localCities || [])]));
   const expandedLabel = localCities.length > 1 ? `nearby markets including ${localCities.join(" and ")}` : `${fallbackCity}, ${county.state.abbr}`;
-  const stateFeedUrls = buildStateFeedUrls(county.state);
   const locality = {
     countyName: county.name,
     stateName: county.state.name,
@@ -344,8 +455,6 @@ function CountyPage() {
     cities: localCities,
     strict: true,
   };
-  const relatedMarketUrls = (kind: Parameters<typeof buildMarketFeedUrl>[0]) =>
-    localCities.slice(1).map((city) => buildMarketFeedUrl(kind, city, county.state));
 
   return (
     <div className="layout-grid">
@@ -378,9 +487,9 @@ function CountyPage() {
       <NewsFeedSection
         title="Local headlines"
         kicker="County desk"
-        feedUrl={county.feeds.localNewsUrl}
-        fallbackUrl={buildMarketFeedUrl("localNews", fallbackCity, county.state)}
-        relatedUrls={relatedMarketUrls("localNews")}
+        apiPath={countyApiPath(county.state.slug, county.slug, "general")}
+        fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "general")}
+        {...pageSectionProps(countyPage, "localNews")}
         expandedLabel={expandedLabel}
         pageSize={16}
         kind="general"
@@ -389,9 +498,9 @@ function CountyPage() {
       <NewsFeedSection
         title="Local sports"
         kicker="Scores & highlights"
-        feedUrl={county.feeds.localSportsUrl}
-        fallbackUrl={buildMarketFeedUrl("localSports", fallbackCity, county.state)}
-        relatedUrls={relatedMarketUrls("localSports")}
+        apiPath={countyApiPath(county.state.slug, county.slug, "sports")}
+        fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "sports")}
+        {...pageSectionProps(countyPage, "localSports")}
         expandedLabel={expandedLabel}
         pageSize={12}
         kind="sports"
@@ -400,9 +509,9 @@ function CountyPage() {
       <NewsFeedSection
         title="Politics"
         kicker="Civic desk"
-        feedUrl={county.feeds.politicsUrl}
-        fallbackUrl={buildMarketFeedUrl("politics", fallbackCity, county.state)}
-        relatedUrls={relatedMarketUrls("politics")}
+        apiPath={countyApiPath(county.state.slug, county.slug, "politics")}
+        fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "politics")}
+        {...pageSectionProps(countyPage, "politics")}
         expandedLabel={expandedLabel}
         pageSize={12}
         kind="politics"
@@ -411,9 +520,9 @@ function CountyPage() {
       <NewsFeedSection
         title="Economy & business"
         kicker="Markets"
-        feedUrl={county.feeds.economyUrl}
-        fallbackUrl={buildMarketFeedUrl("economy", fallbackCity, county.state)}
-        relatedUrls={relatedMarketUrls("economy")}
+        apiPath={countyApiPath(county.state.slug, county.slug, "economy")}
+        fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "economy")}
+        {...pageSectionProps(countyPage, "economy")}
         expandedLabel={expandedLabel}
         pageSize={12}
         kind="economy"
@@ -422,9 +531,9 @@ function CountyPage() {
       <NewsFeedSection
         title="Crime & courts"
         kicker="Public safety"
-        feedUrl={county.feeds.crimeUrl}
-        fallbackUrl={buildMarketFeedUrl("crime", fallbackCity, county.state)}
-        relatedUrls={relatedMarketUrls("crime")}
+        apiPath={countyApiPath(county.state.slug, county.slug, "crime")}
+        fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "crime")}
+        {...pageSectionProps(countyPage, "crime")}
         expandedLabel={expandedLabel}
         pageSize={12}
         kind="crime"
@@ -433,9 +542,9 @@ function CountyPage() {
       <NewsFeedSection
         title="Obituaries & public notices"
         kicker="Community records"
-        feedUrl={county.feeds.obituariesUrl}
-        fallbackUrl={buildMarketFeedUrl("obituaries", fallbackCity, county.state)}
-        relatedUrls={relatedMarketUrls("obituaries")}
+        apiPath={countyApiPath(county.state.slug, county.slug, "obituaries")}
+        fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "obituaries")}
+        {...pageSectionProps(countyPage, "obituaries")}
         expandedLabel={expandedLabel}
         pageSize={12}
         kind="obituaries"
@@ -444,9 +553,9 @@ function CountyPage() {
       <NewsFeedSection
         title="Opinion & op-eds"
         kicker="Local voices"
-        feedUrl={county.feeds.opinionUrl}
-        fallbackUrl={buildMarketFeedUrl("opinion", fallbackCity, county.state)}
-        relatedUrls={relatedMarketUrls("opinion")}
+        apiPath={countyApiPath(county.state.slug, county.slug, "opinion")}
+        fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "opinion")}
+        {...pageSectionProps(countyPage, "opinion")}
         expandedLabel={expandedLabel}
         kind="opinion"
         locality={locality}
@@ -454,8 +563,8 @@ function CountyPage() {
       <NewsFeedSection
         title={`${county.state.name} headlines`}
         kicker="State desk"
-        feedUrl={stateFeedUrls[0]}
-        relatedUrls={stateFeedUrls.slice(1)}
+        apiPath={stateApiPath(county.state.slug, "general")}
+        fallbackFeedUrls={buildStateFallbackFeedUrls(county.state, "general")}
         pageSize={12}
         locality={{ stateName: county.state.name, stateAbbr: county.state.abbr, cities: [], strict: true }}
         actionLink={{ to: `/states/${county.state.slug}`, label: `View ${county.state.name} page` }}
@@ -463,7 +572,8 @@ function CountyPage() {
       <NewsFeedSection
         title="National briefing"
         kicker="Context"
-        feedUrl={county.feeds.nationalNewsUrl}
+        apiPath={nationalApiPath("general")}
+        fallbackFeedUrls={buildNationalFallbackFeedUrls("general")}
         pageSize={12}
         actionLink={{ to: "/", label: "View national page" }}
       />
@@ -485,7 +595,7 @@ function CountyOpEdPage() {
     return <NotFound />;
   }
 
-  const marketCities = getCountyMarketCities(county, 2);
+  const marketCities = getCountyMarketCities(county, 3);
   const fallbackCity = marketCities[0] || getCountyMarketCity(county);
   const localCities = Array.from(new Set([fallbackCity, ...marketCities.slice(1), ...(county.localCities || [])]));
 
@@ -501,9 +611,8 @@ function CountyOpEdPage() {
       <NewsFeedSection
         title="Local opinion"
         kicker="County op-eds"
-        feedUrl={county.feeds.opinionUrl}
-        fallbackUrl={buildMarketFeedUrl("opinion", fallbackCity, county.state)}
-        relatedUrls={localCities.slice(1).map((city) => buildMarketFeedUrl("opinion", city, county.state))}
+        apiPath={countyApiPath(county.state.slug, county.slug, "opinion")}
+        fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "opinion")}
         expandedLabel={`nearby markets including ${localCities.join(" and ")}`}
         pageSize={16}
         kind="opinion"
@@ -527,7 +636,14 @@ function OpEdPage() {
         <h1>National Op-Ed Desk</h1>
         <p className="lead">Columns and analysis across the United States.</p>
       </section>
-      <NewsFeedSection title="National opinion" kicker="Columns & analysis" feedUrl={site.links.nationalOpEds} pageSize={18} kind="opinion" />
+      <NewsFeedSection
+        title="National opinion"
+        kicker="Columns & analysis"
+        apiPath={nationalApiPath("opinion")}
+        fallbackFeedUrls={buildNationalFallbackFeedUrls("opinion")}
+        pageSize={18}
+        kind="opinion"
+      />
     </div>
   );
 }
@@ -554,7 +670,7 @@ function PrivacyPage() {
       <section className="hero-card">
         <p className="kicker">Privacy</p>
         <h1>Privacy Policy</h1>
-        <p className="lead">We use feeds for news aggregation and EmailJS for submissions. No behavioral tracking or ad tech.</p>
+        <p className="lead">We use the County Post News API for news aggregation and EmailJS for submissions. No behavioral tracking or ad tech.</p>
       </section>
     </div>
   );
@@ -566,7 +682,7 @@ function TermsPage() {
       <section className="hero-card">
         <p className="kicker">Terms</p>
         <h1>Terms of Service</h1>
-        <p className="lead">Content is aggregated from public feeds. Links open to original publishers. Submissions are subject to editorial review.</p>
+        <p className="lead">Content is aggregated through the County Post News API. Links open to original publishers. Submissions are subject to editorial review.</p>
       </section>
     </div>
   );

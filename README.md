@@ -1,8 +1,8 @@
 # The County Post
 
-An old-timey, black-and-white county news desk. Every U.S. county gets a page with live Google News RSS feeds for local headlines, sports, obituaries, and national context, plus a reader submission form powered by EmailJS.
+An old-timey, black-and-white county news desk. Every U.S. county gets a page with live headlines, market and crypto tickers, local county weather, and a reader submission form powered by EmailJS.
 
-## Getting started
+## Getting Started
 
 ```bash
 npm install
@@ -11,28 +11,51 @@ npm run dev
 
 ## Environment
 
-EmailJS powers the submission form. Copy `.env.example` to `.env` and add your keys:
+Copy `.env.example` to `.env` for local development only. Do not commit `.env`; it is ignored by git.
 
-```
+```text
 VITE_EMAILJS_SERVICE_ID=
 VITE_EMAILJS_TEMPLATE_ID=
 VITE_EMAILJS_PUBLIC_KEY=
+
+# Optional until the County Post News API is deployed.
+VITE_NEWS_API_URL=
 ```
 
-Optional overrides:
+EmailJS powers the submission form. The news API variable is optional: leave `VITE_NEWS_API_URL` blank for the current deployment if the API is not available yet.
 
-- `VITE_RSS_PROVIDER_URL` (defaults to `https://api.rss2json.com/v1/api.json`)
-- `VITE_RSS2JSON_API_KEY` (if your provider requires one)
-- `VITE_RSS_RAW_PROXY_URL` (defaults to `https://api.allorigins.win/raw`)
+## News Loading
 
-## Project notes
+Each news section tries sources in this order:
+
+1. County Post News API, when `VITE_NEWS_API_URL` is configured and reachable.
+2. Browser-side fallback RSS fetching, using Google News RSS URLs and the restored RSS provider/proxy flow.
+
+The UI displays the active source per section:
+
+- `Fetching articles via County News API`
+- `Fetching articles via Fallback RSS`
+
+Fallback configuration:
+
+- `VITE_RSS_PROVIDER_URL`: optional RSS-to-JSON provider override. Defaults to `https://api.rss2json.com/v1/api.json`.
+- `VITE_RSS2JSON_API_KEY`: optional rss2json API key.
+- `VITE_RSS_LOCAL_PROXY_URL`: optional local proxy path for development, default `/api/rss` in dev.
+- `VITE_RSS_RAW_PROXY_URL`: optional raw CORS proxy URL.
+
+This allows the frontend to deploy now without the localhost API. Once the API is deployed, set `VITE_NEWS_API_URL` in the deployment environment and the app will prefer the API while keeping fallback available.
+
+## Project Notes
 
 - Built with Vite + React + TypeScript.
 - County and state data come from `@nickgraffis/us-counties`.
-- Feeds are generated via Google News RSS queries with county/state disambiguation.
+- County and state market selection uses county centroids and nearest in-state news hubs.
+- Feeds prefer `VITE_NEWS_API_URL` when available, then fall back to RSS.
+- The top strip includes a TradingView stock ticker, LiveCoinWatch crypto ticker, and county weather on county pages.
 - Styling is intentionally monochrome with bold, newspaper-inspired typography.
+- `.env` must stay local. If secrets were ever committed, rotate them and rewrite/purge GitHub history separately.
 
-## Submission workflow
+## Submission Workflow
 
 The `SubmissionForm` component posts to EmailJS using the three `VITE_EMAILJS_*` variables. The template receives:
 
@@ -42,38 +65,15 @@ The `SubmissionForm` component posts to EmailJS using the three `VITE_EMAILJS_*`
 
 ## Routes
 
-- `/` Front page with search
-- `/states` State and county directory
-- `/:state/:county` County news page with feeds and submission form
-# React + TypeScript + Vite
+- `/` front page with county search, national feeds, and state directory
+- `/states` state and county directory
+- `/states/:stateSlug` state news page
+- `/:stateSlug/:countySlug` county news page with feeds and submission form
+- `/:stateSlug/:countySlug/op-eds` county opinion page
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+## Deployment Notes
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
-
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+- Do not set `VITE_NEWS_API_URL` to `localhost` in hosted environments.
+- Leave `VITE_NEWS_API_URL` unset until the deployed County Post News API URL is available.
+- Configure EmailJS variables in the hosting provider if the submission form should work in production.
+- Keep `.env.example` committed as documentation; keep `.env` untracked.

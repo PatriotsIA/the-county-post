@@ -3,63 +3,107 @@ import { getCountiesForState, getCounty, getCountyMarketCities } from "../../src
 import { states } from "../../src/data/states";
 
 test.beforeEach(async ({ page }) => {
-  await page.route("**/api/rss?**", async (route) => {
+  await page.route("http://localhost:8787/v1/pages/**", async (route) => {
     const requestUrl = new URL(route.request().url());
-    const feedUrl = requestUrl.searchParams.get("url") || "";
-    const decodedFeedUrl = decodeURIComponent(feedUrl);
-    const query = new URL(decodedFeedUrl).searchParams.get("q") || "";
-    const lowerQuery = query.toLowerCase();
-    const isObituary = lowerQuery.includes("obituar") || lowerQuery.includes("funeral");
-    const isSports = lowerQuery.includes("sports") || lowerQuery.includes("football") || lowerQuery.includes("basketball");
-    const isCrime = lowerQuery.includes("crime") || lowerQuery.includes("police") || lowerQuery.includes("court");
-    const isMarketFallback = lowerQuery.includes("amarillo");
-    const isLubbock = lowerQuery.includes("lubbock");
-    const isHouston = lowerQuery.includes("houston");
-    const isBriscoe = lowerQuery.includes("briscoe");
-    const isArkansas = lowerQuery.includes("arkansas") || lowerQuery.includes("little rock") || lowerQuery.includes("fayetteville");
-    const isOpinion = lowerQuery.includes("opinion") || lowerQuery.includes("editorial") || lowerQuery.includes("column");
+    const limit = Number(requestUrl.searchParams.get("limit") || "24");
+    const parts = requestUrl.pathname.split("/").filter(Boolean);
+    const scope = parts[2];
+    const stateSlug = parts[3] || "";
+    const countySlug = parts[4] || "";
+    const sections = (requestUrl.searchParams.get("sections") || "")
+      .split(",")
+      .map((section) => section.trim())
+      .filter(Boolean);
 
-    const topic = isObituary ? "Obituary" : isSports ? "Sports" : isCrime ? "Crime" : "Local News";
-    const source = isArkansas
-      ? "Arkansas State Test"
-      : isBriscoe
-        ? "Briscoe County Test"
-        : isLubbock
-          ? "Lubbock Daily Test"
-          : isHouston
-            ? "Houston Daily Test"
-            : isMarketFallback
-              ? "Amarillo Daily Test"
-              : "Randall County Test";
-    const itemCount = isBriscoe ? 4 : 90;
-    const items = Array.from({ length: itemCount }, (_, index) => {
-      const date = new Date(Date.UTC(2026, 5, 26 - index + (isLubbock ? 1 : 0), 12, 0, 0));
-      const title =
-        index === 2 && !isObituary
-          ? "Obituary notice should be filtered from non-obituary feeds"
-          : index === 3 && isOpinion
-            ? "Tennessee op-ed should be filtered from Potter County Texas"
-            : isArkansas
-              ? `Arkansas ${topic} story ${String(index + 1).padStart(2, "0")} from ${source}`
-          : `${topic} story ${String(index + 1).padStart(2, "0")} from ${source}`;
-
-      return `<item>
-        <guid>${source}-${topic}-${index}</guid>
-        <title>${escapeXml(title)}</title>
-        <link>https://example.com/${source.toLowerCase().replace(/\s+/g, "-")}/${topic.toLowerCase().replace(/\s+/g, "-")}/${index}</link>
-        <source>${escapeXml(source)}</source>
-        <pubDate>${date.toUTCString()}</pubDate>
-        <description>${escapeXml(title)}</description>
-      </item>`;
-    }).join("");
+    const sectionEntries = sections.map((section) => {
+      const topicSlug = topicForSection(section);
+      const items = makeRouteItems({ scope, stateSlug, countySlug, topicSlug, limit });
+      return [
+        section,
+        {
+          scope: {},
+          topic: topicSlug,
+          items,
+          meta: { count: items.length, sourcesUsed: ["test"], fetchedAt: new Date().toISOString(), cacheTtlSeconds: 300 },
+        },
+      ];
+    });
 
     await route.fulfill({
       status: 200,
-      contentType: "application/rss+xml",
-      body: `<?xml version="1.0" encoding="UTF-8"?><rss><channel>${items}</channel></rss>`,
+      contentType: "application/json",
+      body: JSON.stringify({
+        scope: {},
+        sections: Object.fromEntries(sectionEntries),
+        meta: { count: sectionEntries.length, fetchedAt: new Date().toISOString(), cacheTtlSeconds: 300 },
+      }),
+    });
+  });
+
+  await page.route("http://localhost:8787/v1/feeds/**", async (route) => {
+    const requestUrl = new URL(route.request().url());
+    const limit = Number(requestUrl.searchParams.get("limit") || "24");
+    const parts = requestUrl.pathname.split("/").filter(Boolean);
+    const scope = parts[2];
+    const stateSlug = parts[3] || "";
+    const countySlug = parts[4] || "";
+    const topicSlug = parts.at(-1) || "general";
+    const items = makeRouteItems({ scope, stateSlug, countySlug, topicSlug, limit });
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        scope: {},
+        topic: topicSlug,
+        items,
+        meta: { count: items.length, sourcesUsed: ["test"], fetchedAt: new Date().toISOString(), cacheTtlSeconds: 300 },
+      }),
     });
   });
 });
+
+function topicForSection(section: string) {
+  if (section === "localNews") return "general";
+  if (section === "localSports") return "sports";
+  return section;
+}
+
+function makeRouteItems({
+  scope,
+  stateSlug,
+  countySlug,
+  topicSlug,
+  limit,
+}: {
+  scope: string;
+  stateSlug: string;
+  countySlug: string;
+  topicSlug: string;
+  limit: number;
+}) {
+  const isObituary = topicSlug === "obituaries";
+  const isSports = topicSlug === "sports";
+  const isCrime = topicSlug === "crime";
+  const isOpinion = topicSlug === "opinion";
+  const isBriscoe = countySlug === "briscoe";
+  const isArkansas = stateSlug === "arkansas";
+
+  const topic = isObituary ? "Obituary" : isSports ? "Sports" : isCrime ? "Crime" : "Local News";
+  return isBriscoe
+    ? [
+        ...makeItems({ source: "Briscoe County Test", topic, count: Math.min(4, limit), stateLabel: "Texas" }),
+        ...makeItems({ source: "Lubbock Daily Test", topic, count: Math.max(0, limit - 4), offset: 4, stateLabel: "Texas" }),
+      ]
+    : makeItems({
+        source: isArkansas ? "Arkansas State Test" : scope === "national" ? "National Test" : "Randall County Test",
+        topic,
+        count: limit,
+        stateLabel: isArkansas ? "Arkansas" : "Texas",
+        includeFilteredObituary: !isObituary,
+        includeTennesseeOpinion: isOpinion,
+      });
+}
 
 test("county feeds merge nearby-market stories, sort newest first, filter sections, and load more on scroll", async ({ page }) => {
   await page.goto("/texas/randall");
@@ -128,11 +172,41 @@ test("one sampled county in every state receives an in-state fallback market", (
   expect(getCountyMarketCities(briscoe!, 2)).toEqual(["Amarillo", "Lubbock"]);
 });
 
-function escapeXml(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
+function makeItems({
+  source,
+  topic,
+  count,
+  offset = 0,
+  stateLabel,
+  includeFilteredObituary = false,
+  includeTennesseeOpinion = false,
+}: {
+  source: string;
+  topic: string;
+  count: number;
+  offset?: number;
+  stateLabel: string;
+  includeFilteredObituary?: boolean;
+  includeTennesseeOpinion?: boolean;
+}) {
+  return Array.from({ length: count }, (_, index) => {
+    const itemNumber = index + offset + 1;
+    const date = new Date(Date.UTC(2026, 5, 27 - itemNumber, 12, 0, 0));
+    const title =
+      index === 2 && includeFilteredObituary
+        ? "Obituary notice should be filtered from non-obituary feeds"
+        : index === 3 && includeTennesseeOpinion
+          ? "Tennessee op-ed should be filtered from Potter County Texas"
+          : `${stateLabel} ${topic} story ${String(itemNumber).padStart(2, "0")} from ${source}`;
+
+    return {
+      id: `${source}-${topic}-${itemNumber}`,
+      title,
+      link: `https://example.com/${source.toLowerCase().replace(/\s+/g, "-")}/${topic.toLowerCase().replace(/\s+/g, "-")}/${itemNumber}`,
+      source,
+      publishedAt: date.toUTCString(),
+      description: title,
+      imageUrl: "",
+    };
+  });
 }

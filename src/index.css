@@ -12,6 +12,8 @@
   --accent: #0f0f0f;
   --shadow: 0 10px 0 rgba(0, 0, 0, 0.82);
   --soft-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 16px 40px rgba(0, 0, 0, 0.14);
+  --ticker-height: 42px;
+  --ticker-speed: 36s;
 
   font-family: "Libre Baskerville", Georgia, "Times New Roman", serif;
   font-size: 18px;
@@ -91,6 +93,13 @@ body::before {
   color: var(--muted);
 }
 
+.masthead-kicker-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+}
+
 .wordmark {
   display: inline-flex;
   flex-direction: column;
@@ -140,6 +149,104 @@ body::before {
 .nav-link:hover {
   text-decoration: underline;
   transform: translateY(-1px);
+}
+
+.market-weather-stack {
+  border: 1px solid var(--border);
+  margin: 0 0 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(239, 239, 236, 0.94)),
+    var(--panel);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.72) inset;
+}
+
+.market-weather-bar,
+.market-weather-weather-bar {
+  display: grid;
+  align-items: center;
+  min-height: var(--ticker-height);
+}
+
+.market-weather-bar {
+  border-bottom: 1px solid var(--rule);
+}
+
+.crypto-weather-bar {
+  height: var(--ticker-height);
+  min-height: var(--ticker-height);
+  overflow: hidden;
+}
+
+.market-weather-weather-bar {
+  justify-items: center;
+  min-height: 36px;
+  padding: 4px 12px;
+}
+
+.market-ticker-widget {
+  min-width: 0;
+  height: var(--ticker-height);
+  overflow: hidden;
+}
+
+.crypto-ticker-widget {
+  min-width: 0;
+  width: 100%;
+  height: var(--ticker-height);
+  min-height: var(--ticker-height);
+  max-height: var(--ticker-height);
+  overflow: hidden;
+}
+
+.crypto-ticker-widget .livecoinwatch-widget-5 {
+  width: 100%;
+  height: var(--ticker-height) !important;
+  max-height: var(--ticker-height) !important;
+  overflow: hidden !important;
+}
+
+.crypto-ticker-widget .marquee-widget,
+.crypto-ticker-widget [class*="marquee"] {
+  height: var(--ticker-height) !important;
+  max-height: var(--ticker-height) !important;
+  animation-duration: var(--ticker-speed) !important;
+  animation-timing-function: linear !important;
+}
+
+.market-ticker-widget iframe {
+  display: block;
+}
+
+.weather-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  max-width: 100%;
+  color: var(--ink);
+  font-family: "Roboto Mono", monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.25;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.weather-pill span,
+.weather-pill strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.weather-pill span:first-child {
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  padding: 1px 5px;
+  background: #111;
+  color: #f4f4f1;
+  font-size: 10px;
+  letter-spacing: 0.08em;
 }
 
 .layout-grid {
@@ -204,6 +311,19 @@ h2 {
 .muted {
   color: var(--muted);
   margin: 6px 0;
+}
+
+.feed-source {
+  display: inline-block;
+  margin: 0 0 8px;
+  border: 1px solid var(--rule);
+  padding: 3px 7px;
+  background: linear-gradient(#f8f8f6, #e8e8e4);
+  color: var(--muted);
+  font-family: "Roboto Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .section-heading {
@@ -528,6 +648,10 @@ button:disabled {
 }
 
 @media (max-width: 720px) {
+  :root {
+    --ticker-height: 32px;
+  }
+
   .masthead {
     flex-direction: column;
     align-items: flex-start;
@@ -542,6 +666,41 @@ button:disabled {
 
   .wordmark-main {
     font-size: 32px;
+  }
+
+  .market-weather-stack {
+    margin-bottom: 12px;
+  }
+
+  .market-weather-bar {
+    min-height: var(--ticker-height);
+  }
+
+  .market-ticker-widget {
+    height: var(--ticker-height);
+  }
+
+  .crypto-weather-bar,
+  .crypto-ticker-widget {
+    height: var(--ticker-height);
+    min-height: var(--ticker-height);
+    max-height: var(--ticker-height);
+  }
+
+  .market-ticker-widget iframe {
+    width: 125% !important;
+    transform: scale(0.8);
+    transform-origin: top left;
+  }
+
+  .market-weather-weather-bar {
+    min-height: 32px;
+  }
+
+  .weather-pill {
+    flex-wrap: wrap;
+    font-size: 11px;
+    white-space: normal;
   }
 
   .search-form {

@@ -1,7 +1,5 @@
 import { getCountyByState } from "@nickgraffis/us-counties";
 import { countyCentroidsByFips } from "./county-centroids";
-import { buildCountyFeedUrl } from "../lib/county-feed-urls";
-import { site } from "./site";
 import { stateNewsHubs } from "./state-news-hubs";
 import { getStateBySlug, states, type StateSite } from "./states";
 
@@ -22,17 +20,6 @@ export type CountySite = {
   latitude?: number;
   longitude?: number;
   description: string;
-  feeds: {
-    localNewsUrl: string;
-    localSportsUrl: string;
-    localVideoUrl: string;
-    nationalNewsUrl: string;
-    obituariesUrl: string;
-    politicsUrl: string;
-    economyUrl: string;
-    crimeUrl: string;
-    opinionUrl: string;
-  };
 };
 
 export function slugify(value: string) {
@@ -57,17 +44,6 @@ function createCountySite(county: UsCounty, state: StateSite): CountySite {
     latitude: centroid?.[0],
     longitude: centroid?.[1],
     description: `County-level dispatches for ${displayName}, ${state.abbr}. Local headlines, sports, obituaries, and nearby stories in one place.`,
-    feeds: {
-      localNewsUrl: buildCountyFeedUrl("localNews", county.name, state),
-      localSportsUrl: buildCountyFeedUrl("localSports", county.name, state),
-      localVideoUrl: buildCountyFeedUrl("localVideo", county.name, state),
-      nationalNewsUrl: site.links.nationalNews,
-      obituariesUrl: buildCountyFeedUrl("obituaries", county.name, state),
-      politicsUrl: buildCountyFeedUrl("politics", county.name, state),
-      economyUrl: buildCountyFeedUrl("economy", county.name, state),
-      crimeUrl: buildCountyFeedUrl("crime", county.name, state),
-      opinionUrl: buildCountyFeedUrl("opinion", county.name, state),
-    },
   };
 }
 
@@ -94,7 +70,6 @@ function withOverrides(county: CountySite): CountySite {
   return {
     ...county,
     ...override,
-    feeds: { ...county.feeds, ...override.feeds },
   };
 }
 

@@ -1,12 +1,4 @@
-export type NewsFeedItem = {
-  id: string;
-  title: string;
-  link: string;
-  source?: string;
-  publishedAt?: string;
-  description?: string;
-  imageUrl?: string;
-};
+import type { NewsFeedItem } from "./news-api";
 
 const DEFAULT_PROVIDER_URL = "https://api.rss2json.com/v1/api.json";
 const DEFAULT_LOCAL_PROXY_URL = "/api/rss";

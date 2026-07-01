@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { fetchNewsFeed, fetchNewsFeeds, type NewsFeedItem } from "../lib/rss";
+import { fetchNewsApiFeed, isNewsApiConfigured, type NewsFeedItem } from "../lib/news-api";
+import { fetchNewsFeeds } from "../lib/rss";
 
 type FeedKind = "general" | "sports" | "politics" | "economy" | "crime" | "obituaries" | "opinion";
 
@@ -14,9 +15,12 @@ type LocalityScope = {
 
 type Props = {
   title: string;
-  feedUrl: string;
-  fallbackUrl?: string;
-  relatedUrls?: string[];
+  apiPath?: string;
+  fallbackFeedUrls?: string[];
+  initialError?: string;
+  initialItems?: NewsFeedItem[];
+  initialStatus?: "idle" | "loading" | "loaded" | "error";
+  initialSource?: FeedSource;
   expandedLabel?: string;
   kicker?: string;
   pageSize?: number;
@@ -30,13 +34,16 @@ type Props = {
 };
 
 const MAX_REQUESTED_ITEMS = 200;
-const EMPTY_RELATED_URLS: string[] = [];
+type FeedSource = "api" | "fallback";
 
 export function NewsFeedSection({
   title,
-  feedUrl,
-  fallbackUrl,
-  relatedUrls = EMPTY_RELATED_URLS,
+  apiPath,
+  fallbackFeedUrls = [],
+  initialError,
+  initialItems,
+  initialStatus = "idle",
+  initialSource,
   expandedLabel,
   kicker,
   pageSize = 12,
@@ -48,14 +55,23 @@ export function NewsFeedSection({
   const [items, setItems] = useState<NewsFeedItem[]>([]);
   const [status, setStatus] = useState<"idle" | "loading" | "loaded" | "error">("idle");
   const [error, setError] = useState<string>("");
+  const [source, setSource] = useState<FeedSource | undefined>(initialSource);
   const [requestedCount, setRequestedCount] = useState(pageSize);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const relatedUrlsKey = relatedUrls.join("|");
-  const expandedUrls = useMemo(() => [fallbackUrl, ...relatedUrls].filter(Boolean) as string[], [fallbackUrl, relatedUrlsKey]);
-  const feedUrls = useMemo(() => [feedUrl, ...expandedUrls].filter(Boolean) as string[], [feedUrl, expandedUrls]);
-  const filteredItems = useMemo(() => filterFeedItems(items, kind, locality), [items, kind, locality]);
-  const canRequestMore = requestedCount < MAX_REQUESTED_ITEMS && filteredItems.length < MAX_REQUESTED_ITEMS;
+  const fallbackFeedUrlsKey = fallbackFeedUrls.join("\n");
+  const stableFallbackFeedUrls = useMemo(() => fallbackFeedUrlsKey.split("\n").filter(Boolean), [fallbackFeedUrlsKey]);
+  const hasInitialPageData = initialItems !== undefined || initialStatus === "loading" || initialStatus === "error";
+  const shouldUseServerFilteredItems = source === "api";
+  const filteredItems = useMemo(
+    () => (shouldUseServerFilteredItems ? items : filterFeedItems(items, kind, locality)),
+    [items, kind, locality, shouldUseServerFilteredItems],
+  );
+  const canRequestMore =
+    source === "fallback" &&
+    !hasInitialPageData &&
+    requestedCount < MAX_REQUESTED_ITEMS &&
+    filteredItems.length < MAX_REQUESTED_ITEMS;
 
   useEffect(() => {
     let cancelled = false;
@@ -63,20 +79,47 @@ export function NewsFeedSection({
       setStatus("loading");
       setError("");
       try {
-        const [primaryItems, expandedItems] = await Promise.all([
-          fetchNewsFeed(feedUrl, requestedCount),
-          expandedUrls.length ? fetchNewsFeeds(expandedUrls, requestedCount) : Promise.resolve([]),
-        ]);
-        const nextItems = combinePriorityFeeds(primaryItems, expandedItems, requestedCount);
-        if (!cancelled && nextItems.length) {
-          setItems(nextItems);
-          setStatus("loaded");
+        if (hasInitialPageData && initialStatus === "loading" && requestedCount <= pageSize) {
+          return;
+        }
+        if (hasInitialPageData && initialStatus === "error" && requestedCount <= pageSize) {
+          const fallbackItems = await loadFallbackItems(requestedCount, stableFallbackFeedUrls);
+          if (!cancelled) {
+            setItems(fallbackItems);
+            setSource("fallback");
+            setStatus("loaded");
+            setError("");
+          }
+          return;
+        }
+        if (hasInitialPageData && initialStatus === "loaded" && requestedCount <= Math.max(pageSize, initialItems?.length || 0)) {
+          if (!cancelled) {
+            setItems(initialItems || []);
+            setSource(initialSource || "api");
+            setStatus("loaded");
+          }
           return;
         }
 
+        if (apiPath && isNewsApiConfigured()) {
+          try {
+            const apiItems = await fetchNewsApiFeed(apiPath, requestedCount);
+            if (!cancelled) {
+              setItems(apiItems);
+              setSource("api");
+              setStatus("loaded");
+            }
+            return;
+          } catch {
+            // Fall through to RSS so deployments can keep articles while the API is offline.
+          }
+        }
+
+        const fallbackItems = await loadFallbackItems(requestedCount, stableFallbackFeedUrls);
         if (!cancelled) {
-          setStatus("error");
-          setError("No stories found for this feed yet.");
+          setItems(fallbackItems);
+          setSource("fallback");
+          setStatus("loaded");
         }
       } catch (reason) {
         if (!cancelled) {
@@ -89,14 +132,17 @@ export function NewsFeedSection({
     return () => {
       cancelled = true;
     };
-  }, [feedUrls, requestedCount]);
+  }, [apiPath, fallbackFeedUrlsKey, hasInitialPageData, initialItems, initialSource, initialStatus, pageSize, requestedCount, stableFallbackFeedUrls]);
 
   useEffect(() => {
-    setItems([]);
-    setRequestedCount(pageSize);
+    setItems(initialItems || []);
+    setStatus(initialStatus === "loaded" || initialItems ? "loaded" : initialStatus);
+    setSource(initialStatus === "loaded" || initialItems ? initialSource || "api" : undefined);
+    setError(initialStatus === "error" ? initialError || "Unable to load this section from the News API." : "");
+    setRequestedCount(Math.max(pageSize, initialItems?.length || 0));
     const container = containerRef.current;
     if (container) container.scrollTop = 0;
-  }, [pageSize, feedUrls]);
+  }, [apiPath, initialError, initialItems, initialSource, initialStatus, pageSize]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -149,7 +195,8 @@ export function NewsFeedSection({
       </header>
       {status === "error" ? <p className="muted">{error}</p> : null}
       {status === "loading" && !items.length ? <p className="muted">Presses are warming…</p> : null}
-      {expandedLabel && expandedUrls.length ? (
+      {status === "loaded" && source ? <p className="feed-source">Fetching articles via {source === "api" ? "County News API" : "Fallback RSS"}</p> : null}
+      {expandedLabel ? (
         <p className="muted">County-specific stories appear first. When coverage is sparse, this feed expands to {expandedLabel}.</p>
       ) : null}
       <div className="feed-scroll" ref={containerRef}>
@@ -175,15 +222,11 @@ export function NewsFeedSection({
   );
 }
 
-function combinePriorityFeeds(primaryItems: NewsFeedItem[], expandedItems: NewsFeedItem[], maxItems: number) {
-  const seen = new Set<string>();
-  const addUnique = (item: NewsFeedItem) => {
-    const key = item.link || `${item.title}-${item.publishedAt}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  };
-  return [...primaryItems.filter(addUnique), ...expandedItems.filter(addUnique)].slice(0, maxItems);
+async function loadFallbackItems(requestedCount: number, fallbackFeedUrls: string[]) {
+  if (!fallbackFeedUrls.length) throw new Error("No fallback RSS feeds are configured for this section.");
+  const items = await fetchNewsFeeds(fallbackFeedUrls, requestedCount);
+  if (!items.length) throw new Error("Unable to load this feed from the News API or fallback RSS.");
+  return items;
 }
 
 const obituaryTerms = [
@@ -300,17 +343,13 @@ function matchesLocality(contentHaystack: string, fullHaystack: string, locality
   const mentionsOtherState = stateNames.some((stateName) => stateName !== allowedStateName && includesTerm(contentHaystack, stateName));
   if (mentionsOtherState) return false;
 
-  const localityTerms = [
-    locality.countyName,
-    locality.countyName ? `${locality.countyName} county` : undefined,
-    locality.stateName,
-    locality.stateAbbr,
-    ...(locality.cities || []),
-  ]
-    .filter(Boolean)
-    .map((term) => term!.toLowerCase());
+  const localityTerms = locality.countyName
+    ? [locality.countyName, `${locality.countyName} county`, ...(locality.cities || [])]
+    : [locality.stateName, locality.stateAbbr, ...(locality.cities || [])];
 
-  return localityTerms.length ? localityTerms.some((term) => includesTerm(fullHaystack, term)) : true;
+  const normalizedLocalityTerms = localityTerms.filter(Boolean).map((term) => term!.toLowerCase());
+
+  return normalizedLocalityTerms.length ? normalizedLocalityTerms.some((term) => includesTerm(fullHaystack, term)) : true;
 }
 
 function includesTerm(value: string, term: string) {
