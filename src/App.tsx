@@ -177,9 +177,9 @@ function App() {
           <NavLink to="/about" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             About
           </NavLink>
-          <a className="nav-link" href="mailto:submissions@thecountypost.com">
-            Submit Tips
-          </a>
+          <NavLink to={submitStoryPath(activeCounty, activeState)} className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Submit A Story
+          </NavLink>
         </nav>
       </header>
       <ContextNav county={activeCounty} state={activeState} />
@@ -260,7 +260,7 @@ function contextLinks(county?: NonNullable<ReturnType<typeof getCounty>>, state?
       { to: base, label: "County Home", end: true },
       ...subjectPages.map((subject) => ({ to: `${base}/${subject.slug}`, label: subject.title })),
       { to: `${base}/op-eds`, label: "County Op-Eds" },
-      { to: `${base}/submit`, label: "Submit Op-Eds/Stories" },
+      { to: `${base}/submit`, label: "Submit A Story" },
     ];
   }
 
@@ -270,7 +270,7 @@ function contextLinks(county?: NonNullable<ReturnType<typeof getCounty>>, state?
       { to: base, label: "State Home", end: true },
       ...subjectPages.map((subject) => ({ to: `${base}/${subject.slug}`, label: subject.title })),
       { to: `${base}/op-eds`, label: "State Op-Eds" },
-      { to: `${base}/submit`, label: "Submit Op-Eds/Stories" },
+      { to: `${base}/submit`, label: "Submit A Story" },
     ];
   }
 
@@ -278,8 +278,14 @@ function contextLinks(county?: NonNullable<ReturnType<typeof getCounty>>, state?
     { to: "/", label: "National Home", end: true },
     ...subjectPages.map((subject) => ({ to: `/topics/${subject.slug}`, label: subject.title })),
     { to: "/op-eds", label: "National Op-Eds" },
-    { to: "/submit", label: "Submit Op-Eds/Stories" },
+    { to: "/submit", label: "Submit A Story" },
   ];
+}
+
+function submitStoryPath(county?: NonNullable<ReturnType<typeof getCounty>>, state?: ReturnType<typeof getStateBySlug>) {
+  if (county) return `/${county.state.slug}/${county.slug}/submit`;
+  if (state) return `/states/${state.slug}/submit`;
+  return "/submit";
 }
 
 function HomePage() {
@@ -617,7 +623,7 @@ function CountyPage() {
         </h1>
         <p className="lead">{county.description}</p>
         <p className="muted">
-          Live feeds refresh on page load. The submission desk below uses EmailJS to route reader tips and op-eds directly
+          Live feeds refresh on page load. The submission desk below uses EmailJS to route reader story leads and op-eds directly
           to editors.
         </p>
         <div className="meta-grid">
@@ -831,9 +837,9 @@ function CountySubmitPage() {
       <section className="hero-card">
         <p className="kicker">Submit</p>
         <h1>
-          Submit to {county.displayName} <span className="muted">({county.state.abbr})</span>
+          Submit A Story to {county.displayName} <span className="muted">({county.state.abbr})</span>
         </h1>
-        <p className="lead">Send op-eds, tips, story leads, documents, public notices, and local reporting to the county desk.</p>
+        <p className="lead">Send op-eds, story leads, documents, public notices, and local reporting to the county desk.</p>
       </section>
       <SubmissionForm county={county} />
     </div>
@@ -863,22 +869,19 @@ function OpEdPage() {
 function SubmitPage() {
   const { stateSlug } = useParams<{ stateSlug?: string }>();
   const state = getStateBySlug(stateSlug);
+  if (stateSlug && !state) return <NotFound />;
   const scopeLabel = state ? `${state.name} desk` : "national desk";
-  const subject = encodeURIComponent(`Submission for ${scopeLabel}`);
 
   return (
     <div className="layout-grid">
       <section className="hero-card">
         <p className="kicker">Submit</p>
-        <h1>Submit Op-Eds/Stories</h1>
+        <h1>Submit A Story</h1>
         <p className="lead">
-          Send op-eds, story tips, documents, public notices, and local reporting to the {scopeLabel}. County pages include
-          a full submission form; state and national submissions can be emailed directly for now.
+          Send op-eds, story leads, documents, public notices, and reporting to the {scopeLabel}.
         </p>
-        <a className="button-link" href={`mailto:${site.contact.email}?subject=${subject}`}>
-          Email the desk
-        </a>
       </section>
+      <SubmissionForm state={state} />
     </div>
   );
 }

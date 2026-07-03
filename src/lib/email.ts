@@ -1,6 +1,7 @@
 import emailjs from "@emailjs/browser";
 import type { CountySite } from "../data/counties";
 import { site } from "../data/site";
+import type { StateSite } from "../data/states";
 
 type FormValue = string | boolean | undefined;
 
@@ -21,23 +22,35 @@ function formatValue(value: FormValue) {
   return value?.toString().trim() || "Not provided";
 }
 
-function buildMessage(title: string, county: CountySite, values: Record<string, FormValue>) {
+export type SubmissionScope =
+  | { level: "county"; label: string; county: CountySite }
+  | { level: "state"; label: string; state: StateSite }
+  | { level: "national"; label: string };
+
+function buildMessage(title: string, scope: SubmissionScope, values: Record<string, FormValue>) {
   const details = Object.entries(values)
     .filter(([key]) => key !== "website")
     .map(([key, value]) => `${key}: ${formatValue(value)}`)
     .join("\n");
 
+  const scopeDetails =
+    scope.level === "county"
+      ? [`County: ${scope.county.displayName}, ${scope.county.state.name}`, `FIPS: ${scope.county.fips}`]
+      : scope.level === "state"
+        ? [`State: ${scope.state.name}`, `State slug: ${scope.state.slug}`]
+        : ["Scope: National"];
+
   return [
     `Submission type: ${title}`,
-    `County: ${county.displayName}, ${county.state.name}`,
-    `FIPS: ${county.fips}`,
+    `Submission scope: ${scope.label}`,
+    ...scopeDetails,
     "",
     details,
   ].join("\n");
 }
 
-export async function sendCountyFormEmail(params: {
-  county: CountySite;
+export async function sendStoryFormEmail(params: {
+  scope: SubmissionScope;
   title: string;
   replyTo?: string;
   values: Record<string, FormValue>;
@@ -55,11 +68,13 @@ export async function sendCountyFormEmail(params: {
       email: fromEmail,
       reply_to: fromEmail,
       to_email: site.contact.email,
-      county_name: params.county.displayName,
-      county_slug: params.county.slug,
-      state_name: params.county.state.name,
-      state_slug: params.county.state.slug,
-      message: buildMessage(params.title, params.county, params.values),
+      county_name: params.scope.level === "county" ? params.scope.county.displayName : "",
+      county_slug: params.scope.level === "county" ? params.scope.county.slug : "",
+      state_name: params.scope.level === "county" ? params.scope.county.state.name : params.scope.level === "state" ? params.scope.state.name : "",
+      state_slug: params.scope.level === "county" ? params.scope.county.state.slug : params.scope.level === "state" ? params.scope.state.slug : "",
+      submission_scope: params.scope.label,
+      submission_level: params.scope.level,
+      message: buildMessage(params.title, params.scope, params.values),
       page_url: window.location.href,
       submitted_at: new Date().toISOString(),
     },
