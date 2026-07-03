@@ -1,13 +1,16 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
 import type { CountySite } from "../data/counties";
-import { sendCountyFormEmail } from "../lib/email";
+import type { StateSite } from "../data/states";
+import { sendStoryFormEmail, type SubmissionScope } from "../lib/email";
 
 type Props = {
-  county: CountySite;
+  county?: CountySite;
+  state?: StateSite;
 };
 
-export function SubmissionForm({ county }: Props) {
+export function SubmissionForm({ county, state }: Props) {
+  const scope = submissionScope(county, state);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -24,8 +27,8 @@ export function SubmissionForm({ county }: Props) {
     setError("");
 
     try {
-      await sendCountyFormEmail({
-        county,
+      await sendStoryFormEmail({
+        scope,
         title: form.headline || "Reader submission",
         replyTo: form.email,
         values: {
@@ -55,7 +58,7 @@ export function SubmissionForm({ county }: Props) {
       </header>
       <p className="muted">
         Share local reporting, op-eds, investigations, public notices, or upcoming events. We read every submission for{" "}
-        {county.displayName}.
+        {scope.label}.
       </p>
       <form className="submission-form" onSubmit={handleSubmit}>
         <label>
@@ -109,11 +112,17 @@ export function SubmissionForm({ county }: Props) {
           <span>Editors may contact me for verification</span>
         </label>
         <button type="submit" disabled={status === "sending"}>
-          {status === "sending" ? "Sending…" : "Submit to the newsroom"}
+          {status === "sending" ? "Sending…" : "Submit A Story"}
         </button>
         {status === "sent" ? <p className="success">Received. Thank you for sharing your reporting.</p> : null}
         {status === "error" ? <p className="error">{error}</p> : null}
       </form>
     </section>
   );
+}
+
+function submissionScope(county?: CountySite, state?: StateSite): SubmissionScope {
+  if (county) return { level: "county", label: county.displayName, county };
+  if (state) return { level: "state", label: `${state.name} desk`, state };
+  return { level: "national", label: "the national desk" };
 }
