@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { AdPreviewPlaceholder } from "./AdPreviewPlaceholder";
+import type { AdPricingKey } from "../data/ad-pricing";
 import { fetchNewsApiFeed, isNewsApiConfigured, type NewsFeedItem } from "../lib/news-api";
 import { fetchNewsFeeds } from "../lib/rss";
 
@@ -208,6 +210,9 @@ export function NewsFeedSection({
       {status === "error" ? <p className="muted">{error}</p> : null}
       {status === "loading" && !items.length ? <p className="muted">Presses are warming…</p> : null}
       {status === "loaded" && source ? <p className="feed-source">Fetching articles via {source === "api" ? "County News API" : "Fallback RSS"}</p> : null}
+      <div className="feed-sponsor-preview">
+        <AdPreviewPlaceholder pricingKey={feedSponsorPricingKey(kind)} compact label={`${title} sponsor`} />
+      </div>
       {expandedLabel ? (
         <p className="muted">County-specific stories appear first. When coverage is sparse, this feed expands to {expandedLabel}.</p>
       ) : null}
@@ -232,6 +237,13 @@ export function NewsFeedSection({
       {!filteredItems.length && status === "loaded" ? <p className="muted">No matching stories available yet.</p> : null}
     </section>
   );
+}
+
+function feedSponsorPricingKey(kind: FeedKind): AdPricingKey {
+  if (kind === "sports") return "feed-sports";
+  if (kind === "obituaries") return "feed-obituaries";
+  if (["sound-money", "paper-elections", "bond-issues", "property-taxes"].includes(kind)) return "feed-subject";
+  return "feed-articles";
 }
 
 async function loadFallbackItems(requestedCount: number, fallbackFeedUrls: string[]) {

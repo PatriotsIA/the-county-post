@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getCountyMarketCity, type CountySite } from "../data/counties";
+import { PresentedByPreview } from "./AdPreviewPlaceholder";
 
 type WeatherStatus = {
   label: string;
@@ -44,6 +45,7 @@ export function TopTicker({ county }: { county?: CountySite }) {
       {county ? (
         <div className="market-weather-weather-bar">
           <CountyWeather county={county} />
+          <PresentedByPreview pricingKey="weather-sponsor" label="Weather sponsor" />
         </div>
       ) : null}
     </section>

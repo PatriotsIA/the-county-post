@@ -3,6 +3,10 @@ import { Link, NavLink, Route, Routes, useLocation, useNavigate, useParams } fro
 import { SubmissionForm } from "./components/SubmissionForm";
 import { NewsFeedSection } from "./components/NewsFeedSection";
 import { TopTicker } from "./components/TopTicker";
+import { AdSlot } from "./components/AdSlot";
+import { PresentedByPreview } from "./components/AdPreviewPlaceholder";
+import { PaymentsPage } from "./components/PaymentsPage";
+import { advertiserTiers, adjacentCountyAddOns, adAssetSpecs, formatAdPrice, nationwidePricingLabel, pricingInventoryPlacements } from "./data/ad-pricing";
 import { getCounty, getCountiesForState, getCountyMarketCities, getCountyMarketCity, searchCounties } from "./data/counties";
 import { site } from "./data/site";
 import { getStateBySlug, searchStates, states } from "./data/states";
@@ -177,6 +181,12 @@ function App() {
           <NavLink to="/about" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             About
           </NavLink>
+          <NavLink to="/advertise" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Advertise
+          </NavLink>
+          <NavLink to="/payments" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Payments
+          </NavLink>
           <a className="nav-link" href="mailto:submissions@thecountypost.com">
             Submit Tips
           </a>
@@ -189,6 +199,8 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/topics/:subjectSlug" element={<NationalSubjectPage />} />
           <Route path="/submit" element={<SubmitPage />} />
+          <Route path="/advertise" element={<AdvertisePage />} />
+          <Route path="/payments" element={<PaymentsPage />} />
           <Route path="/states" element={<StateDirectory />} />
           <Route path="/states/:stateSlug" element={<StatePage />} />
           <Route path="/states/:stateSlug/:subjectSlug" element={<StateSubjectPage />} />
@@ -204,6 +216,7 @@ function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
+      <PageBottomAd county={activeCounty} />
 
       <footer className="footer">
         <p>
@@ -308,6 +321,7 @@ function HomePage() {
           Find your county below, or explore all states. Every county page includes a newsroom submission form powered by
           EmailJS for reader reporting, op-eds, and public notices.
         </p>
+        <PresentedByPreview pricingKey="national-hero-sponsor" />
       </section>
 
       <section className="card">
@@ -380,6 +394,8 @@ function HomePage() {
         />
       ))}
 
+      <AdSlot pricingKey="homepage-sponsor-carousel" label="Homepage sponsor carousel" count={4} carousel />
+
       <section className="card">
         <header className="section-heading">
           <div className="section-heading-rule" aria-hidden />
@@ -409,6 +425,7 @@ function StateDirectory() {
         <p className="kicker">Directory</p>
         <h1>States & Counties</h1>
         <p className="lead">Browse all states, then jump into the county editions from each state page.</p>
+        <PresentedByPreview pricingKey="national-hero-sponsor" label="Directory sponsor" />
       </section>
       <section className="card">
         <div className="state-grid">
@@ -455,6 +472,7 @@ function StatePage() {
         <p className="lead">
           State-level desk with top headlines, politics, and regional context. Jump straight to any county edition below.
         </p>
+        <PresentedByPreview pricingKey="national-hero-sponsor" label="State page sponsor" />
         <div className="meta-grid">
           <div>
             <p className="meta-label">National lens</p>
@@ -620,6 +638,7 @@ function CountyPage() {
           Live feeds refresh on page load. The submission desk below uses EmailJS to route reader tips and op-eds directly
           to editors.
         </p>
+        <PresentedByPreview pricingKey="county-hero-sponsor" />
         <div className="meta-grid">
           <div>
             <p className="meta-label">Primary market</p>
@@ -635,6 +654,8 @@ function CountyPage() {
           </div>
         </div>
       </section>
+
+      <AdSlot pricingKey="county-sponsor-carousel" label={`${county.displayName} sponsor carousel`} count={4} carousel />
 
       <NewsFeedSection
         title="Local headlines"
@@ -924,6 +945,105 @@ function TermsPage() {
         <p className="lead">Content is aggregated through the County Post News API. Links open to original publishers. Submissions are subject to editorial review.</p>
       </section>
     </div>
+  );
+}
+
+function AdvertisePage() {
+  const placements = pricingInventoryPlacements();
+
+  return (
+    <div className="layout-grid">
+      <section className="hero-card">
+        <p className="kicker">Advertise</p>
+        <h1>Advertiser preview inventory</h1>
+        <p className="lead">
+          This branch shows sellable sponsor and ad space across national, state, county, feed, weather, and page-level
+          surfaces. Pricing matches the advertiser-preview model from PIA Counties, with neutral County Post advertiser
+          labels.
+        </p>
+        <PresentedByPreview pricingKey="national-hero-sponsor" label="National advertiser" />
+        <Link className="button-link" to="/payments">
+          View advertiser payments
+        </Link>
+      </section>
+
+      <section className="card advertiser-pricing-card">
+        <p className="kicker">Published Tiers</p>
+        <h2>Advertiser packages</h2>
+        <div className="advertiser-tier-grid">
+          {advertiserTiers.map((tier) => (
+            <article className="advertiser-tier-card" key={tier.name}>
+              <h3>{tier.name}</h3>
+              <p className="advertiser-tier-price">
+                <strong>{formatAdPrice(tier.monthly)}/mo</strong>
+                <span>{formatAdPrice(tier.yearly)}/yr</span>
+              </p>
+              <p>{tier.summary}</p>
+            </article>
+          ))}
+          <article className="advertiser-tier-card advertiser-tier-card-quote">
+            <h3>National Advertiser</h3>
+            <p className="advertiser-tier-price">
+              <strong>{nationwidePricingLabel}</strong>
+            </p>
+            <p>Nationwide homepage hero, sponsor carousel, and bottom banner inventory.</p>
+          </article>
+        </div>
+      </section>
+
+      <section className="card advertiser-pricing-card">
+        <p className="kicker">Placement Inventory</p>
+        <h2>Sellable page and feed elements</h2>
+        <div className="advertiser-placement-grid">
+          {placements.map((placement) => (
+            <article className="advertiser-placement-card" key={placement.key}>
+              <h3>{placement.label}</h3>
+              <p className="advertiser-placement-tier">{placement.tier}</p>
+              <p>
+                {placement.quoteOnly ? placement.quoteLabel : `${formatAdPrice(placement.monthly)}/mo · ${formatAdPrice(placement.yearly)}/yr`}
+              </p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="card advertiser-pricing-card">
+        <p className="kicker">Multi-County</p>
+        <h2>Adjacent county add-ons</h2>
+        <div className="advertiser-placement-grid">
+          {adjacentCountyAddOns.map((addOn) => (
+            <article className="advertiser-placement-card" key={addOn.name}>
+              <h3>{addOn.name}</h3>
+              <p>{addOn.matchesTier}</p>
+              <p>
+                {formatAdPrice(addOn.monthly)}/mo · {formatAdPrice(addOn.yearly)}/yr
+              </p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="card advertiser-pricing-card">
+        <p className="kicker">Creative Specs</p>
+        <h2>Ad asset delivery</h2>
+        <p>
+          Square placements use {adAssetSpecs.square}. Bottom banner placements use {adAssetSpecs.banner}. Send finished
+          creatives or quote requests to <a href={`mailto:${adAssetSpecs.email}`}>{adAssetSpecs.email}</a>.
+        </p>
+      </section>
+    </div>
+  );
+}
+
+function PageBottomAd({ county }: { county?: ReturnType<typeof useActiveCounty> }) {
+  return (
+    <AdSlot
+      pricingKey="page-bottom-banner"
+      label={county ? `${county.displayName} bottom banner` : "Page bottom banner"}
+      count={3}
+      banner
+      carousel
+    />
   );
 }
 
