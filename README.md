@@ -24,6 +24,11 @@ VITE_NEWS_API_URL=
 
 EmailJS powers the submission form. The news API variable is optional: leave `VITE_NEWS_API_URL` blank for the current deployment if the API is not available yet.
 
+## Documentation
+
+- Comprehensive overview: `docs/architecture.md`
+- Visual dashboard canvas (open in Cursor): `/home/telephone/.cursor/projects/home-telephone-PIA-the-county-post/canvases/county-post-overview.canvas.tsx`
+
 ## News Loading
 
 Each news section tries sources in this order:
