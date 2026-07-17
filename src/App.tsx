@@ -139,6 +139,9 @@ function pageSectionProps(page: NewsPageState, section: string) {
 function App() {
   const activeCounty = useActiveCounty();
   const activeState = useActiveState(activeCounty);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const { hash, pathname } = useLocation();
   const todayLabel = useMemo(
     () =>
       new Intl.DateTimeFormat("en-US", {
@@ -149,6 +152,22 @@ function App() {
       }).format(new Date()),
     [],
   );
+
+  useEffect(() => {
+    if (hash !== "#find-a-county") return;
+    requestAnimationFrame(() => document.getElementById("find-a-county")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }, [hash]);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    const updateScrollTopVisibility = () => setShowScrollTop(window.scrollY > 420);
+    updateScrollTopVisibility();
+    window.addEventListener("scroll", updateScrollTopVisibility, { passive: true });
+    return () => window.removeEventListener("scroll", updateScrollTopVisibility);
+  }, []);
 
   return (
     <div className="page">
@@ -164,25 +183,51 @@ function App() {
             <span className="wordmark-sub">{site.tagline}</span>
           </Link>
         </div>
-        <nav className="nav">
-          <NavLink to="/" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+        <button
+          type="button"
+          className="menu-toggle"
+          aria-controls="primary-navigation"
+          aria-expanded={mobileMenuOpen}
+          onClick={() => setMobileMenuOpen((open) => !open)}
+        >
+          <span aria-hidden="true">☰</span> Menu
+        </button>
+        <nav id="primary-navigation" className={`nav${mobileMenuOpen ? " nav-open" : ""}`} aria-label="Primary navigation">
+          <NavLink to="/" end className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")} onClick={() => setMobileMenuOpen(false)}>
             Front Page
           </NavLink>
-          <NavLink to="/states" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-            States & Counties
+          <NavLink
+            to="/states"
+            className={({ isActive }) => (isActive ? "nav-link nav-link-directory active" : "nav-link nav-link-directory")}
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            Find Your State & County News
           </NavLink>
-          <NavLink to="/op-eds" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+          <NavLink to="/op-eds" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")} onClick={() => setMobileMenuOpen(false)}>
             Op-Eds
           </NavLink>
-          <NavLink to="/about" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+          <NavLink to="/about" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")} onClick={() => setMobileMenuOpen(false)}>
             About
           </NavLink>
-          <NavLink to={submitStoryPath(activeCounty, activeState)} className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+          <NavLink
+            to={submitStoryPath(activeCounty, activeState)}
+            className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
+            onClick={() => setMobileMenuOpen(false)}
+          >
             Submit A Story
           </NavLink>
         </nav>
       </header>
       <ContextNav county={activeCounty} state={activeState} />
+      <button
+        type="button"
+        className={`scroll-top${showScrollTop ? " scroll-top-visible" : ""}`}
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        aria-label="Scroll to the top of the page"
+      >
+        <span aria-hidden="true">↑</span>
+        <span>Top</span>
+      </button>
 
       <main>
         <Routes>
@@ -288,18 +333,74 @@ function submitStoryPath(county?: NonNullable<ReturnType<typeof getCounty>>, sta
   return "/submit";
 }
 
-function HomePage() {
+function CountyDirectorySearch({ id }: { id?: string }) {
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
-  const nationalPage = useNewsPage(nationalPageApiPath(), pageTopicSections);
   const trimmedQuery = query.trim();
   const hasQuery = trimmedQuery.length > 0;
-  const matches = useMemo(() => (hasQuery ? searchCounties(query, 24) : []), [hasQuery, query]);
+  const countyMatches = useMemo(() => (hasQuery ? searchCounties(query, 24) : []), [hasQuery, query]);
   const stateMatches = useMemo(() => (hasQuery ? searchStates(query, 15) : []), [hasQuery, query]);
-
-  const bestCounty = matches[0];
+  const bestCounty = countyMatches[0];
   const bestState = stateMatches[0];
-  const combinedResults = [...stateMatches.slice(0, 6).map((s) => ({ type: "state" as const, state: s })), ...matches.slice(0, 10).map((c) => ({ type: "county" as const, county: c }))];
+  const results = [
+    ...stateMatches.slice(0, 6).map((state) => ({ type: "state" as const, state })),
+    ...countyMatches.slice(0, 10).map((county) => ({ type: "county" as const, county })),
+  ];
+
+  return (
+    <section id={id} className="card county-finder">
+      <header className="section-heading">
+        <div className="section-heading-rule" aria-hidden />
+        <div>
+          <h2>Find A County</h2>
+        </div>
+        <div className="section-heading-rule" aria-hidden />
+      </header>
+      <form
+        className="search-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (bestCounty) {
+            navigate(`/${bestCounty.state.slug}/${bestCounty.slug}`);
+          } else if (bestState) {
+            navigate(`/states/${bestState.slug}`);
+          }
+        }}
+      >
+        <input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search by county or state (e.g., Orange, TX)"
+          aria-label="Search for a county or state"
+        />
+        <button type="submit" disabled={!hasQuery}>
+          Search
+        </button>
+      </form>
+      {hasQuery ? (
+        <div className="results-list single">
+          {results.map((item) =>
+            item.type === "state" ? (
+              <Link key={item.state.slug} to={`/states/${item.state.slug}`} className="result-link">
+                <span className="result-name">{item.state.name}</span>
+                <span className="result-meta">State • {item.state.abbr}</span>
+              </Link>
+            ) : (
+              <Link key={item.county.fips} to={`/${item.county.state.slug}/${item.county.slug}`} className="result-link">
+                <span className="result-name">{item.county.displayName}</span>
+                <span className="result-meta">County • {item.county.state.name}</span>
+              </Link>
+            ),
+          )}
+          {!results.length ? <p className="muted">No places match that search yet.</p> : null}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function HomePage() {
+  const nationalPage = useNewsPage(nationalPageApiPath(), pageTopicSections);
 
   return (
     <div className="layout-grid">
@@ -316,56 +417,7 @@ function HomePage() {
         </p>
       </section>
 
-      <section className="card">
-        <header className="section-heading">
-          <div className="section-heading-rule" aria-hidden />
-          <div>
-            <p className="kicker">Find a county</p>
-            <h2>Search the map</h2>
-          </div>
-          <div className="section-heading-rule" aria-hidden />
-        </header>
-        <form
-          className="search-form"
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (!hasQuery) return;
-            if (bestCounty) {
-              navigate(`/${bestCounty.state.slug}/${bestCounty.slug}`);
-              return;
-            }
-            if (bestState) {
-              navigate(`/states/${bestState.slug}`);
-            }
-          }}
-        >
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search by county or state (e.g., Orange, TX)"
-            aria-label="Search for a county or state"
-          />
-          <button type="submit">Go</button>
-        </form>
-        {hasQuery ? (
-          <div className="results-list single">
-            {combinedResults.map((item) =>
-              item.type === "state" ? (
-                <Link key={item.state.slug} to={`/states/${item.state.slug}`} className="result-link">
-                  <span className="result-name">{item.state.name}</span>
-                  <span className="result-meta">State • {item.state.abbr}</span>
-                </Link>
-              ) : (
-                <Link key={item.county.fips} to={`/${item.county.state.slug}/${item.county.slug}`} className="result-link">
-                  <span className="result-name">{item.county.displayName}</span>
-                  <span className="result-meta">County • {item.county.state.name}</span>
-                </Link>
-              ),
-            )}
-            {!combinedResults.length ? <p className="muted">No places match that search yet.</p> : null}
-          </div>
-        ) : null}
-      </section>
+      <CountyDirectorySearch id="find-a-county" />
 
       <NewsFeedSection
         title="National briefing"
@@ -413,9 +465,10 @@ function StateDirectory() {
     <div className="layout-grid">
       <section className="hero-card">
         <p className="kicker">Directory</p>
-        <h1>States & Counties</h1>
-        <p className="lead">Browse all states, then jump into the county editions from each state page.</p>
+        <h1>Find Your State & County News</h1>
+        <p className="lead">Search every U.S. county and state, or browse the complete state directory below.</p>
       </section>
+      <CountyDirectorySearch />
       <section className="card">
         <div className="state-grid">
           {states.map((state) => (

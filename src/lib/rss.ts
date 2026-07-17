@@ -75,6 +75,7 @@ async function tryProvider(feedUrl: string) {
         pubDate?: string;
         description?: string;
         thumbnail?: string;
+        content?: string;
         enclosure?: { link?: string; type?: string };
       }[];
       feed?: { title?: string };
@@ -153,6 +154,14 @@ function text(item: Element, selector: string) {
 }
 
 function imageFromRawItem(item: Element, description: string) {
+  const mediaThumbnail = item.getElementsByTagName("media:thumbnail")[0]?.getAttribute("url");
+  if (mediaThumbnail) return mediaThumbnail;
+
+  const mediaContent = item.getElementsByTagName("media:content")[0];
+  if (mediaContent?.getAttribute("type")?.startsWith("image/")) {
+    return mediaContent.getAttribute("url") || "";
+  }
+
   const enclosure = item.getElementsByTagName("enclosure")[0];
   if (enclosure?.getAttribute("type")?.startsWith("image/")) {
     return enclosure.getAttribute("url") || "";
@@ -160,10 +169,10 @@ function imageFromRawItem(item: Element, description: string) {
   return description.match(/<img[^>]+src=["']([^"']+)["']/i)?.[1] || "";
 }
 
-function imageFromItem(item: { thumbnail?: string; enclosure?: { link?: string; type?: string } }) {
+function imageFromItem(item: { thumbnail?: string; content?: string; enclosure?: { link?: string; type?: string } }) {
   if (item.thumbnail) return item.thumbnail;
   if (item.enclosure?.type?.startsWith("image/")) return item.enclosure.link || "";
-  return "";
+  return item.content?.match(/<img[^>]+src=["']([^"']+)["']/i)?.[1] || "";
 }
 
 function newest(items: NewsFeedItem[], maxItems: number) {

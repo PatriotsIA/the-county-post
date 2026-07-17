@@ -215,6 +215,7 @@ export function NewsFeedSection({
         <div className="feed-grid">
           {filteredItems.map((item) => (
             <article key={item.id} className="feed-card">
+              <ArticleMedia item={item} />
               <div className="feed-card-body">
                 <a href={item.link} target="_blank" rel="noreferrer" className="feed-title">
                   {item.title}
@@ -231,6 +232,34 @@ export function NewsFeedSection({
       </div>
       {!filteredItems.length && status === "loaded" ? <p className="muted">No matching stories available yet.</p> : null}
     </section>
+  );
+}
+
+function ArticleMedia({ item }: { item: NewsFeedItem }) {
+  const [imageAvailable, setImageAvailable] = useState(Boolean(item.imageUrl));
+
+  useEffect(() => {
+    setImageAvailable(Boolean(item.imageUrl));
+  }, [item.imageUrl]);
+
+  if (!imageAvailable || !item.imageUrl) {
+    return (
+      <div className="feed-source-mark" aria-label={`Publication: ${item.source || "News source"}`}>
+        {item.source || "News source"}
+      </div>
+    );
+  }
+
+  return (
+    <a href={item.link} target="_blank" rel="noreferrer" className="feed-image-link" tabIndex={-1} aria-hidden="true">
+      <img
+        className="feed-image"
+        src={item.imageUrl}
+        alt=""
+        loading="lazy"
+        onError={() => setImageAvailable(false)}
+      />
+    </a>
   );
 }
 
