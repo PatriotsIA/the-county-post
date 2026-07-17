@@ -11,7 +11,7 @@ function getEmailConfig() {
   const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY as string | undefined;
 
   if (!serviceId || !templateId || !publicKey) {
-    throw new Error("EmailJS is not configured. Add VITE_EMAILJS_* values to your .env file.");
+    throw new Error("The submission service is not configured. Please contact the desk directly.");
   }
 
   return { serviceId, templateId, publicKey };

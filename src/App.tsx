@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Link, NavLink, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
 import { SubmissionForm } from "./components/SubmissionForm";
+import { ClassifiedSubmissionForm } from "./components/ClassifiedSubmissionForm";
+import { AdSlot } from "./components/AdSlot";
 import { NewsFeedSection } from "./components/NewsFeedSection";
 import { TopTicker } from "./components/TopTicker";
+import { ads } from "./data/ads";
 import { getCounty, getCountiesForState, getCountyMarketCities, getCountyMarketCity, searchCounties } from "./data/counties";
 import { site } from "./data/site";
 import { getStateBySlug, searchStates, states } from "./data/states";
@@ -235,6 +238,7 @@ function App() {
           <Route path="/topics/:subjectSlug" element={<NationalSubjectPage />} />
           <Route path="/submit" element={<SubmitPage />} />
           <Route path="/states" element={<StateDirectory />} />
+          <Route path="/partners" element={<PartnerDirectory />} />
           <Route path="/states/:stateSlug" element={<StatePage />} />
           <Route path="/states/:stateSlug/:subjectSlug" element={<StateSubjectPage />} />
           <Route path="/states/:stateSlug/submit" element={<SubmitPage />} />
@@ -245,17 +249,20 @@ function App() {
           <Route path="/:stateSlug/:countySlug" element={<CountyPage />} />
           <Route path="/:stateSlug/:countySlug/op-eds" element={<CountyOpEdPage />} />
           <Route path="/:stateSlug/:countySlug/submit" element={<CountySubmitPage />} />
+          <Route path="/:stateSlug/:countySlug/classifieds" element={<CountyClassifiedsPage />} />
           <Route path="/:stateSlug/:countySlug/:subjectSlug" element={<CountySubjectPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
 
+      <AdSlot slot="banner" limit={4} />
       <footer className="footer">
         <p>
           {site.name} • County-by-county newswire • Contact the desk:{" "}
           <a href={`mailto:${site.contact.email}`}>{site.contact.email}</a>
         </p>
         <div className="footer-links">
+          <Link to="/partners">Partners</Link>
           <Link to="/privacy">Privacy</Link>
           <Link to="/terms">Terms</Link>
         </div>
@@ -305,6 +312,7 @@ function contextLinks(county?: NonNullable<ReturnType<typeof getCounty>>, state?
       { to: base, label: "County Home", end: true },
       ...subjectPages.map((subject) => ({ to: `${base}/${subject.slug}`, label: subject.title })),
       { to: `${base}/op-eds`, label: "County Op-Eds" },
+      { to: `${base}/classifieds`, label: "Classifieds" },
       { to: `${base}/submit`, label: "Submit A Story" },
     ];
   }
@@ -412,8 +420,8 @@ function HomePage() {
           sports scores, obituaries, and state-level context pulled straight from live news wires.
         </p>
         <p className="muted">
-          Find your county below, or explore all states. Every county page includes a newsroom submission form powered by
-          EmailJS for reader reporting, op-eds, and public notices.
+          Find your county below, or explore all states. Every county page includes a newsroom submission form for reader
+          reporting, op-eds, and public notices.
         </p>
       </section>
 
@@ -427,15 +435,17 @@ function HomePage() {
         {...pageSectionProps(nationalPage, "general")}
       />
       {topicSections.map((section) => (
-        <NewsFeedSection
-          key={section.kind}
-          title={section.title}
-          kicker={section.kicker}
-          apiPath={nationalApiPath(section.kind)}
-          fallbackFeedUrls={buildNationalFallbackFeedUrls(section.kind)}
-          {...pageSectionProps(nationalPage, section.kind)}
-          kind={section.kind}
-        />
+        <Fragment key={section.kind}>
+          <NewsFeedSection
+            title={section.title}
+            kicker={section.kicker}
+            apiPath={nationalApiPath(section.kind)}
+            fallbackFeedUrls={buildNationalFallbackFeedUrls(section.kind)}
+            {...pageSectionProps(nationalPage, section.kind)}
+            kind={section.kind}
+          />
+          {section.kind === "sports" ? <AdSlot slot="inline" /> : null}
+        </Fragment>
       ))}
 
       <section className="card">
@@ -479,6 +489,59 @@ function StateDirectory() {
           ))}
         </div>
       </section>
+    </div>
+  );
+}
+
+function PartnerDirectory() {
+  const partners = Array.from(new Map(ads.map((ad) => [ad.name, ad])).values());
+  const nationwidePartners = partners.filter((partner) => partner.href !== "/partners");
+  const countyPartners = partners.filter((partner) => partner.href === "/partners");
+
+  return (
+    <div className="layout-grid">
+      <section className="hero-card">
+        <p className="kicker">Advertiser directory</p>
+        <h1>Our Partners</h1>
+        <p className="lead">Explore the businesses and organizations that support The County Post.</p>
+      </section>
+      <section className="partner-callout">
+        <div>
+          <p className="kicker">Founding partners</p>
+          <h2>Become a County Post partner</h2>
+          <p>Put your organization in front of readers following national, state, and local news.</p>
+        </div>
+        <Link to="/submit" className="partner-callout-action">Contact the desk</Link>
+      </section>
+      <section className="card partner-section">
+        <p className="kicker">Sitewide partners</p>
+        <h2>National partners supporting The County Post</h2>
+        <p className="muted">These organizations support readers across every County Post edition.</p>
+        <PartnerList partners={nationwidePartners} />
+      </section>
+      <section className="card partner-section">
+        <p className="kicker">County founding partners</p>
+        <h2>Partners supporting local editions</h2>
+        <p className="muted">These advertisers support coverage in County Post communities.</p>
+        <PartnerList partners={countyPartners} />
+      </section>
+    </div>
+  );
+}
+
+function PartnerList({ partners }: { partners: typeof ads }) {
+  return (
+    <div className="partner-directory">
+      {partners.map((partner) => (
+        <article key={partner.id} className="partner-card">
+          <img src={partner.image} alt="" />
+          <div>
+            <h3>{partner.name}</h3>
+            <p>Supporting independent county-by-county news coverage.</p>
+            {partner.href === "/partners" ? <span className="partner-directory-label">County Post partner</span> : <a href={partner.href} target="_blank" rel="noreferrer sponsored">Visit partner</a>}
+          </div>
+        </article>
+      ))}
     </div>
   );
 }
@@ -568,22 +631,25 @@ function StatePage() {
         locality={{ stateName: state.name, stateAbbr: state.abbr, strict: true }}
       />
       {topicSections.map((section) => (
-        <NewsFeedSection
-          key={section.kind}
-          title={section.title}
-          kicker={section.kicker}
-          apiPath={stateApiPath(state.slug, section.kind)}
-          fallbackFeedUrls={buildStateFallbackFeedUrls(state, section.kind)}
-          {...pageSectionProps(statePage, section.kind)}
-          kind={section.kind}
-          locality={{ stateName: state.name, stateAbbr: state.abbr, strict: true }}
-        />
+        <Fragment key={section.kind}>
+          <NewsFeedSection
+            title={section.title}
+            kicker={section.kicker}
+            apiPath={stateApiPath(state.slug, section.kind)}
+            fallbackFeedUrls={buildStateFallbackFeedUrls(state, section.kind)}
+            {...pageSectionProps(statePage, section.kind)}
+            kind={section.kind}
+            locality={{ stateName: state.name, stateAbbr: state.abbr, strict: true }}
+          />
+          {section.kind === "sports" ? <AdSlot slot="inline" /> : null}
+        </Fragment>
       ))}
       <NewsFeedSection
         title="National briefing"
         kicker="Context"
         apiPath={nationalApiPath("general")}
         fallbackFeedUrls={buildNationalFallbackFeedUrls("general")}
+        sponsorId="amberwood-brush-inline"
       />
     </div>
   );
@@ -676,8 +742,7 @@ function CountyPage() {
         </h1>
         <p className="lead">{county.description}</p>
         <p className="muted">
-          Live feeds refresh on page load. The submission desk below uses EmailJS to route reader story leads and op-eds directly
-          to editors.
+          Live feeds refresh on page load. The submission desk below routes reader story leads and op-eds directly to editors.
         </p>
         <div className="meta-grid">
           <div>
@@ -685,12 +750,12 @@ function CountyPage() {
             <p className="meta-value">{fallbackCity}, {county.state.abbr}</p>
           </div>
           <div>
-            <p className="meta-label">FIPS</p>
-            <p className="meta-value">{county.fips}</p>
-          </div>
-          <div>
             <p className="meta-label">National lens</p>
             <p className="meta-value">Balanced, non-partisan aggregation</p>
+          </div>
+          <div>
+            <p className="meta-label">County Sponsored By:</p>
+            <CountySponsor county={county} />
           </div>
         </div>
       </section>
@@ -717,6 +782,7 @@ function CountyPage() {
         kind="sports"
         locality={locality}
       />
+      <AdSlot slot="inline" />
       <NewsFeedSection
         title="Politics"
         kicker="Civic desk"
@@ -777,6 +843,7 @@ function CountyPage() {
         apiPath={stateApiPath(county.state.slug, "general")}
         fallbackFeedUrls={buildStateFallbackFeedUrls(county.state, "general")}
         pageSize={12}
+        sponsorId="arw-inline"
         locality={{ stateName: county.state.name, stateAbbr: county.state.abbr, cities: [], strict: true }}
         actionLink={{ to: `/states/${county.state.slug}`, label: `View ${county.state.name} page` }}
       />
@@ -786,6 +853,7 @@ function CountyPage() {
         apiPath={nationalApiPath("general")}
         fallbackFeedUrls={buildNationalFallbackFeedUrls("general")}
         pageSize={12}
+        sponsorId="amberwood-brush-inline"
         actionLink={{ to: "/", label: "View national page" }}
       />
 
@@ -795,6 +863,20 @@ function CountyPage() {
         View county op-eds
       </Link>
     </div>
+  );
+}
+
+function CountySponsor({ county }: { county: NonNullable<ReturnType<typeof getCounty>> }) {
+  const sponsorAds = ads.filter((ad) => ad.slot === "inline" && ad.id !== "guerrilla-gear-inline");
+  const seed = county.fips || `${county.state.slug}/${county.slug}`;
+  const hash = Array.from(seed).reduce((total, character) => total + character.charCodeAt(0), 0);
+  const sponsor = sponsorAds[hash % sponsorAds.length];
+  if (!sponsor) return null;
+
+  return (
+    <a className="county-sponsor" href={sponsor.href} target="_blank" rel="noreferrer sponsored">
+      <img src={sponsor.image} alt={sponsor.alt} />
+    </a>
   );
 }
 
@@ -899,6 +981,25 @@ function CountySubmitPage() {
   );
 }
 
+function CountyClassifiedsPage() {
+  const { stateSlug, countySlug } = useParams<{ stateSlug: string; countySlug: string }>();
+  const county = getCounty(stateSlug, countySlug);
+  if (!county) return <NotFound />;
+
+  return (
+    <div className="layout-grid">
+      <section className="hero-card">
+        <p className="kicker">County classifieds</p>
+        <h1>
+          {county.displayName} Classifieds <span className="muted">({county.state.abbr})</span>
+        </h1>
+        <p className="lead">Buy, sell, hire, announce, and connect with your local community.</p>
+      </section>
+      <ClassifiedSubmissionForm county={county} />
+    </div>
+  );
+}
+
 function OpEdPage() {
   return (
     <div className="layout-grid">
@@ -952,7 +1053,7 @@ function AboutPage() {
         <p className="lead">County-by-county newswire built for context, speed, and transparency.</p>
         <p className="muted">
           We aggregate local headlines, sports, obituaries, op-eds, and national briefs so every county has a single front page.
-          Reader submissions flow through EmailJS to reach editors quickly.
+          Reader submissions reach editors for review.
         </p>
       </section>
     </div>
@@ -965,7 +1066,7 @@ function PrivacyPage() {
       <section className="hero-card">
         <p className="kicker">Privacy</p>
         <h1>Privacy Policy</h1>
-        <p className="lead">We use the County Post News API for news aggregation and EmailJS for submissions. No behavioral tracking or ad tech.</p>
+        <p className="lead">We use the County Post News API for news aggregation. No behavioral tracking or ad tech.</p>
       </section>
     </div>
   );

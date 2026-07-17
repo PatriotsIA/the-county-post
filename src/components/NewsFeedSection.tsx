@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { ads } from "../data/ads";
 import { fetchNewsApiFeed, isNewsApiConfigured, type NewsFeedItem } from "../lib/news-api";
 import { fetchNewsFeeds } from "../lib/rss";
 
@@ -37,6 +38,7 @@ type Props = {
   pageSize?: number;
   pageStep?: number;
   kind?: FeedKind;
+  sponsorId?: string;
   locality?: LocalityScope;
   actionLink?: {
     to: string;
@@ -60,6 +62,7 @@ export function NewsFeedSection({
   pageSize = 12,
   pageStep = 16,
   kind = "general",
+  sponsorId,
   locality,
   actionLink,
 }: Props) {
@@ -197,6 +200,8 @@ export function NewsFeedSection({
         <div>
           {kicker ? <p className="kicker">{kicker}</p> : null}
           <h2>{title}</h2>
+          <p className="feed-presented-by">Presented by</p>
+          <FeedSponsor kind={kind} sponsorId={sponsorId} />
           {actionLink ? (
             <Link to={actionLink.to} className="section-action">
               {actionLink.label}
@@ -206,7 +211,16 @@ export function NewsFeedSection({
         <div className="section-heading-rule" aria-hidden />
       </header>
       {status === "error" ? <p className="muted">{error}</p> : null}
-      {status === "loading" && !items.length ? <p className="muted">Presses are warming…</p> : null}
+      {status === "loading" && !items.length ? (
+        <div className="feed-loading" role="status">
+          <p>Presses Are Warming... Please allow 20 seconds for us to aggregate articles</p>
+          <div className="press-loading-graphic" aria-hidden>
+            <span />
+            <span />
+            <span />
+          </div>
+        </div>
+      ) : null}
       {status === "loaded" && source ? <p className="feed-source">Fetching articles via {source === "api" ? "County News API" : "Fallback RSS"}</p> : null}
       {expandedLabel ? (
         <p className="muted">County-specific stories appear first. When coverage is sparse, this feed expands to {expandedLabel}.</p>
@@ -232,6 +246,31 @@ export function NewsFeedSection({
       </div>
       {!filteredItems.length && status === "loaded" ? <p className="muted">No matching stories available yet.</p> : null}
     </section>
+  );
+}
+
+const feedSponsorIds: Record<FeedKind, string> = {
+  general: "guerrilla-gear-inline",
+  sports: "lemc-inline",
+  politics: "patriot-dispatch-inline",
+  economy: "plains-bank-inline",
+  crime: "pasture-exchange-inline",
+  obituaries: "patriot-trailer-inline",
+  opinion: "cbt-inline",
+  "sound-money": "brown-gmc-inline",
+  "paper-elections": "canyon-ridge-inline",
+  "bond-issues": "catchings-inline",
+  "property-taxes": "dyers-inline",
+};
+
+function FeedSponsor({ kind, sponsorId }: { kind: FeedKind; sponsorId?: string }) {
+  const sponsor = ads.find((ad) => ad.id === (sponsorId || feedSponsorIds[kind]));
+  if (!sponsor) return null;
+
+  return (
+    <a className="feed-sponsor" href={sponsor.href} target="_blank" rel="noreferrer sponsored">
+      <img src={sponsor.image} alt={sponsor.alt} />
+    </a>
   );
 }
 

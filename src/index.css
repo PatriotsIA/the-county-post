@@ -63,9 +63,9 @@ body::before {
 }
 
 #root {
-  max-width: clamp(320px, 96vw, 1600px);
+  max-width: min(99vw, 1920px);
   margin: 0 auto;
-  padding: clamp(20px, 2vw + 12px, 48px) clamp(16px, 2vw, 32px) 60px;
+  padding: clamp(12px, 1.5vw + 8px, 32px) clamp(8px, 1vw + 6px, 24px) 48px;
 }
 
 .page {
@@ -438,6 +438,97 @@ h2 {
   text-transform: uppercase;
 }
 
+.feed-loading {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.feed-loading p {
+  margin: 0;
+}
+
+.press-loading-graphic {
+  display: flex;
+  width: 96px;
+  height: 24px;
+  align-items: end;
+  justify-content: center;
+  gap: 5px;
+  border-bottom: 2px solid var(--ink);
+}
+
+.press-loading-graphic span {
+  width: 19px;
+  background: var(--ink);
+  animation: press-warm 900ms ease-in-out infinite alternate;
+}
+
+.press-loading-graphic span:nth-child(1) {
+  height: 11px;
+}
+
+.press-loading-graphic span:nth-child(2) {
+  height: 20px;
+  animation-delay: 180ms;
+}
+
+.press-loading-graphic span:nth-child(3) {
+  height: 14px;
+  animation-delay: 360ms;
+}
+
+@keyframes press-warm {
+  to {
+    background: var(--news-red);
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .press-loading-graphic span {
+    animation: none;
+  }
+}
+
+.feed-sponsor {
+  display: inline-block;
+  max-width: 100%;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  text-decoration: none;
+}
+
+.feed-sponsor img {
+  display: block;
+  width: 222px;
+  height: 72px;
+  object-fit: contain;
+}
+
+.feed-sponsor:hover {
+  opacity: 0.82;
+}
+
+.section-heading > div:nth-child(2) {
+  text-align: center;
+}
+
+.feed-presented-by {
+  margin: 5px 0 2px;
+  color: var(--muted);
+  font-family: "Roboto Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
 .section-heading {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -492,8 +583,8 @@ h2 {
 }
 
 .section-action {
-  display: inline-block;
-  margin-top: 6px;
+  display: table;
+  margin: 6px auto 0;
   border: 1px solid var(--border);
   padding: 4px 8px;
   color: var(--ink);
@@ -655,10 +746,250 @@ button:disabled {
   background: #dadad7;
 }
 
+.ad-slot {
+  padding: 10px 0;
+}
+
+.ad-slot-label {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-family: "Roboto Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.ad-slot-items {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 2px;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+}
+
+.ad-carousel-shell {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.ad-carousel-arrow {
+  display: grid;
+  width: 34px;
+  min-height: 54px;
+  place-items: center;
+  border: 1px solid var(--ink);
+  padding: 0;
+  background: var(--white);
+  color: var(--ink);
+  font-size: 28px;
+  line-height: 1;
+}
+
+.ad-carousel-arrow:hover {
+  background: var(--news-red);
+  color: var(--white);
+}
+
+.ad-slot-inline .ad-slot-items {
+  justify-content: flex-start;
+}
+
+.ad-slot-banner {
+  margin: 24px auto 0;
+  max-width: 980px;
+}
+
+.ad-link {
+  display: block;
+  flex: 0 0 270px;
+  line-height: 0;
+  overflow: hidden;
+  scroll-snap-align: center;
+}
+
+.ad-link:focus-visible {
+  outline: 3px solid var(--news-red);
+  outline-offset: 3px;
+}
+
+.ad-link img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 300 / 250;
+  height: auto;
+  object-fit: contain;
+  transition: transform 160ms ease;
+}
+
+.ad-link:hover img {
+  transform: scale(1.02);
+}
+
+.ad-banner-viewport {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 980 / 300;
+  overflow: hidden;
+}
+
+.ad-banner-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 700ms ease;
+}
+
+.ad-banner-slide.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.ad-banner-slide img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.ad-banner-controls {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.ad-banner-controls button {
+  width: 9px;
+  min-height: 9px;
+  height: 9px;
+  padding: 0;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+  background: transparent;
+}
+
+.ad-banner-controls button.active {
+  background: var(--news-red);
+}
+
+.ad-banner-side-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  display: grid;
+  width: 36px;
+  min-height: 52px;
+  place-items: center;
+  border: 1px solid var(--ink);
+  padding: 0;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--ink);
+  font-size: 28px;
+  line-height: 1;
+  transform: translateY(-50%);
+}
+
+.ad-banner-side-arrow:hover {
+  background: var(--news-red);
+  color: var(--white);
+}
+
+.ad-banner-side-arrow-prev {
+  left: 8px;
+}
+
+.ad-banner-side-arrow-next {
+  right: 8px;
+}
+
+.partner-callout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border: 2px solid var(--news-blue);
+  padding: 18px;
+  background: linear-gradient(90deg, #e8edf4, var(--white));
+}
+
+.partner-callout h2,
+.partner-section h2 {
+  margin-top: 3px;
+}
+
+.partner-callout p {
+  margin: 5px 0 0;
+}
+
+.partner-callout-action {
+  flex: 0 0 auto;
+  border: 1px solid var(--news-red-dark);
+  padding: 10px 14px;
+  background: var(--news-red);
+  color: var(--white);
+  font-family: "Roboto Mono", monospace;
+  font-size: 12px;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.partner-directory {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.partner-card {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--border);
+  padding: 10px;
+  background: var(--white);
+}
+
+.partner-card img {
+  width: 86px;
+  aspect-ratio: 1;
+  object-fit: contain;
+}
+
+.partner-card h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.partner-card p {
+  margin: 3px 0 7px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.partner-card a,
+.partner-directory-label {
+  color: var(--news-blue);
+  font-family: "Roboto Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.partner-card a:hover {
+  color: var(--news-red);
+}
+
 .feed-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 12px;
+  min-width: 0;
 }
 
 .feed-card {
@@ -733,9 +1064,15 @@ button:disabled {
 
 .feed-scroll {
   max-height: min(70vh, 960px);
+  min-width: 0;
   overflow-y: auto;
   padding-right: 4px;
   padding-bottom: 12px;
+}
+
+.section {
+  min-width: 0;
+  overflow: hidden;
 }
 
 .feed-title {
@@ -809,6 +1146,19 @@ button:disabled {
 .meta-value {
   margin: 0;
   font-weight: 700;
+}
+
+.county-sponsor {
+  display: inline-block;
+  margin-top: 4px;
+}
+
+.county-sponsor img {
+  display: block;
+  width: 140px;
+  max-width: 100%;
+  height: 58px;
+  object-fit: contain;
 }
 
 .button-link {
@@ -944,9 +1294,9 @@ button:disabled {
 
   .crypto-weather-bar,
   .crypto-ticker-widget {
-    height: var(--ticker-height);
-    min-height: var(--ticker-height);
-    max-height: var(--ticker-height);
+    height: 42px;
+    min-height: 42px;
+    max-height: 42px;
   }
 
   .market-ticker-widget iframe {
@@ -970,6 +1320,66 @@ button:disabled {
   }
 
   .results-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .ad-slot-inline .ad-slot-items {
+    gap: 8px;
+    justify-content: flex-start;
+    padding: 2px max(0px, calc((100% - min(270px, 78vw)) / 2));
+    scroll-padding-inline: max(0px, calc((100% - min(270px, 78vw)) / 2));
+  }
+
+  .ad-carousel-shell {
+    grid-template-columns: 28px minmax(0, 1fr) 28px;
+    gap: 5px;
+  }
+
+  .ad-carousel-arrow {
+    width: 28px;
+    min-height: 46px;
+  }
+
+  .ad-link {
+    flex-basis: min(270px, 78vw);
+  }
+
+  .ad-slot-banner {
+    margin-top: 18px;
+  }
+
+  .ad-banner-side-arrow {
+    width: 30px;
+    min-height: 42px;
+    font-size: 24px;
+  }
+
+  .ad-banner-side-arrow-prev {
+    left: 4px;
+  }
+
+  .ad-banner-side-arrow-next {
+    right: 4px;
+  }
+
+  .feed-sponsor {
+    padding: 0;
+  }
+
+  .feed-sponsor img {
+    width: 187px;
+    height: 62px;
+  }
+
+  .partner-callout {
+    display: grid;
+  }
+
+  .partner-callout-action {
+    text-align: center;
+  }
+
+  .partner-directory {
     grid-template-columns: 1fr;
   }
 }
