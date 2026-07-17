@@ -221,7 +221,7 @@ export function NewsFeedSection({
                   {item.title}
                 </a>
                 <p className="feed-meta">
-                  {[item.source, formatDate(item.publishedAt)].filter(Boolean).join(" • ")}
+                  {[item.imageUrl ? item.source : undefined, formatDate(item.publishedAt)].filter(Boolean).join(" • ")}
                 </p>
               </div>
             </article>
@@ -244,8 +244,8 @@ function ArticleMedia({ item }: { item: NewsFeedItem }) {
 
   if (!imageAvailable || !item.imageUrl) {
     return (
-      <div className="feed-source-mark" aria-label={`Publication: ${item.source || "News source"}`}>
-        {item.source || "News source"}
+      <div className="feed-source-mark" aria-label={`Publication: ${publicationName(item)}`}>
+        {publicationName(item)}
       </div>
     );
   }
@@ -261,6 +261,12 @@ function ArticleMedia({ item }: { item: NewsFeedItem }) {
       />
     </a>
   );
+}
+
+function publicationName(item: NewsFeedItem) {
+  if (item.source?.trim()) return item.source.trim().replace(/\s+\|\s*$/, "");
+  const titleSource = item.title.match(/\s[-–—]\s([^-–—]+)$/)?.[1]?.trim();
+  return titleSource || "News source";
 }
 
 async function loadFallbackItems(requestedCount: number, fallbackFeedUrls: string[]) {

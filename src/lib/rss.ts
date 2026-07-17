@@ -84,15 +84,18 @@ async function tryProvider(feedUrl: string) {
 
     if (json.status && json.status !== "ok") throw new Error("Provider returned error");
 
-    return (json.items || []).map((item, index) => ({
-      id: item.guid || item.link || `${item.title || "item"}-${index}`,
-      title: decodeEntities(stripHtml(item.title || "Untitled update")),
-      link: item.link || "#",
-      source: item.author || json.feed?.title,
-      publishedAt: item.pubDate,
-      description: decodeEntities(stripHtml(item.description || "")).slice(0, 200),
-      imageUrl: imageFromItem(item),
-    }));
+    return (json.items || []).map((item, index) => {
+      const title = decodeEntities(stripHtml(item.title || "Untitled update"));
+      return {
+        id: item.guid || item.link || `${item.title || "item"}-${index}`,
+        title,
+        link: item.link || "#",
+        source: publicationSource(item.author || json.feed?.title, title),
+        publishedAt: item.pubDate,
+        description: decodeEntities(stripHtml(item.description || "")).slice(0, 200),
+        imageUrl: imageFromItem(item),
+      };
+    });
   } catch {
     return [];
   }
@@ -117,11 +120,12 @@ function parseRssXml(xml: string) {
 
   const rssItems = Array.from(document.querySelectorAll("item")).map((item, index) => {
     const description = text(item, "description");
+    const title = decodeEntities(stripHtml(text(item, "title") || "Untitled update"));
     return {
       id: text(item, "guid") || text(item, "link") || `${text(item, "title") || "item"}-${index}`,
-      title: decodeEntities(stripHtml(text(item, "title") || "Untitled update")),
+      title,
       link: text(item, "link") || "#",
-      source: text(item, "source"),
+      source: publicationSource(text(item, "source"), title),
       publishedAt: text(item, "pubDate"),
       description: decodeEntities(stripHtml(description)).slice(0, 200),
       imageUrl: imageFromRawItem(item, description),
@@ -173,6 +177,19 @@ function imageFromItem(item: { thumbnail?: string; content?: string; enclosure?:
   if (item.thumbnail) return item.thumbnail;
   if (item.enclosure?.type?.startsWith("image/")) return item.enclosure.link || "";
   return item.content?.match(/<img[^>]+src=["']([^"']+)["']/i)?.[1] || "";
+}
+
+function publicationSource(source: string | undefined, title: string) {
+  const normalizedSource = source?.trim() || "";
+  if (normalizedSource && !isAggregatorSource(normalizedSource)) return normalizedSource;
+
+  const titleParts = title.split(/\s[-–—]\s/).map((part) => part.trim()).filter(Boolean);
+  return titleParts.length > 1 ? titleParts.at(-1) || normalizedSource : normalizedSource;
+}
+
+function isAggregatorSource(source: string) {
+  const normalized = source.toLowerCase();
+  return normalized.includes("google news") || normalized.includes("bing news") || normalized.includes("news.google.com");
 }
 
 function newest(items: NewsFeedItem[], maxItems: number) {
