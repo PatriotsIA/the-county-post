@@ -81,3 +81,11 @@ export async function sendStoryFormEmail(params: {
     { publicKey: config.publicKey },
   );
 }
+
+export async function sendStoryFormEmailFromForm(form: HTMLFormElement) {
+  const config = getEmailConfig();
+
+  return emailjs.sendForm(config.serviceId, config.templateId, form, {
+    publicKey: config.publicKey,
+  });
+}

@@ -4,25 +4,24 @@ import arwLogo from "../../ad-assets/ARWLogo250.jpg";
 import brownGmc from "../../ad-assets/BrownGMC-250.jpg";
 import canyonRidge from "../../ad-assets/CanyonRidge250.jpg";
 import catchings from "../../ad-assets/Catchings250.jpg";
+import becomeAPatriot from "../../ad-assets/BecomeAPatriot.jpg";
+import becomeAPatriot2 from "../../ad-assets/BecomeAPatriot2.jpg";
 import dyers from "../../ad-assets/Dyers250.jpg";
 import hoffbrau from "../../ad-assets/Hoffbrau250.jpg";
 import guerrillaGear from "../../ad-assets/ad-guerilla-gear.png";
 import lemcInline from "../../ad-assets/LEMC250.jpg";
 import lemcBanner from "../../ad-assets/LEMC980.jpg";
 import mattressBanner from "../../ad-assets/matress-ad.jpg";
-import merch from "../../ad-assets/Merch.jpg";
-import joinPia from "../../ad-assets/JoinPIA.jpg";
 import lawyersTitle from "../../ad-assets/LawyersTitle250.jpg";
 import pastureBanner from "../../ad-assets/Pasture-Exchange980.jpg";
 import pastureInline from "../../ad-assets/PastureEXCHANGELogo.jpg";
 import patriotDispatch from "../../ad-assets/PatriotDispatch.jpg";
 import patriotMessaging from "../../ad-assets/PatriotMessaging.jpg";
-import patriotRewards from "../../ad-assets/PATRIOTREWARDS.jpg";
 import patriotTrailer from "../../ad-assets/PatriotTrailerStore.jpg";
 import pestCon from "../../ad-assets/PestCon250.jpg";
 import piaBanner from "../../ad-assets/PIA980.jpg";
+import piaStore from "../../ad-assets/PIAStore.jpg";
 import plainsBank from "../../ad-assets/PlainsBank250.jpg";
-import patriotRewardsSmall from "../../ad-assets/PatriotRewards-250.jpg";
 
 export type AdSlotId = "inline" | "banner";
 
@@ -103,14 +102,6 @@ export const ads: AdCreative[] = [
     href: "https://www.guerrillagear.com/",
   },
   {
-    id: "patriot-rewards-inline",
-    slot: "inline",
-    image: patriotRewards,
-    name: "Patriot Rewards",
-    alt: "Patriot Rewards",
-    href: "https://community.patriotsinaction.com/",
-  },
-  {
     id: "lemc-banner",
     slot: "banner",
     image: lemcBanner,
@@ -175,11 +166,19 @@ export const ads: AdCreative[] = [
     href: partnerDirectory,
   },
   {
-    id: "join-pia-inline",
+    id: "become-a-patriot-inline",
     slot: "inline",
-    image: joinPia,
-    name: "Join Patriots in Action",
-    alt: "Join Patriots in Action",
+    image: becomeAPatriot,
+    name: "Become a Patriot",
+    alt: "Become a Patriot",
+    href: "https://community.patriotsinaction.com/",
+  },
+  {
+    id: "become-a-patriot-2-inline",
+    slot: "inline",
+    image: becomeAPatriot2,
+    name: "Become a Patriot",
+    alt: "Become a Patriot",
     href: "https://community.patriotsinaction.com/",
   },
   {
@@ -193,7 +192,7 @@ export const ads: AdCreative[] = [
   {
     id: "merch-inline",
     slot: "inline",
-    image: merch,
+    image: piaStore,
     name: "The Patriot Merch Store",
     alt: "The Patriot Merch Store",
     href: "https://shop.patriotsinaction.com/",
@@ -205,14 +204,6 @@ export const ads: AdCreative[] = [
     name: "PestCon",
     alt: "PestCon",
     href: partnerDirectory,
-  },
-  {
-    id: "patriot-rewards-small-inline",
-    slot: "inline",
-    image: patriotRewardsSmall,
-    name: "Patriot Rewards",
-    alt: "Patriot Rewards",
-    href: "https://community.patriotsinaction.com/",
   },
   {
     id: "mattress-banner",

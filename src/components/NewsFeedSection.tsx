@@ -213,7 +213,7 @@ export function NewsFeedSection({
       {status === "error" ? <p className="muted">{error}</p> : null}
       {status === "loading" && !items.length ? (
         <div className="feed-loading" role="status">
-          <p>Presses Are Warming... Please allow 20 seconds for us to aggregate articles</p>
+          <p>Please Wait 20 Seconds As We Fetch The News</p>
           <div className="press-loading-graphic" aria-hidden>
             <span />
             <span />
