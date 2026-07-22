@@ -48,6 +48,7 @@ type Props = {
 
 const MAX_REQUESTED_ITEMS = 200;
 type FeedSource = "api" | "fallback";
+const inFeedAds = ads.filter((ad) => ad.slot === "inline");
 
 export function NewsFeedSection({
   title,
@@ -73,6 +74,8 @@ export function NewsFeedSection({
   const [requestedCount, setRequestedCount] = useState(pageSize);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const gridRef = useRef<HTMLDivElement | null>(null);
+  const [gridColumns, setGridColumns] = useState(1);
   const fallbackFeedUrlsKey = fallbackFeedUrls.join("\n");
   const stableFallbackFeedUrls = useMemo(() => fallbackFeedUrlsKey.split("\n").filter(Boolean), [fallbackFeedUrlsKey]);
   const hasInitialPageData = initialItems !== undefined || initialStatus === "loading" || initialStatus === "error";
@@ -80,6 +83,10 @@ export function NewsFeedSection({
   const filteredItems = useMemo(
     () => (shouldUseServerFilteredItems ? items : filterFeedItems(items, kind, locality)),
     [items, kind, locality, shouldUseServerFilteredItems],
+  );
+  const feedEntries = useMemo(
+    () => createFeedEntries(filteredItems, `${title}-${kind}-${locality?.countyName || locality?.stateName || ""}`, gridColumns),
+    [filteredItems, gridColumns, kind, locality?.countyName, locality?.stateName, title],
   );
   const canRequestMore =
     source === "fallback" &&
@@ -188,6 +195,21 @@ export function NewsFeedSection({
   }, [canRequestMore, pageStep]);
 
   useEffect(() => {
+    const grid = gridRef.current;
+    if (!grid) return;
+
+    const updateColumnCount = () => {
+      const columns = getComputedStyle(grid).gridTemplateColumns.split(" ").filter(Boolean).length;
+      setGridColumns(Math.max(1, columns));
+    };
+
+    updateColumnCount();
+    const observer = new ResizeObserver(updateColumnCount);
+    observer.observe(grid);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
     if (status === "loaded" && canRequestMore && filteredItems.length < pageSize) {
       setRequestedCount((count) => Math.min(MAX_REQUESTED_ITEMS, count + pageStep));
     }
@@ -226,20 +248,34 @@ export function NewsFeedSection({
         <p className="muted">County-specific stories appear first. When coverage is sparse, this feed expands to {expandedLabel}.</p>
       ) : null}
       <div className="feed-scroll" ref={containerRef}>
-        <div className="feed-grid">
-          {filteredItems.map((item) => (
-            <article key={item.id} className="feed-card">
-              <ArticleMedia item={item} />
-              <div className="feed-card-body">
-                <a href={item.link} target="_blank" rel="noreferrer" className="feed-title">
-                  {item.title}
-                </a>
-                <p className="feed-meta">
-                  {[item.imageUrl ? item.source : undefined, formatDate(item.publishedAt)].filter(Boolean).join(" • ")}
-                </p>
-              </div>
-            </article>
-          ))}
+        <div className="feed-grid" ref={gridRef}>
+          {feedEntries.map((entry) =>
+            entry.type === "ad" ? (
+              <a
+                key={`ad-${entry.ad.id}-${entry.position}`}
+                className="feed-card feed-ad-card"
+                href={entry.ad.href}
+                target="_blank"
+                rel="noreferrer sponsored"
+                aria-label={`Advertisement: ${entry.ad.name}`}
+              >
+                <img className="feed-ad-image" src={entry.ad.image} alt={entry.ad.alt} />
+                <span className="feed-ad-label">Advertisement</span>
+              </a>
+            ) : (
+              <article key={entry.item.id} className="feed-card">
+                <ArticleMedia item={entry.item} />
+                <div className="feed-card-body">
+                  <a href={entry.item.link} target="_blank" rel="noreferrer" className="feed-title">
+                    {entry.item.title}
+                  </a>
+                  <p className="feed-meta">
+                    {[entry.item.imageUrl ? entry.item.source : undefined, formatDate(entry.item.publishedAt)].filter(Boolean).join(" • ")}
+                  </p>
+                </div>
+              </article>
+            ),
+          )}
         </div>
         <div ref={sentinelRef} aria-hidden style={{ height: "48px" }} />
         {status === "loading" && items.length ? <p className="muted">Loading more stories…</p> : null}
@@ -247,6 +283,38 @@ export function NewsFeedSection({
       {!filteredItems.length && status === "loaded" ? <p className="muted">No matching stories available yet.</p> : null}
     </section>
   );
+}
+
+type FeedEntry = { type: "article"; item: NewsFeedItem } | { type: "ad"; ad: (typeof ads)[number]; position: number };
+
+function createFeedEntries(items: NewsFeedItem[], feedIdentity: string, gridColumns: number): FeedEntry[] {
+  const entries: FeedEntry[] = [];
+  const seed = hashFeedIdentity(feedIdentity);
+  const articlesPerAd = Math.max(1, gridColumns * 2 - 1);
+
+  for (let start = 0, adPosition = 0; start < items.length; start += articlesPerAd, adPosition += 1) {
+    const chunk = items.slice(start, start + articlesPerAd);
+    // One ad follows every two grid rows of articles. Its column changes per
+    // feed and insertion, but a full article-only row always separates ad rows.
+    const adIndex = gridColumns + ((seed + adPosition) % gridColumns);
+    entries.push(...chunk.slice(0, adIndex).map((item) => ({ type: "article" as const, item })));
+
+    if (chunk.length && inFeedAds.length) {
+      entries.push({
+        type: "ad",
+        ad: inFeedAds[(seed + adPosition) % inFeedAds.length],
+        position: adPosition,
+      });
+    }
+
+    entries.push(...chunk.slice(adIndex).map((item) => ({ type: "article" as const, item })));
+  }
+
+  return entries;
+}
+
+function hashFeedIdentity(value: string) {
+  return Array.from(value).reduce((hash, character) => (hash * 31 + character.charCodeAt(0)) >>> 0, 0);
 }
 
 const feedSponsorIds: Record<FeedKind, string> = {
