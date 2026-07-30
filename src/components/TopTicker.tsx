@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getCountyMarketCity, type CountySite } from "../data/counties";
+import itmTradingAd from "../../ad-assets/ad-itmtrading.JPG";
 
 type WeatherStatus = {
   label: string;
@@ -19,28 +20,15 @@ type WeatherResponse = {
   };
 };
 
-const marketSymbols = [
-  { proName: "AMEX:SPY", title: "S&P 500" },
-  { proName: "NASDAQ:QQQ", title: "Nasdaq 100" },
-  { proName: "AMEX:GLD", title: "Gold" },
-  { proName: "AMEX:SLV", title: "Silver" },
-  { proName: "AMEX:DBA", title: "Agriculture" },
-  { proName: "AMEX:CORN", title: "Corn" },
-  { proName: "AMEX:WEAT", title: "Wheat" },
-  { proName: "AMEX:USO", title: "Crude Oil" },
-  { proName: "NYSE:CVX", title: "Chevron" },
-  { proName: "NASDAQ:TSLA", title: "Tesla" },
-];
-
 export function TopTicker({ county }: { county?: CountySite }) {
   return (
     <section className="market-weather-stack" aria-label="Market ticker and local weather">
       <div className="market-weather-bar">
         <TradingViewTicker />
       </div>
-      <div className="market-weather-bar crypto-weather-bar">
-        <CryptoTicker />
-      </div>
+      <aside className="market-ticker-ad" aria-label="Advertisement">
+        <img src={itmTradingAd} alt="ITM Trading" />
+      </aside>
       {county ? (
         <div className="market-weather-weather-bar">
           <CountyWeather county={county} />
@@ -58,22 +46,23 @@ function TradingViewTicker() {
     if (!container) return;
 
     container.textContent = "";
-    const widgetRoot = document.createElement("div");
-    widgetRoot.className = "tradingview-widget-container__widget";
-    const script = document.createElement("script");
-    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js";
-    script.type = "text/javascript";
-    script.async = true;
-    script.textContent = JSON.stringify({
-      symbols: marketSymbols,
-      showSymbolLogo: true,
-      isTransparent: true,
-      displayMode: "adaptive",
-      colorTheme: "light",
-      locale: "en",
-    });
+    if (!document.getElementById("tradingview-tickers-script")) {
+      const script = document.createElement("script");
+      script.id = "tradingview-tickers-script";
+      script.type = "module";
+      script.src = "https://widgets.tradingview-widget.com/w/en/tv-tickers.js";
+      document.head.append(script);
+    }
 
-    container.append(widgetRoot, script);
+    const ticker = document.createElement("tv-tickers");
+    ticker.setAttribute(
+      "symbols",
+      "FOREXCOM:SPXUSD,FOREXCOM:NSXUSD,FX:EURUSD,BITSTAMP:BTCUSD,BITSTAMP:ETHUSD,TVC:GOLD,CMCMARKETS:SILVERU2026,SPARKS:BEEF,COINBASE:ETHUSD,FOREXCOM:WHEAT,CAPITALCOM:COTTON,NASDAQ:TSLA,NASDAQ:AAPL",
+    );
+    ticker.setAttribute("hide-chart", "");
+    ticker.setAttribute("item-size", "compact");
+    ticker.setAttribute("show-hover", "");
+    container.append(ticker);
 
     return () => {
       container.textContent = "";
@@ -81,36 +70,6 @@ function TradingViewTicker() {
   }, []);
 
   return <div className="tradingview-widget-container market-ticker-widget" ref={containerRef} />;
-}
-
-function CryptoTicker() {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    container.textContent = "";
-    const widgetRoot = document.createElement("div");
-    widgetRoot.className = "livecoinwatch-widget-5";
-    widgetRoot.setAttribute("lcw-base", "USD");
-    widgetRoot.setAttribute("lcw-color-tx", "#555555");
-    widgetRoot.setAttribute("lcw-marquee-1", "coins");
-    widgetRoot.setAttribute("lcw-marquee-2", "movers");
-    widgetRoot.setAttribute("lcw-marquee-items", "10");
-
-    const script = document.createElement("script");
-    script.src = "https://www.livecoinwatch.com/static/lcw-widget.js";
-    script.defer = true;
-
-    container.append(widgetRoot, script);
-
-    return () => {
-      container.textContent = "";
-    };
-  }, []);
-
-  return <div className="crypto-ticker-widget" ref={containerRef} />;
 }
 
 function CountyWeather({ county }: { county: CountySite }) {
