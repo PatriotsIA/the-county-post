@@ -55,8 +55,11 @@ const subjectPages: { kind: TopicFeedKind; slug: string; title: string; kicker: 
   },
 ];
 
-const pageTopicSections = ["general", ...topicSections.map((section) => section.kind)] as const;
-const countyPageSections = ["localNews", "localSports", "politics", "economy", "crime", "obituaries", "opinion"] as const;
+const pageLeadSections = ["general"] as const;
+const pageBackgroundSections = ["sports", "politics", "economy", "crime", "obituaries", "opinion"] as const;
+const countyLeadSections = ["localNews"] as const;
+const countyBackgroundSections = ["localSports", "politics", "economy", "crime", "obituaries", "opinion"] as const;
+const LEAD_PREFETCH_LIMIT = 32;
 const PAGE_PREFETCH_LIMIT = 96;
 
 type NewsPageState = {
@@ -137,6 +140,20 @@ function pageSectionProps(page: NewsPageState, section: string) {
     initialStatus: page.status,
     initialSource: page.status === "loaded" ? ("api" as const) : undefined,
   };
+}
+
+function backgroundPageSectionProps(page: NewsPageState, section: string, enabled: boolean) {
+  if (enabled && page.status !== "idle") return pageSectionProps(page, section);
+  return {
+    initialError: "",
+    initialItems: undefined,
+    initialStatus: "loading" as const,
+    initialSource: undefined,
+  };
+}
+
+function canLoadBackgroundPage(page: NewsPageState) {
+  return page.status === "loaded" || page.status === "error";
 }
 
 function App() {
@@ -408,7 +425,9 @@ function CountyDirectorySearch({ id }: { id?: string }) {
 }
 
 function HomePage() {
-  const nationalPage = useNewsPage(nationalPageApiPath(), pageTopicSections);
+  const nationalLeadPage = useNewsPage(nationalPageApiPath(), pageLeadSections, LEAD_PREFETCH_LIMIT);
+  const loadNationalBackground = canLoadBackgroundPage(nationalLeadPage);
+  const nationalBackgroundPage = useNewsPage(loadNationalBackground ? nationalPageApiPath() : undefined, pageBackgroundSections);
 
   return (
     <div className="layout-grid">
@@ -432,7 +451,7 @@ function HomePage() {
         kicker="Top of the hour"
         apiPath={nationalApiPath("general")}
         fallbackFeedUrls={buildNationalFallbackFeedUrls("general")}
-        {...pageSectionProps(nationalPage, "general")}
+        {...pageSectionProps(nationalLeadPage, "general")}
       />
       {topicSections.map((section) => (
         <Fragment key={section.kind}>
@@ -441,7 +460,7 @@ function HomePage() {
             kicker={section.kicker}
             apiPath={nationalApiPath(section.kind)}
             fallbackFeedUrls={buildNationalFallbackFeedUrls(section.kind)}
-            {...pageSectionProps(nationalPage, section.kind)}
+            {...backgroundPageSectionProps(nationalBackgroundPage, section.kind, loadNationalBackground)}
             kind={section.kind}
           />
           {section.kind === "sports" ? <AdSlot slot="inline" /> : null}
@@ -550,7 +569,9 @@ function StatePage() {
   const { stateSlug } = useParams<{ stateSlug: string }>();
   const state = getStateBySlug(stateSlug);
   const [countyQuery, setCountyQuery] = useState("");
-  const statePage = useNewsPage(state ? statePageApiPath(state.slug) : undefined, pageTopicSections);
+  const stateLeadPage = useNewsPage(state ? statePageApiPath(state.slug) : undefined, pageLeadSections, LEAD_PREFETCH_LIMIT);
+  const loadStateBackground = canLoadBackgroundPage(stateLeadPage);
+  const stateBackgroundPage = useNewsPage(state && loadStateBackground ? statePageApiPath(state.slug) : undefined, pageBackgroundSections);
   const counties = useMemo(() => (state ? getCountiesForState(state.slug) : []), [state]);
   const filteredCounties = useMemo(() => {
     const normalized = countyQuery.trim().toLowerCase();
@@ -627,7 +648,7 @@ function StatePage() {
         kicker="State desk"
         apiPath={stateApiPath(state.slug, "general")}
         fallbackFeedUrls={buildStateFallbackFeedUrls(state, "general")}
-        {...pageSectionProps(statePage, "general")}
+        {...pageSectionProps(stateLeadPage, "general")}
         locality={{ stateName: state.name, stateAbbr: state.abbr, strict: true }}
       />
       {topicSections.map((section) => (
@@ -637,7 +658,7 @@ function StatePage() {
             kicker={section.kicker}
             apiPath={stateApiPath(state.slug, section.kind)}
             fallbackFeedUrls={buildStateFallbackFeedUrls(state, section.kind)}
-            {...pageSectionProps(statePage, section.kind)}
+            {...backgroundPageSectionProps(stateBackgroundPage, section.kind, loadStateBackground)}
             kind={section.kind}
             locality={{ stateName: state.name, stateAbbr: state.abbr, strict: true }}
           />
@@ -715,7 +736,12 @@ function StateSubjectPage() {
 function CountyPage() {
   const { stateSlug, countySlug } = useParams<{ stateSlug: string; countySlug: string }>();
   const county = getCounty(stateSlug, countySlug);
-  const countyPage = useNewsPage(county ? countyPageApiPath(county.state.slug, county.slug) : undefined, countyPageSections);
+  const countyLeadPage = useNewsPage(county ? countyPageApiPath(county.state.slug, county.slug) : undefined, countyLeadSections, LEAD_PREFETCH_LIMIT);
+  const loadCountyBackground = canLoadBackgroundPage(countyLeadPage);
+  const countyBackgroundPage = useNewsPage(
+    county && loadCountyBackground ? countyPageApiPath(county.state.slug, county.slug) : undefined,
+    countyBackgroundSections,
+  );
 
   if (!county) {
     return <NotFound />;
@@ -765,7 +791,7 @@ function CountyPage() {
         kicker="County desk"
         apiPath={countyApiPath(county.state.slug, county.slug, "general")}
         fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "general")}
-        {...pageSectionProps(countyPage, "localNews")}
+        {...pageSectionProps(countyLeadPage, "localNews")}
         expandedLabel={expandedLabel}
         pageSize={16}
         kind="general"
@@ -776,7 +802,7 @@ function CountyPage() {
         kicker="Scores & highlights"
         apiPath={countyApiPath(county.state.slug, county.slug, "sports")}
         fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "sports")}
-        {...pageSectionProps(countyPage, "localSports")}
+        {...backgroundPageSectionProps(countyBackgroundPage, "localSports", loadCountyBackground)}
         expandedLabel={expandedLabel}
         pageSize={12}
         kind="sports"
@@ -788,7 +814,7 @@ function CountyPage() {
         kicker="Civic desk"
         apiPath={countyApiPath(county.state.slug, county.slug, "politics")}
         fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "politics")}
-        {...pageSectionProps(countyPage, "politics")}
+        {...backgroundPageSectionProps(countyBackgroundPage, "politics", loadCountyBackground)}
         expandedLabel={expandedLabel}
         pageSize={12}
         kind="politics"
@@ -799,7 +825,7 @@ function CountyPage() {
         kicker="Markets"
         apiPath={countyApiPath(county.state.slug, county.slug, "economy")}
         fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "economy")}
-        {...pageSectionProps(countyPage, "economy")}
+        {...backgroundPageSectionProps(countyBackgroundPage, "economy", loadCountyBackground)}
         expandedLabel={expandedLabel}
         pageSize={12}
         kind="economy"
@@ -810,7 +836,7 @@ function CountyPage() {
         kicker="Public safety"
         apiPath={countyApiPath(county.state.slug, county.slug, "crime")}
         fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "crime")}
-        {...pageSectionProps(countyPage, "crime")}
+        {...backgroundPageSectionProps(countyBackgroundPage, "crime", loadCountyBackground)}
         expandedLabel={expandedLabel}
         pageSize={12}
         kind="crime"
@@ -821,7 +847,7 @@ function CountyPage() {
         kicker="Community records"
         apiPath={countyApiPath(county.state.slug, county.slug, "obituaries")}
         fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "obituaries")}
-        {...pageSectionProps(countyPage, "obituaries")}
+        {...backgroundPageSectionProps(countyBackgroundPage, "obituaries", loadCountyBackground)}
         expandedLabel={expandedLabel}
         pageSize={12}
         kind="obituaries"
@@ -832,7 +858,7 @@ function CountyPage() {
         kicker="Local voices"
         apiPath={countyApiPath(county.state.slug, county.slug, "opinion")}
         fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "opinion")}
-        {...pageSectionProps(countyPage, "opinion")}
+        {...backgroundPageSectionProps(countyBackgroundPage, "opinion", loadCountyBackground)}
         expandedLabel={expandedLabel}
         kind="opinion"
         locality={locality}
