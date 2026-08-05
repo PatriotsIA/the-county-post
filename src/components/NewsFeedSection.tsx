@@ -44,6 +44,8 @@ type Props = {
     to: string;
     label: string;
   };
+  loadEnabled?: boolean;
+  onLoadSettled?: () => void;
 };
 
 const MAX_REQUESTED_ITEMS = 200;
@@ -66,6 +68,8 @@ export function NewsFeedSection({
   sponsorId,
   locality,
   actionLink,
+  loadEnabled = true,
+  onLoadSettled,
 }: Props) {
   const [items, setItems] = useState<NewsFeedItem[]>([]);
   const [status, setStatus] = useState<"idle" | "loading" | "loaded" | "error">("idle");
@@ -75,6 +79,7 @@ export function NewsFeedSection({
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
+  const onLoadSettledRef = useRef(onLoadSettled);
   const [gridColumns, setGridColumns] = useState(1);
   const fallbackFeedUrlsKey = fallbackFeedUrls.join("\n");
   const stableFallbackFeedUrls = useMemo(() => fallbackFeedUrlsKey.split("\n").filter(Boolean), [fallbackFeedUrlsKey]);
@@ -96,8 +101,17 @@ export function NewsFeedSection({
     filteredItems.length < MAX_REQUESTED_ITEMS;
 
   useEffect(() => {
+    onLoadSettledRef.current = onLoadSettled;
+  }, [onLoadSettled]);
+
+  useEffect(() => {
     let cancelled = false;
     async function load() {
+      if (!loadEnabled && !hasInitialPageData) {
+        setStatus("loading");
+        setError("");
+        return;
+      }
       setStatus("loading");
       setError("");
       try {
@@ -111,6 +125,7 @@ export function NewsFeedSection({
             setSource("fallback");
             setStatus("loaded");
             setError("");
+            onLoadSettledRef.current?.();
           }
           return;
         }
@@ -130,6 +145,7 @@ export function NewsFeedSection({
               setItems(apiItems);
               setSource("api");
               setStatus("loaded");
+            onLoadSettledRef.current?.();
             }
             return;
           } catch {
@@ -142,11 +158,13 @@ export function NewsFeedSection({
           setItems(fallbackItems);
           setSource("fallback");
           setStatus("loaded");
+          onLoadSettledRef.current?.();
         }
       } catch (reason) {
         if (!cancelled) {
           setStatus("error");
           setError(reason instanceof Error ? reason.message : "Unable to load this feed right now.");
+          onLoadSettledRef.current?.();
         }
       }
     }
@@ -154,7 +172,7 @@ export function NewsFeedSection({
     return () => {
       cancelled = true;
     };
-  }, [apiPath, fallbackFeedUrlsKey, hasInitialPageData, initialItems, initialSource, initialStatus, pageSize, requestedCount, stableFallbackFeedUrls]);
+  }, [apiPath, fallbackFeedUrlsKey, hasInitialPageData, initialItems, initialSource, initialStatus, loadEnabled, pageSize, requestedCount, stableFallbackFeedUrls]);
 
   useEffect(() => {
     setItems(initialItems || []);

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Link, NavLink, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
 import { SubmissionForm } from "./components/SubmissionForm";
 import { ClassifiedSubmissionForm } from "./components/ClassifiedSubmissionForm";
@@ -142,18 +142,28 @@ function pageSectionProps(page: NewsPageState, section: string) {
   };
 }
 
-function backgroundPageSectionProps(page: NewsPageState, section: string, enabled: boolean) {
-  if (enabled && page.status !== "idle") return pageSectionProps(page, section);
-  return {
-    initialError: "",
-    initialItems: undefined,
-    initialStatus: "loading" as const,
-    initialSource: undefined,
-  };
-}
-
 function canLoadBackgroundPage(page: NewsPageState) {
   return page.status === "loaded" || page.status === "error";
+}
+
+function useSequentialFeedLoader(enabled: boolean, itemCount: number, resetKey: string) {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [itemCount, resetKey]);
+
+  const markSettled = useCallback(
+    (index: number) => {
+      if (!enabled) return;
+      setActiveIndex((current) => (current === index ? Math.min(itemCount, current + 1) : current));
+    },
+    [enabled, itemCount],
+  );
+
+  const isEnabled = useCallback((index: number) => enabled && index <= activeIndex, [activeIndex, enabled]);
+
+  return { isEnabled, markSettled };
 }
 
 function App() {
@@ -427,7 +437,7 @@ function CountyDirectorySearch({ id }: { id?: string }) {
 function HomePage() {
   const nationalLeadPage = useNewsPage(nationalPageApiPath(), pageLeadSections, LEAD_PREFETCH_LIMIT);
   const loadNationalBackground = canLoadBackgroundPage(nationalLeadPage);
-  const nationalBackgroundPage = useNewsPage(loadNationalBackground ? nationalPageApiPath() : undefined, pageBackgroundSections);
+  const nationalBackgroundLoader = useSequentialFeedLoader(loadNationalBackground, pageBackgroundSections.length, "national");
 
   return (
     <div className="layout-grid">
@@ -453,15 +463,16 @@ function HomePage() {
         fallbackFeedUrls={buildNationalFallbackFeedUrls("general")}
         {...pageSectionProps(nationalLeadPage, "general")}
       />
-      {topicSections.map((section) => (
+      {topicSections.map((section, index) => (
         <Fragment key={section.kind}>
           <NewsFeedSection
             title={section.title}
             kicker={section.kicker}
             apiPath={nationalApiPath(section.kind)}
             fallbackFeedUrls={buildNationalFallbackFeedUrls(section.kind)}
-            {...backgroundPageSectionProps(nationalBackgroundPage, section.kind, loadNationalBackground)}
             kind={section.kind}
+            loadEnabled={nationalBackgroundLoader.isEnabled(index)}
+            onLoadSettled={() => nationalBackgroundLoader.markSettled(index)}
           />
           {section.kind === "sports" ? <AdSlot slot="inline" /> : null}
         </Fragment>
@@ -571,7 +582,7 @@ function StatePage() {
   const [countyQuery, setCountyQuery] = useState("");
   const stateLeadPage = useNewsPage(state ? statePageApiPath(state.slug) : undefined, pageLeadSections, LEAD_PREFETCH_LIMIT);
   const loadStateBackground = canLoadBackgroundPage(stateLeadPage);
-  const stateBackgroundPage = useNewsPage(state && loadStateBackground ? statePageApiPath(state.slug) : undefined, pageBackgroundSections);
+  const stateBackgroundLoader = useSequentialFeedLoader(loadStateBackground, pageBackgroundSections.length + 1, state?.slug || "");
   const counties = useMemo(() => (state ? getCountiesForState(state.slug) : []), [state]);
   const filteredCounties = useMemo(() => {
     const normalized = countyQuery.trim().toLowerCase();
@@ -651,16 +662,17 @@ function StatePage() {
         {...pageSectionProps(stateLeadPage, "general")}
         locality={{ stateName: state.name, stateAbbr: state.abbr, strict: true }}
       />
-      {topicSections.map((section) => (
+      {topicSections.map((section, index) => (
         <Fragment key={section.kind}>
           <NewsFeedSection
             title={section.title}
             kicker={section.kicker}
             apiPath={stateApiPath(state.slug, section.kind)}
             fallbackFeedUrls={buildStateFallbackFeedUrls(state, section.kind)}
-            {...backgroundPageSectionProps(stateBackgroundPage, section.kind, loadStateBackground)}
             kind={section.kind}
             locality={{ stateName: state.name, stateAbbr: state.abbr, strict: true }}
+            loadEnabled={stateBackgroundLoader.isEnabled(index)}
+            onLoadSettled={() => stateBackgroundLoader.markSettled(index)}
           />
           {section.kind === "sports" ? <AdSlot slot="inline" /> : null}
         </Fragment>
@@ -671,6 +683,8 @@ function StatePage() {
         apiPath={nationalApiPath("general")}
         fallbackFeedUrls={buildNationalFallbackFeedUrls("general")}
         sponsorId="amberwood-brush-inline"
+        loadEnabled={stateBackgroundLoader.isEnabled(6)}
+        onLoadSettled={() => stateBackgroundLoader.markSettled(6)}
       />
     </div>
   );
@@ -738,10 +752,7 @@ function CountyPage() {
   const county = getCounty(stateSlug, countySlug);
   const countyLeadPage = useNewsPage(county ? countyPageApiPath(county.state.slug, county.slug) : undefined, countyLeadSections, LEAD_PREFETCH_LIMIT);
   const loadCountyBackground = canLoadBackgroundPage(countyLeadPage);
-  const countyBackgroundPage = useNewsPage(
-    county && loadCountyBackground ? countyPageApiPath(county.state.slug, county.slug) : undefined,
-    countyBackgroundSections,
-  );
+  const countyBackgroundLoader = useSequentialFeedLoader(loadCountyBackground, countyBackgroundSections.length + 2, county?.fips || "");
 
   if (!county) {
     return <NotFound />;
@@ -802,11 +813,12 @@ function CountyPage() {
         kicker="Scores & highlights"
         apiPath={countyApiPath(county.state.slug, county.slug, "sports")}
         fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "sports")}
-        {...backgroundPageSectionProps(countyBackgroundPage, "localSports", loadCountyBackground)}
         expandedLabel={expandedLabel}
         pageSize={12}
         kind="sports"
         locality={locality}
+        loadEnabled={countyBackgroundLoader.isEnabled(0)}
+        onLoadSettled={() => countyBackgroundLoader.markSettled(0)}
       />
       <AdSlot slot="inline" />
       <NewsFeedSection
@@ -814,54 +826,59 @@ function CountyPage() {
         kicker="Civic desk"
         apiPath={countyApiPath(county.state.slug, county.slug, "politics")}
         fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "politics")}
-        {...backgroundPageSectionProps(countyBackgroundPage, "politics", loadCountyBackground)}
         expandedLabel={expandedLabel}
         pageSize={12}
         kind="politics"
         locality={locality}
+        loadEnabled={countyBackgroundLoader.isEnabled(1)}
+        onLoadSettled={() => countyBackgroundLoader.markSettled(1)}
       />
       <NewsFeedSection
         title="Economy & business"
         kicker="Markets"
         apiPath={countyApiPath(county.state.slug, county.slug, "economy")}
         fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "economy")}
-        {...backgroundPageSectionProps(countyBackgroundPage, "economy", loadCountyBackground)}
         expandedLabel={expandedLabel}
         pageSize={12}
         kind="economy"
         locality={locality}
+        loadEnabled={countyBackgroundLoader.isEnabled(2)}
+        onLoadSettled={() => countyBackgroundLoader.markSettled(2)}
       />
       <NewsFeedSection
         title="Crime & courts"
         kicker="Public safety"
         apiPath={countyApiPath(county.state.slug, county.slug, "crime")}
         fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "crime")}
-        {...backgroundPageSectionProps(countyBackgroundPage, "crime", loadCountyBackground)}
         expandedLabel={expandedLabel}
         pageSize={12}
         kind="crime"
         locality={locality}
+        loadEnabled={countyBackgroundLoader.isEnabled(3)}
+        onLoadSettled={() => countyBackgroundLoader.markSettled(3)}
       />
       <NewsFeedSection
         title="Obituaries & public notices"
         kicker="Community records"
         apiPath={countyApiPath(county.state.slug, county.slug, "obituaries")}
         fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "obituaries")}
-        {...backgroundPageSectionProps(countyBackgroundPage, "obituaries", loadCountyBackground)}
         expandedLabel={expandedLabel}
         pageSize={12}
         kind="obituaries"
         locality={locality}
+        loadEnabled={countyBackgroundLoader.isEnabled(4)}
+        onLoadSettled={() => countyBackgroundLoader.markSettled(4)}
       />
       <NewsFeedSection
         title="Opinion & op-eds"
         kicker="Local voices"
         apiPath={countyApiPath(county.state.slug, county.slug, "opinion")}
         fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "opinion")}
-        {...backgroundPageSectionProps(countyBackgroundPage, "opinion", loadCountyBackground)}
         expandedLabel={expandedLabel}
         kind="opinion"
         locality={locality}
+        loadEnabled={countyBackgroundLoader.isEnabled(5)}
+        onLoadSettled={() => countyBackgroundLoader.markSettled(5)}
       />
       <NewsFeedSection
         title={`${county.state.name} headlines`}
@@ -872,6 +889,8 @@ function CountyPage() {
         sponsorId="arw-inline"
         locality={{ stateName: county.state.name, stateAbbr: county.state.abbr, cities: [], strict: true }}
         actionLink={{ to: `/states/${county.state.slug}`, label: `View ${county.state.name} page` }}
+        loadEnabled={countyBackgroundLoader.isEnabled(6)}
+        onLoadSettled={() => countyBackgroundLoader.markSettled(6)}
       />
       <NewsFeedSection
         title="National briefing"
@@ -881,6 +900,8 @@ function CountyPage() {
         pageSize={12}
         sponsorId="amberwood-brush-inline"
         actionLink={{ to: "/", label: "View national page" }}
+        loadEnabled={countyBackgroundLoader.isEnabled(7)}
+        onLoadSettled={() => countyBackgroundLoader.markSettled(7)}
       />
 
       <SubmissionForm county={county} />
