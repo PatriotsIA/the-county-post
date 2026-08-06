@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getCountyMarketCity, type CountySite } from "../data/counties";
+import { fetchCattleTicker, fetchMetalsTicker } from "../lib/markets-api";
 import itmTradingAd from "../../ad-assets/ad-itmtrading.JPG";
 
 type WeatherStatus = {
@@ -20,16 +21,6 @@ type WeatherResponse = {
   };
 };
 
-type MetalQuote = {
-  price: number;
-  currency: string;
-  change_abs: number;
-};
-
-type PreciousMetalsResponse = {
-  data: Record<"gold" | "silver" | "platinum" | "palladium", MetalQuote>;
-};
-
 const itmTradingUrl = "https://www.itmtrading.com/";
 
 export function TopTicker({ county }: { county?: CountySite }) {
@@ -39,6 +30,7 @@ export function TopTicker({ county }: { county?: CountySite }) {
         <TradingViewTicker />
       </div>
       <PreciousMetalsTicker />
+      <CattleTicker />
       {county ? (
         <div className="market-weather-weather-bar">
           <CountyWeather county={county} />
@@ -83,24 +75,24 @@ function TradingViewTicker() {
 }
 
 function PreciousMetalsTicker() {
-  const [quotes, setQuotes] = useState<PreciousMetalsResponse["data"]>();
+  const [quotes, setQuotes] = useState<Awaited<ReturnType<typeof fetchMetalsTicker>>["items"]>();
+  const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
 
   useEffect(() => {
     const controller = new AbortController();
     const loadQuotes = () => {
-      fetch("https://aurumrates.com/api/v1/spot", { signal: controller.signal })
-        .then((response) => {
-          if (!response.ok) throw new Error("Metal prices unavailable");
-          return response.json() as Promise<PreciousMetalsResponse>;
+      fetchMetalsTicker(controller.signal)
+        .then((data) => {
+          setQuotes(data.items);
+          setStatus("loaded");
         })
-        .then((data) => setQuotes(data.data))
         .catch(() => {
-          if (!controller.signal.aborted) setQuotes(undefined);
+          if (!controller.signal.aborted) setStatus("error");
         });
     };
 
     loadQuotes();
-    const refresh = window.setInterval(loadQuotes, 30 * 60 * 1000);
+    const refresh = window.setInterval(loadQuotes, 60 * 1000);
 
     return () => {
       controller.abort();
@@ -108,36 +100,28 @@ function PreciousMetalsTicker() {
     };
   }, []);
 
-  const metals = [
-    ["gold", "Gold"],
-    ["silver", "Silver"],
-    ["platinum", "Platinum"],
-    ["palladium", "Palladium"],
-  ] as const;
+  const metals = quotes || [
+    { key: "gold", label: "Gold" },
+    { key: "silver", label: "Silver" },
+    { key: "platinum", label: "Platinum" },
+    { key: "palladium", label: "Palladium" },
+  ];
 
   return (
     <aside className="precious-metals-ticker" aria-label="Precious metals prices">
       <div className="precious-metals-quotes">
-        {metals.map(([key, label]) => {
-          const quote = quotes?.[key];
-          const change = quote?.change_abs;
-
+        {metals.map((quote) => {
           return (
             <a
-              key={key}
+              key={quote.key}
               className="precious-metal-quote"
               href={itmTradingUrl}
               target="_blank"
               rel="noreferrer sponsored"
-              aria-label={`${label} price, presented by ITM Trading`}
+              aria-label={`${quote.label} price, presented by ITM Trading`}
             >
-              <span>{label}</span>
-              <strong>{quote ? formatMetalPrice(quote.price) : "Loading…"}</strong>
-              {change !== undefined ? (
-                <small className={change >= 0 ? "positive" : "negative"}>
-                  {change >= 0 ? "+" : "−"}{formatMetalPrice(Math.abs(change))}
-                </small>
-              ) : null}
+              <span>{quote.label}</span>
+              <strong>{"price" in quote ? formatMetalPrice(quote.price) : status === "error" ? "Unavailable" : "Loading…"}</strong>
             </a>
           );
         })}
@@ -156,6 +140,61 @@ function formatMetalPrice(value: number) {
     currency: "USD",
     maximumFractionDigits: 2,
   }).format(value);
+}
+
+function CattleTicker() {
+  const [ticker, setTicker] = useState<Awaited<ReturnType<typeof fetchCattleTicker>>>();
+  const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchCattleTicker(controller.signal)
+      .then((data) => {
+        setTicker(data);
+        setStatus("loaded");
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setStatus("error");
+      });
+    return () => controller.abort();
+  }, []);
+
+  const cattle = ticker?.items || [
+    { key: "feeder-cattle", label: "Feeder cattle" },
+    { key: "slaughter-cattle", label: "Slaughter cattle" },
+  ];
+  const feederBreakdown = ticker?.items.find((item) => item.key === "feeder-cattle")?.breakdown;
+
+  return (
+    <aside className="cattle-ticker" aria-label="Cattle and agriculture prices">
+      <div className="cattle-ticker-summary">
+        <span className="cattle-ticker-label">Cattle &amp; agriculture</span>
+        <div className="cattle-ticker-items">
+          {cattle.map((quote) => (
+            <span key={quote.key}>
+              {quote.label}: {"price" in quote ? formatCattlePrice(quote.price, quote.unit) : status === "error" ? "Unavailable" : "Loading..."}
+            </span>
+          ))}
+        </div>
+        <span className="cattle-ticker-status">{ticker?.updatedAt ? `USDA MARS ${ticker.updatedAt}` : status === "error" ? "USDA prices unavailable" : "USDA prices loading"}</span>
+      </div>
+      {feederBreakdown?.length ? (
+        <div className="cattle-ticker-breakdown">
+          <span className="cattle-ticker-breakdown-title">Feeder cattle</span>
+          {feederBreakdown.map((quote) => (
+              <span key={quote.label}>
+                {quote.label} <strong>{formatCattlePrice(quote.price, quote.unit)}</strong>
+              </span>
+            ))}
+          <span className="cattle-ticker-breakdown-source">USDA Market News</span>
+        </div>
+      ) : null}
+    </aside>
+  );
+}
+
+function formatCattlePrice(value: number, unit: string) {
+  return `${formatMetalPrice(value)} ${unit}`;
 }
 
 function CountyWeather({ county }: { county: CountySite }) {
