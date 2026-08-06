@@ -283,19 +283,91 @@ body::before {
   border-bottom: 1px solid var(--rule);
 }
 
-.market-ticker-ad {
-  display: flex;
-  justify-content: center;
-  padding: 4px 12px;
+.precious-metals-ticker {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 5px 12px;
   border-bottom: 1px solid var(--rule);
-  background: transparent;
+  background: #fff;
+  color: var(--ink);
 }
 
-.market-ticker-ad img {
+.precious-metals-sponsor {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+  white-space: nowrap;
+  font-family: "Roboto Mono", monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.precious-metals-sponsor:hover {
+  color: var(--news-blue);
+}
+
+.precious-metals-sponsor img {
   display: block;
-  width: 112px;
-  max-width: 100%;
+  width: 56px;
   height: auto;
+}
+
+.precious-metals-quotes {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+
+.precious-metal-quote {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  justify-content: center;
+  column-gap: 5px;
+  color: var(--ink);
+  font-family: "Roboto Mono", monospace;
+  font-size: 12px;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.precious-metal-quote:hover strong {
+  color: var(--news-blue);
+  text-decoration: underline;
+}
+
+.precious-metal-quote > span {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.precious-metal-quote strong {
+  font-size: 14px;
+}
+
+.precious-metal-quote small {
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.precious-metal-quote .positive {
+  color: #26733a;
+}
+
+.precious-metal-quote .negative {
+  color: var(--news-red);
 }
 
 .crypto-weather-bar {
@@ -1335,6 +1407,21 @@ button:disabled {
 
   .market-weather-bar {
     min-height: var(--ticker-height);
+  }
+
+  .precious-metals-ticker {
+    grid-template-columns: 1fr;
+    gap: 5px;
+    justify-items: center;
+  }
+
+  .precious-metals-quotes {
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .precious-metals-sponsor {
+    justify-content: center;
   }
 
   .market-ticker-widget {
