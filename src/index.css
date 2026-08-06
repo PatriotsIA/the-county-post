@@ -327,10 +327,11 @@ body::before {
 
 .precious-metal-quote {
   display: grid;
-  grid-template-columns: auto auto;
-  align-items: baseline;
+  grid-template-columns: 16px auto;
+  grid-template-rows: auto auto;
+  align-items: center;
   justify-content: center;
-  column-gap: 5px;
+  column-gap: 6px;
   color: var(--ink);
   font-family: "Roboto Mono", monospace;
   font-size: 12px;
@@ -344,8 +345,9 @@ body::before {
   text-decoration: underline;
 }
 
-.precious-metal-quote > span {
-  grid-column: 1 / -1;
+.precious-metal-label {
+  grid-column: 2;
+  grid-row: 1;
   color: var(--muted);
   font-size: 10px;
   font-weight: 700;
@@ -353,7 +355,41 @@ body::before {
   text-transform: uppercase;
 }
 
+.metal-symbol {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  display: inline-grid;
+  width: 16px;
+  height: 16px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1;
+  text-transform: none;
+}
+
+.metal-symbol-gold {
+  background: #b8860b;
+}
+
+.metal-symbol-silver {
+  background: #6e7781;
+}
+
+.metal-symbol-platinum {
+  background: #376b81;
+}
+
+.metal-symbol-palladium {
+  background: #765d50;
+}
+
 .precious-metal-quote strong {
+  grid-column: 2;
+  grid-row: 2;
   font-size: 14px;
 }
 

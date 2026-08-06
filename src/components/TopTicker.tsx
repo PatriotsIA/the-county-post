@@ -22,6 +22,12 @@ type WeatherResponse = {
 };
 
 const itmTradingUrl = "https://www.itmtrading.com/";
+const metalSymbols = {
+  gold: "Au",
+  silver: "Ag",
+  platinum: "Pt",
+  palladium: "Pd",
+} as const;
 
 export function TopTicker({ county }: { county?: CountySite }) {
   return (
@@ -120,7 +126,8 @@ function PreciousMetalsTicker() {
               rel="noreferrer sponsored"
               aria-label={`${quote.label} price, presented by ITM Trading`}
             >
-              <span>{quote.label}</span>
+              <span className={`metal-symbol metal-symbol-${quote.key}`}>{metalSymbols[quote.key]}</span>
+              <span className="precious-metal-label">{quote.label}</span>
               <strong>{"price" in quote ? formatMetalPrice(quote.price) : status === "error" ? "Unavailable" : "Loading…"}</strong>
             </a>
           );
