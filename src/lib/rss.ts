@@ -144,7 +144,7 @@ function parseRssXml(xml: string) {
       source: text(entry, "source title") || text(entry, "author name"),
       publishedAt: text(entry, "published") || text(entry, "updated"),
       description: decodeEntities(stripHtml(description)).slice(0, 200),
-      imageUrl: "",
+      imageUrl: imageFromRawItem(entry, description),
     };
   });
 }

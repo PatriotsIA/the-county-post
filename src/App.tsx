@@ -3,6 +3,7 @@ import { Link, NavLink, Route, Routes, useLocation, useNavigate, useParams } fro
 import { SubmissionForm } from "./components/SubmissionForm";
 import { ClassifiedSubmissionForm } from "./components/ClassifiedSubmissionForm";
 import { AdSlot } from "./components/AdSlot";
+import { HardAssetsFeed } from "./components/HardAssetsFeed";
 import { NewsFeedSection } from "./components/NewsFeedSection";
 import { TopTicker } from "./components/TopTicker";
 import { ads } from "./data/ads";
@@ -61,6 +62,7 @@ const countyLeadSections = ["localNews"] as const;
 const countyBackgroundSections = ["localSports", "politics", "economy", "crime", "obituaries", "opinion"] as const;
 const LEAD_PREFETCH_LIMIT = 32;
 const PAGE_PREFETCH_LIMIT = 96;
+const soundMoneyFeaturedVideoIds = ["pjlmcqWTPPg", "1CDpb0G3v2g", "QZcVYmEJ9x4"];
 
 type NewsPageState = {
   status: "idle" | "loading" | "loaded" | "error";
@@ -477,6 +479,7 @@ function HomePage() {
           {section.kind === "sports" ? <AdSlot slot="inline" /> : null}
         </Fragment>
       ))}
+      <HardAssetsFeed />
 
       <section className="card">
         <header className="section-heading">
@@ -677,6 +680,7 @@ function StatePage() {
           {section.kind === "sports" ? <AdSlot slot="inline" /> : null}
         </Fragment>
       ))}
+      <HardAssetsFeed />
       <NewsFeedSection
         title="National briefing"
         kicker="Context"
@@ -702,14 +706,18 @@ function NationalSubjectPage() {
         <h1>{subject.title}</h1>
         <p className="lead">{subject.description}</p>
       </section>
-      <NewsFeedSection
-        title={`${subject.title} headlines`}
-        kicker="National desk"
-        apiPath={nationalApiPath(subject.kind)}
-        fallbackFeedUrls={buildNationalFallbackFeedUrls(subject.kind)}
-        pageSize={18}
-        kind={subject.kind}
-      />
+      {subject.kind === "sound-money" ? (
+        <HardAssetsFeed featuredVideoIds={soundMoneyFeaturedVideoIds} />
+      ) : (
+        <NewsFeedSection
+          title={`${subject.title} headlines`}
+          kicker="National desk"
+          apiPath={nationalApiPath(subject.kind)}
+          fallbackFeedUrls={buildNationalFallbackFeedUrls(subject.kind)}
+          pageSize={18}
+          kind={subject.kind}
+        />
+      )}
     </div>
   );
 }
@@ -734,15 +742,19 @@ function StateSubjectPage() {
         </h1>
         <p className="lead">{subject.description}</p>
       </section>
-      <NewsFeedSection
-        title={`${state.name} ${subject.title}`}
-        kicker="State desk"
-        apiPath={stateApiPath(state.slug, subject.kind)}
-        fallbackFeedUrls={buildStateFallbackFeedUrls(state, subject.kind)}
-        pageSize={18}
-        kind={subject.kind}
-        locality={{ stateName: state.name, stateAbbr: state.abbr, strict: true }}
-      />
+      {subject.kind === "sound-money" ? (
+        <HardAssetsFeed />
+      ) : (
+        <NewsFeedSection
+          title={`${state.name} ${subject.title}`}
+          kicker="State desk"
+          apiPath={stateApiPath(state.slug, subject.kind)}
+          fallbackFeedUrls={buildStateFallbackFeedUrls(state, subject.kind)}
+          pageSize={18}
+          kind={subject.kind}
+          locality={{ stateName: state.name, stateAbbr: state.abbr, strict: true }}
+        />
+      )}
     </div>
   );
 }
@@ -903,6 +915,7 @@ function CountyPage() {
         loadEnabled={countyBackgroundLoader.isEnabled(7)}
         onLoadSettled={() => countyBackgroundLoader.markSettled(7)}
       />
+      <HardAssetsFeed />
 
       <SubmissionForm county={county} />
 
@@ -948,22 +961,26 @@ function CountySubjectPage() {
         </h1>
         <p className="lead">{subject.description}</p>
       </section>
-      <NewsFeedSection
-        title={`${county.displayName} ${subject.title}`}
-        kicker="County desk"
-        apiPath={countyApiPath(county.state.slug, county.slug, subject.kind)}
-        fallbackFeedUrls={buildCountyFallbackFeedUrls(county, subject.kind)}
-        expandedLabel={`nearby markets including ${localCities.join(" and ")}`}
-        pageSize={18}
-        kind={subject.kind}
-        locality={{
-          countyName: county.name,
-          stateName: county.state.name,
-          stateAbbr: county.state.abbr,
-          cities: localCities,
-          strict: true,
-        }}
-      />
+      {subject.kind === "sound-money" ? (
+        <HardAssetsFeed />
+      ) : (
+        <NewsFeedSection
+          title={`${county.displayName} ${subject.title}`}
+          kicker="County desk"
+          apiPath={countyApiPath(county.state.slug, county.slug, subject.kind)}
+          fallbackFeedUrls={buildCountyFallbackFeedUrls(county, subject.kind)}
+          expandedLabel={`nearby markets including ${localCities.join(" and ")}`}
+          pageSize={18}
+          kind={subject.kind}
+          locality={{
+            countyName: county.name,
+            stateName: county.state.name,
+            stateAbbr: county.state.abbr,
+            cities: localCities,
+            strict: true,
+          }}
+        />
+      )}
     </div>
   );
 }

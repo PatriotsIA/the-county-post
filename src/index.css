@@ -1187,6 +1187,68 @@ button:disabled {
   min-width: 0;
 }
 
+.hard-assets-featured {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.hard-assets-featured-video {
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: var(--ink);
+}
+
+.hard-assets-featured-video iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.hard-assets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.hard-assets-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  color: var(--ink);
+  background: var(--panel-soft);
+  text-decoration: none;
+}
+
+.hard-assets-card:hover {
+  background: #f5f5f3;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.hard-assets-card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: var(--ink);
+  object-fit: cover;
+}
+
+.hard-assets-title {
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.hard-assets-meta {
+  color: var(--muted);
+  font-family: "Roboto Mono", monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
 .feed-card {
   border: 1px solid var(--border);
   display: flex;
@@ -1526,6 +1588,10 @@ button:disabled {
   .precious-metals-quotes {
     width: 100%;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hard-assets-featured {
+    grid-template-columns: 1fr;
   }
 
   .precious-metals-sponsor {
