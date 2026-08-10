@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { AdPreviewPlaceholder } from "./AdPreviewPlaceholder";
-import type { AdPricingKey } from "../data/ad-pricing";
+import { ads } from "../data/ads";
+import { PresentedByPreview } from "./AdPreviewPlaceholder";
 import { fetchNewsApiFeed, isNewsApiConfigured, type NewsFeedItem } from "../lib/news-api";
 import { fetchNewsFeeds } from "../lib/rss";
 
@@ -39,15 +39,19 @@ type Props = {
   pageSize?: number;
   pageStep?: number;
   kind?: FeedKind;
+  sponsorId?: string;
   locality?: LocalityScope;
   actionLink?: {
     to: string;
     label: string;
   };
+  loadEnabled?: boolean;
+  onLoadSettled?: () => void;
 };
 
 const MAX_REQUESTED_ITEMS = 200;
 type FeedSource = "api" | "fallback";
+const inFeedAds = ads.filter((ad) => ad.slot === "inline");
 
 export function NewsFeedSection({
   title,
@@ -62,8 +66,11 @@ export function NewsFeedSection({
   pageSize = 12,
   pageStep = 16,
   kind = "general",
+  sponsorId,
   locality,
   actionLink,
+  loadEnabled = true,
+  onLoadSettled,
 }: Props) {
   const [items, setItems] = useState<NewsFeedItem[]>([]);
   const [status, setStatus] = useState<"idle" | "loading" | "loaded" | "error">("idle");
@@ -72,6 +79,9 @@ export function NewsFeedSection({
   const [requestedCount, setRequestedCount] = useState(pageSize);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const gridRef = useRef<HTMLDivElement | null>(null);
+  const onLoadSettledRef = useRef(onLoadSettled);
+  const [gridColumns, setGridColumns] = useState(1);
   const fallbackFeedUrlsKey = fallbackFeedUrls.join("\n");
   const stableFallbackFeedUrls = useMemo(() => fallbackFeedUrlsKey.split("\n").filter(Boolean), [fallbackFeedUrlsKey]);
   const hasInitialPageData = initialItems !== undefined || initialStatus === "loading" || initialStatus === "error";
@@ -79,6 +89,10 @@ export function NewsFeedSection({
   const filteredItems = useMemo(
     () => (shouldUseServerFilteredItems ? items : filterFeedItems(items, kind, locality)),
     [items, kind, locality, shouldUseServerFilteredItems],
+  );
+  const feedEntries = useMemo(
+    () => createFeedEntries(filteredItems, `${title}-${kind}-${locality?.countyName || locality?.stateName || ""}`, gridColumns),
+    [filteredItems, gridColumns, kind, locality?.countyName, locality?.stateName, title],
   );
   const canRequestMore =
     source === "fallback" &&
@@ -88,8 +102,17 @@ export function NewsFeedSection({
     filteredItems.length < MAX_REQUESTED_ITEMS;
 
   useEffect(() => {
+    onLoadSettledRef.current = onLoadSettled;
+  }, [onLoadSettled]);
+
+  useEffect(() => {
     let cancelled = false;
     async function load() {
+      if (!loadEnabled && !hasInitialPageData) {
+        setStatus("loading");
+        setError("");
+        return;
+      }
       setStatus("loading");
       setError("");
       try {
@@ -103,6 +126,7 @@ export function NewsFeedSection({
             setSource("fallback");
             setStatus("loaded");
             setError("");
+            onLoadSettledRef.current?.();
           }
           return;
         }
@@ -122,6 +146,7 @@ export function NewsFeedSection({
               setItems(apiItems);
               setSource("api");
               setStatus("loaded");
+            onLoadSettledRef.current?.();
             }
             return;
           } catch {
@@ -134,11 +159,13 @@ export function NewsFeedSection({
           setItems(fallbackItems);
           setSource("fallback");
           setStatus("loaded");
+          onLoadSettledRef.current?.();
         }
       } catch (reason) {
         if (!cancelled) {
           setStatus("error");
           setError(reason instanceof Error ? reason.message : "Unable to load this feed right now.");
+          onLoadSettledRef.current?.();
         }
       }
     }
@@ -146,7 +173,7 @@ export function NewsFeedSection({
     return () => {
       cancelled = true;
     };
-  }, [apiPath, fallbackFeedUrlsKey, hasInitialPageData, initialItems, initialSource, initialStatus, pageSize, requestedCount, stableFallbackFeedUrls]);
+  }, [apiPath, fallbackFeedUrlsKey, hasInitialPageData, initialItems, initialSource, initialStatus, loadEnabled, pageSize, requestedCount, stableFallbackFeedUrls]);
 
   useEffect(() => {
     setItems(initialItems || []);
@@ -187,6 +214,21 @@ export function NewsFeedSection({
   }, [canRequestMore, pageStep]);
 
   useEffect(() => {
+    const grid = gridRef.current;
+    if (!grid) return;
+
+    const updateColumnCount = () => {
+      const columns = getComputedStyle(grid).gridTemplateColumns.split(" ").filter(Boolean).length;
+      setGridColumns(Math.max(1, columns));
+    };
+
+    updateColumnCount();
+    const observer = new ResizeObserver(updateColumnCount);
+    observer.observe(grid);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
     if (status === "loaded" && canRequestMore && filteredItems.length < pageSize) {
       setRequestedCount((count) => Math.min(MAX_REQUESTED_ITEMS, count + pageStep));
     }
@@ -199,6 +241,9 @@ export function NewsFeedSection({
         <div>
           {kicker ? <p className="kicker">{kicker}</p> : null}
           <h2>{title}</h2>
+          <p className="feed-presented-by">Presented by</p>
+          <FeedSponsor kind={kind} sponsorId={sponsorId} />
+          <PresentedByPreview pricingKey="section-sponsor" label={`${title} sponsorship`} />
           {actionLink ? (
             <Link to={actionLink.to} className="section-action">
               {actionLink.label}
@@ -208,28 +253,49 @@ export function NewsFeedSection({
         <div className="section-heading-rule" aria-hidden />
       </header>
       {status === "error" ? <p className="muted">{error}</p> : null}
-      {status === "loading" && !items.length ? <p className="muted">Presses are warming…</p> : null}
+      {status === "loading" && !items.length ? (
+        <div className="feed-loading" role="status">
+          <p>Please Wait 20 Seconds As We Fetch The News</p>
+          <div className="press-loading-graphic" aria-hidden>
+            <span />
+            <span />
+            <span />
+          </div>
+        </div>
+      ) : null}
       {status === "loaded" && source ? <p className="feed-source">Fetching articles via {source === "api" ? "County News API" : "Fallback RSS"}</p> : null}
-      <div className="feed-sponsor-preview">
-        <AdPreviewPlaceholder pricingKey={feedSponsorPricingKey(kind)} compact label={`${title} sponsor`} />
-      </div>
       {expandedLabel ? (
         <p className="muted">County-specific stories appear first. When coverage is sparse, this feed expands to {expandedLabel}.</p>
       ) : null}
       <div className="feed-scroll" ref={containerRef}>
-        <div className="feed-grid">
-          {filteredItems.map((item) => (
-            <article key={item.id} className="feed-card">
-              <div className="feed-card-body">
-                <a href={item.link} target="_blank" rel="noreferrer" className="feed-title">
-                  {item.title}
-                </a>
-                <p className="feed-meta">
-                  {[item.source, formatDate(item.publishedAt)].filter(Boolean).join(" • ")}
-                </p>
-              </div>
-            </article>
-          ))}
+        <div className="feed-grid" ref={gridRef}>
+          {feedEntries.map((entry) =>
+            entry.type === "ad" ? (
+              <a
+                key={`ad-${entry.ad.id}-${entry.position}`}
+                className="feed-card feed-ad-card"
+                href={entry.ad.href}
+                target="_blank"
+                rel="noreferrer sponsored"
+                aria-label={`Advertisement: ${entry.ad.name}`}
+              >
+                <img className="feed-ad-image" src={entry.ad.image} alt={entry.ad.alt} />
+                <span className="feed-ad-label">Advertisement</span>
+              </a>
+            ) : (
+              <article key={entry.item.id} className="feed-card">
+                <ArticleMedia item={entry.item} />
+                <div className="feed-card-body">
+                  <a href={entry.item.link} target="_blank" rel="noreferrer" className="feed-title">
+                    {entry.item.title}
+                  </a>
+                  <p className="feed-meta">
+                    {[entry.item.imageUrl ? entry.item.source : undefined, formatDate(entry.item.publishedAt)].filter(Boolean).join(" • ")}
+                  </p>
+                </div>
+              </article>
+            ),
+          )}
         </div>
         <div ref={sentinelRef} aria-hidden style={{ height: "48px" }} />
         {status === "loading" && items.length ? <p className="muted">Loading more stories…</p> : null}
@@ -239,11 +305,95 @@ export function NewsFeedSection({
   );
 }
 
-function feedSponsorPricingKey(kind: FeedKind): AdPricingKey {
-  if (kind === "sports") return "feed-sports";
-  if (kind === "obituaries") return "feed-obituaries";
-  if (["sound-money", "paper-elections", "bond-issues", "property-taxes"].includes(kind)) return "feed-subject";
-  return "feed-articles";
+type FeedEntry = { type: "article"; item: NewsFeedItem } | { type: "ad"; ad: (typeof ads)[number]; position: number };
+
+function createFeedEntries(items: NewsFeedItem[], feedIdentity: string, gridColumns: number): FeedEntry[] {
+  const entries: FeedEntry[] = [];
+  const seed = hashFeedIdentity(feedIdentity);
+  const articlesPerAd = Math.max(1, gridColumns * 2 - 1);
+
+  for (let start = 0, adPosition = 0; start < items.length; start += articlesPerAd, adPosition += 1) {
+    const chunk = items.slice(start, start + articlesPerAd);
+    // One ad follows every two grid rows of articles. Its column changes per
+    // feed and insertion, but a full article-only row always separates ad rows.
+    const adIndex = gridColumns + ((seed + adPosition) % gridColumns);
+    entries.push(...chunk.slice(0, adIndex).map((item) => ({ type: "article" as const, item })));
+
+    if (chunk.length && inFeedAds.length) {
+      entries.push({
+        type: "ad",
+        ad: inFeedAds[(seed + adPosition) % inFeedAds.length],
+        position: adPosition,
+      });
+    }
+
+    entries.push(...chunk.slice(adIndex).map((item) => ({ type: "article" as const, item })));
+  }
+
+  return entries;
+}
+
+function hashFeedIdentity(value: string) {
+  return Array.from(value).reduce((hash, character) => (hash * 31 + character.charCodeAt(0)) >>> 0, 0);
+}
+
+const feedSponsorIds: Record<FeedKind, string> = {
+  general: "guerrilla-gear-inline",
+  sports: "lemc-inline",
+  politics: "patriot-dispatch-inline",
+  economy: "plains-bank-inline",
+  crime: "pasture-exchange-inline",
+  obituaries: "patriot-trailer-inline",
+  opinion: "cbt-inline",
+  "sound-money": "brown-gmc-inline",
+  "paper-elections": "canyon-ridge-inline",
+  "bond-issues": "catchings-inline",
+  "property-taxes": "dyers-inline",
+};
+
+function FeedSponsor({ kind, sponsorId }: { kind: FeedKind; sponsorId?: string }) {
+  const sponsor = ads.find((ad) => ad.id === (sponsorId || feedSponsorIds[kind]));
+  if (!sponsor) return null;
+
+  return (
+    <a className="feed-sponsor" href={sponsor.href} target="_blank" rel="noreferrer sponsored">
+      <img src={sponsor.image} alt={sponsor.alt} />
+    </a>
+  );
+}
+
+function ArticleMedia({ item }: { item: NewsFeedItem }) {
+  const [imageAvailable, setImageAvailable] = useState(Boolean(item.imageUrl));
+
+  useEffect(() => {
+    setImageAvailable(Boolean(item.imageUrl));
+  }, [item.imageUrl]);
+
+  if (!imageAvailable || !item.imageUrl) {
+    return (
+      <div className="feed-source-mark" aria-label={`Publication: ${publicationName(item)}`}>
+        {publicationName(item)}
+      </div>
+    );
+  }
+
+  return (
+    <a href={item.link} target="_blank" rel="noreferrer" className="feed-image-link" tabIndex={-1} aria-hidden="true">
+      <img
+        className="feed-image"
+        src={item.imageUrl}
+        alt=""
+        loading="lazy"
+        onError={() => setImageAvailable(false)}
+      />
+    </a>
+  );
+}
+
+function publicationName(item: NewsFeedItem) {
+  if (item.source?.trim()) return item.source.trim().replace(/\s+\|\s*$/, "");
+  const titleSource = item.title.match(/\s[-–—]\s([^-–—]+)$/)?.[1]?.trim();
+  return titleSource || "News source";
 }
 
 async function loadFallbackItems(requestedCount: number, fallbackFeedUrls: string[]) {

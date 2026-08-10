@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getCountyMarketCity, type CountySite } from "../data/counties";
+import { fetchCattleTicker, fetchMetalsTicker } from "../lib/markets-api";
+import itmTradingAd from "../../ad-assets/ad-itmtrading.JPG";
 import { PresentedByPreview } from "./AdPreviewPlaceholder";
 
 type WeatherStatus = {
@@ -20,18 +22,13 @@ type WeatherResponse = {
   };
 };
 
-const marketSymbols = [
-  { proName: "AMEX:SPY", title: "S&P 500" },
-  { proName: "NASDAQ:QQQ", title: "Nasdaq 100" },
-  { proName: "AMEX:GLD", title: "Gold" },
-  { proName: "AMEX:SLV", title: "Silver" },
-  { proName: "AMEX:DBA", title: "Agriculture" },
-  { proName: "AMEX:CORN", title: "Corn" },
-  { proName: "AMEX:WEAT", title: "Wheat" },
-  { proName: "AMEX:USO", title: "Crude Oil" },
-  { proName: "NYSE:CVX", title: "Chevron" },
-  { proName: "NASDAQ:TSLA", title: "Tesla" },
-];
+const itmTradingUrl = "https://www.itmtrading.com/";
+const metalSymbols = {
+  gold: "Au",
+  silver: "Ag",
+  platinum: "Pt",
+  palladium: "Pd",
+} as const;
 
 export function TopTicker({ county }: { county?: CountySite }) {
   return (
@@ -39,13 +36,12 @@ export function TopTicker({ county }: { county?: CountySite }) {
       <div className="market-weather-bar">
         <TradingViewTicker />
       </div>
-      <div className="market-weather-bar crypto-weather-bar">
-        <CryptoTicker />
-      </div>
+      <PreciousMetalsTicker />
+      <CattleTicker />
       {county ? (
         <div className="market-weather-weather-bar">
           <CountyWeather county={county} />
-          <PresentedByPreview pricingKey="weather-sponsor" label="Weather sponsor" />
+          <PresentedByPreview pricingKey="section-sponsor" label="Weather sponsorship" />
         </div>
       ) : null}
     </section>
@@ -60,22 +56,23 @@ function TradingViewTicker() {
     if (!container) return;
 
     container.textContent = "";
-    const widgetRoot = document.createElement("div");
-    widgetRoot.className = "tradingview-widget-container__widget";
-    const script = document.createElement("script");
-    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js";
-    script.type = "text/javascript";
-    script.async = true;
-    script.textContent = JSON.stringify({
-      symbols: marketSymbols,
-      showSymbolLogo: true,
-      isTransparent: true,
-      displayMode: "adaptive",
-      colorTheme: "light",
-      locale: "en",
-    });
+    if (!document.getElementById("tradingview-tickers-script")) {
+      const script = document.createElement("script");
+      script.id = "tradingview-tickers-script";
+      script.type = "module";
+      script.src = "https://widgets.tradingview-widget.com/w/en/tv-tickers.js";
+      document.head.append(script);
+    }
 
-    container.append(widgetRoot, script);
+    const ticker = document.createElement("tv-tickers");
+    ticker.setAttribute(
+      "symbols",
+      "FOREXCOM:SPXUSD,FOREXCOM:NSXUSD,FX:EURUSD,BITSTAMP:BTCUSD,BITSTAMP:ETHUSD,TVC:GOLD,CMCMARKETS:SILVERU2026,SPARKS:BEEF,COINBASE:ETHUSD,FOREXCOM:WHEAT,CAPITALCOM:COTTON,NASDAQ:TSLA,NASDAQ:AAPL",
+    );
+    ticker.setAttribute("hide-chart", "");
+    ticker.setAttribute("item-size", "compact");
+    ticker.setAttribute("show-hover", "");
+    container.append(ticker);
 
     return () => {
       container.textContent = "";
@@ -85,34 +82,128 @@ function TradingViewTicker() {
   return <div className="tradingview-widget-container market-ticker-widget" ref={containerRef} />;
 }
 
-function CryptoTicker() {
-  const containerRef = useRef<HTMLDivElement | null>(null);
+function PreciousMetalsTicker() {
+  const [quotes, setQuotes] = useState<Awaited<ReturnType<typeof fetchMetalsTicker>>["items"]>();
+  const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+    const controller = new AbortController();
+    const loadQuotes = () => {
+      fetchMetalsTicker(controller.signal)
+        .then((data) => {
+          setQuotes(data.items);
+          setStatus("loaded");
+        })
+        .catch(() => {
+          if (!controller.signal.aborted) setStatus("error");
+        });
+    };
 
-    container.textContent = "";
-    const widgetRoot = document.createElement("div");
-    widgetRoot.className = "livecoinwatch-widget-5";
-    widgetRoot.setAttribute("lcw-base", "USD");
-    widgetRoot.setAttribute("lcw-color-tx", "#555555");
-    widgetRoot.setAttribute("lcw-marquee-1", "coins");
-    widgetRoot.setAttribute("lcw-marquee-2", "movers");
-    widgetRoot.setAttribute("lcw-marquee-items", "10");
-
-    const script = document.createElement("script");
-    script.src = "https://www.livecoinwatch.com/static/lcw-widget.js";
-    script.defer = true;
-
-    container.append(widgetRoot, script);
+    loadQuotes();
+    const refresh = window.setInterval(loadQuotes, 60 * 1000);
 
     return () => {
-      container.textContent = "";
+      controller.abort();
+      window.clearInterval(refresh);
     };
   }, []);
 
-  return <div className="crypto-ticker-widget" ref={containerRef} />;
+  const metals = quotes || [
+    { key: "gold", label: "Gold" },
+    { key: "silver", label: "Silver" },
+    { key: "platinum", label: "Platinum" },
+    { key: "palladium", label: "Palladium" },
+  ];
+
+  return (
+    <aside className="precious-metals-ticker" aria-label="Precious metals prices">
+      <div className="precious-metals-quotes">
+        {metals.map((quote) => {
+          return (
+            <a
+              key={quote.key}
+              className="precious-metal-quote"
+              href={itmTradingUrl}
+              target="_blank"
+              rel="noreferrer sponsored"
+              aria-label={`${quote.label} price, presented by ITM Trading`}
+            >
+              <span className={`metal-symbol metal-symbol-${quote.key}`}>{metalSymbols[quote.key]}</span>
+              <span className="precious-metal-label">{quote.label}</span>
+              <strong>{"price" in quote ? formatMetalPrice(quote.price) : status === "error" ? "Unavailable" : "Loading…"}</strong>
+            </a>
+          );
+        })}
+      </div>
+      <a className="precious-metals-sponsor" href={itmTradingUrl} target="_blank" rel="noreferrer sponsored">
+        <span>Presented by ITM Trading</span>
+        <img src={itmTradingAd} alt="ITM Trading" />
+      </a>
+    </aside>
+  );
+}
+
+function formatMetalPrice(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function CattleTicker() {
+  const [ticker, setTicker] = useState<Awaited<ReturnType<typeof fetchCattleTicker>>>();
+  const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchCattleTicker(controller.signal)
+      .then((data) => {
+        setTicker(data);
+        setStatus("loaded");
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setStatus("error");
+      });
+    return () => controller.abort();
+  }, []);
+
+  const cattle = ticker?.items || [
+    { key: "feeder-cattle", label: "Feeder cattle" },
+    { key: "slaughter-cattle", label: "Slaughter cattle" },
+  ];
+  const feederBreakdown = ticker?.items.find((item) => item.key === "feeder-cattle")?.breakdown;
+
+  return (
+    <aside className="cattle-ticker" aria-label="Cattle and agriculture prices">
+      <div className="cattle-ticker-summary">
+        <span className="cattle-ticker-label">Cattle &amp; agriculture</span>
+        <div className="cattle-ticker-items">
+          {cattle.map((quote) => (
+            <span key={quote.key}>
+              {quote.label}: {"price" in quote ? formatCattlePrice(quote.price, quote.unit) : status === "error" ? "Unavailable" : "Loading..."}
+            </span>
+          ))}
+        </div>
+        <span className="cattle-ticker-status">{ticker?.updatedAt ? `USDA MARS ${ticker.updatedAt}` : status === "error" ? "USDA prices unavailable" : "USDA prices loading"}</span>
+      </div>
+      {feederBreakdown?.length ? (
+        <div className="cattle-ticker-breakdown">
+          <span className="cattle-ticker-breakdown-title">Feeder cattle</span>
+          {feederBreakdown.map((quote) => (
+              <span key={quote.label}>
+                {quote.label} <strong>{formatCattlePrice(quote.price, quote.unit)}</strong>
+              </span>
+            ))}
+          <span className="cattle-ticker-breakdown-source">USDA Market News</span>
+        </div>
+      ) : null}
+    </aside>
+  );
+}
+
+function formatCattlePrice(value: number, unit: string) {
+  return `${formatMetalPrice(value)} ${unit}`;
 }
 
 function CountyWeather({ county }: { county: CountySite }) {

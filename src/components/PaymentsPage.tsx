@@ -1,229 +1,197 @@
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  adjacentCountyAddOns,
-  adAssetSpecs,
-  advertiserTiers,
-  formatAdPrice,
-  nationwidePricingLabel,
-  pricingInventoryPlacements,
-} from "../data/ad-pricing";
+import { type CountySite, searchCounties } from "../data/counties";
+import { adAssetSpecs, countyRateTiers, formatAdPrice, monthlyCountyPlacementPrice } from "../data/ad-pricing";
+import { fetchCountyPopulation, startAdvertiserCheckout, uploadAdCreative } from "../lib/checkout-api";
 
-const placementGuide = [
-  { placement: "Advertiser directory listing", tier: "Preferred Advertiser", note: "Included at $95/mo or $950/yr." },
-  { placement: "Weather sponsor", tier: "Gold Advertiser", note: "Gold minimum when sold as a standalone county placement." },
-  { placement: "Articles feed sponsor", tier: "Gold Advertiser", note: "Sponsor placement attached to local, state, or national article feeds." },
-  { placement: "Obituaries feed sponsor", tier: "Gold Advertiser", note: "Good fit for funeral, floral, hospice, legal, and estate services." },
-  { placement: "Sports feed sponsor", tier: "Gold Advertiser", note: "Local schools, youth sports, booster clubs, clinics, and restaurants." },
-  { placement: "Subject feed sponsor", tier: "Gold Advertiser", note: "Sound Money, Paper Elections, Bond Issues, and Property Taxes pages." },
-  { placement: "County sponsor carousel", tier: "Gold or Platinum Advertiser", note: "Priority rotation for Platinum Advertiser." },
-  { placement: "Bottom banner", tier: "Platinum Advertiser", note: "980x300 banner placement across page bottoms." },
-  { placement: "County hero Presented By", tier: "County Advertiser", note: "$995/mo or $9,950/yr for county-specific hero sponsorship." },
-  { placement: "National homepage inventory", tier: "National Advertiser", note: nationwidePricingLabel },
-] as const;
-
-const discounts = [
-  { label: "Annual prepay", detail: "Annual rates are priced at about two months free compared with monthly billing." },
-  { label: "Adjacent counties", detail: "Add contiguous neighboring counties at half the base tier price for each additional county." },
-  { label: "Multi-placement county bundle", detail: "10% off when buying 3+ elements in one county." },
-  { label: "Category exclusivity", detail: "Add 25%-50% premium when one advertiser owns a business category in a geography." },
-  { label: "Founding advertiser scarcity", detail: "Limit to 3-5 founding advertisers per county." },
-] as const;
-
-const addOns = [
-  { label: "Extra feed sponsorship", detail: "Add $50/mo to Gold or $100/mo to Platinum for another feed beyond the base tier." },
-  { label: "Category exclusivity", detail: "25%-50% premium for one advertiser per category in a county." },
-  { label: "Reporting add-on", detail: "$25-$100/mo when click/impression reporting is available." },
-  { label: "Creative production", detail: "One-time setup fee if The County Post creates ad art." },
-] as const;
+type Placement = "color-card" | "section-sponsorship";
+type Billing = "monthly" | "annual";
+type SelectedCounty = {
+  county: CountySite;
+  population: number;
+  estimateVintage: number;
+};
 
 export function PaymentsPage() {
-  const placements = pricingInventoryPlacements();
+  const [placement, setPlacement] = useState<Placement>("color-card");
+  const [billing, setBilling] = useState<Billing>("monthly");
+  const [businessName, setBusinessName] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [countyQuery, setCountyQuery] = useState("");
+  const [counties, setCounties] = useState<SelectedCounty[]>([]);
+  const [creative, setCreative] = useState<File>();
+  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [message, setMessage] = useState("");
+
+  const matches = useMemo(() => (countyQuery.trim().length > 1 ? searchCounties(countyQuery, 8) : []), [countyQuery]);
+  const monthlyTotal = useMemo(
+    () =>
+      counties
+        .map(({ population }) => monthlyCountyPlacementPrice(population, placement))
+        .sort((left, right) => right - left)
+        .reduce((total, rate, index) => total + (index === 0 ? rate : rate / 2), 0),
+    [counties, placement],
+  );
+  const checkoutTotal = billing === "annual" ? monthlyTotal * 10 : monthlyTotal;
+
+  const addCounty = async (county: CountySite) => {
+    if (counties.some(({ county: selected }) => selected.fips === county.fips)) return;
+    setStatus("loading");
+    setMessage("");
+    try {
+      const population = await fetchCountyPopulation(county.state.slug, county.slug);
+      setCounties((current) => [...current, { county, population: population.population, estimateVintage: population.estimateVintage }]);
+      setCountyQuery("");
+      setStatus("idle");
+    } catch (error) {
+      setStatus("error");
+      setMessage(error instanceof Error ? error.message : "Unable to look up this county.");
+    }
+  };
+
+  const checkout = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!counties.length) {
+      setStatus("error");
+      setMessage("Choose at least one county for your advertisement.");
+      return;
+    }
+
+    setStatus("loading");
+    setMessage(creative ? "Uploading your creative, then opening secure checkout…" : "Opening secure checkout…");
+    try {
+      const creativeAssetKey = creative ? await uploadAdCreative(creative) : undefined;
+      const checkoutSession = await startAdvertiserCheckout({
+        placement,
+        billing,
+        counties: counties.map(({ county }) => ({ stateSlug: county.state.slug, countySlug: county.slug })),
+        customerEmail,
+        businessName,
+        creativeAssetKey,
+      });
+      window.location.assign(checkoutSession.url);
+    } catch (error) {
+      setStatus("error");
+      setMessage(error instanceof Error ? error.message : "Unable to start secure checkout.");
+    }
+  };
 
   return (
     <div className="layout-grid payments-page">
       <section className="hero-card payments-hero">
-        <p className="kicker">Advertiser Payments</p>
-        <h1>The County Post advertiser payments</h1>
+        <p className="kicker">Advertiser rates</p>
+        <h1>Put your business on the Post</h1>
         <p className="lead">
-          Pricing and placement preview for County Post advertisers. Checkout buttons are placeholders until Stripe
-          payment links are configured.
+          Build your county campaign, upload creative, and continue to Stripe’s secure checkout. Rates use the latest Census county population estimate.
         </p>
-        <div className="payments-notice">
-          <strong>Stripe setup pending.</strong>
-          <span>Use these placeholder buttons to confirm layout and package structure before live checkout links are added.</span>
-        </div>
       </section>
 
-      <section className="card payments-block">
-        <p className="kicker">Subscribe</p>
-        <h2>Choose your advertiser tier</h2>
-        <p>
-          Select the tier that matches the visibility you want. Monthly and annual checkout links will be wired to Stripe
-          once the products are created.
-        </p>
-        <div className="payments-table-wrap">
-          <table className="payments-table payments-subscription-table">
-            <thead>
-              <tr>
-                <th scope="col">Advertiser tier</th>
-                <th scope="col">Pricing</th>
-                <th scope="col">Included visibility</th>
-                <th scope="col">Checkout</th>
-              </tr>
-            </thead>
-            <tbody>
-              {advertiserTiers.map((tier) => (
-                <tr key={tier.name}>
-                  <td data-label="Advertiser tier">
-                    <strong>{tier.name}</strong>
-                    <span>{tier.summary}</span>
-                  </td>
-                  <td data-label="Pricing">
-                    <span>
-                      <strong>{formatAdPrice(tier.monthly)}</strong>/month
-                    </span>
-                    <span>
-                      <strong>{formatAdPrice(tier.yearly)}</strong>/year
-                    </span>
-                    <span className="payments-subtle">Annual prepay saves about two months vs monthly.</span>
-                  </td>
-                  <td data-label="Included visibility">
-                    <ul>
-                      {tierIncludes(tier.name).map((item) => (
-                        <li key={item}>{item}</li>
-                      ))}
-                    </ul>
-                  </td>
-                  <td data-label="Checkout">
-                    <PlaceholderButtons monthly={tier.monthly} yearly={tier.yearly} />
-                  </td>
-                </tr>
-              ))}
-              <tr>
-                <td data-label="Advertiser tier">
-                  <strong>National Advertiser</strong>
-                  <span>Nationwide homepage hero, sponsor carousel, and bottom banner inventory.</span>
-                </td>
-                <td data-label="Pricing">
-                  <span className="payments-subscription-quote">{nationwidePricingLabel}</span>
-                </td>
-                <td data-label="Included visibility">
-                  <ul>
-                    <li>National hero Presented By</li>
-                    <li>Homepage sponsor carousel</li>
-                    <li>Homepage bottom banner inventory</li>
-                    <li>Custom category exclusivity options</li>
-                  </ul>
-                </td>
-                <td data-label="Checkout">
-                  <button className="button placeholder-payment-button" type="button" disabled>
-                    Quote link coming soon
+      <section id="checkout" className="card payments-block">
+        <p className="kicker">Secure checkout</p>
+        <h2>Build your advertising order</h2>
+        <form className="checkout-form" onSubmit={checkout}>
+          <div className="checkout-options">
+            <label>
+              Placement
+              <select value={placement} onChange={(event) => setPlacement(event.target.value as Placement)}>
+                <option value="color-card">Local color card</option>
+                <option value="section-sponsorship">Exclusive section sponsorship (includes a card)</option>
+              </select>
+            </label>
+            <label>
+              Billing
+              <select value={billing} onChange={(event) => setBilling(event.target.value as Billing)}>
+                <option value="monthly">Monthly</option>
+                <option value="annual">Annual — 12 months for the price of 10</option>
+              </select>
+            </label>
+          </div>
+
+          <label>
+            Business name
+            <input value={businessName} onChange={(event) => setBusinessName(event.target.value)} maxLength={120} required />
+          </label>
+          <label>
+            Contact email
+            <input type="email" value={customerEmail} onChange={(event) => setCustomerEmail(event.target.value)} required />
+          </label>
+          <label>
+            Upload ad creative (JPG or PNG, up to 10 MB)
+            <input
+              type="file"
+              accept="image/jpeg,image/png"
+              onChange={(event) => setCreative(event.target.files?.[0])}
+            />
+            <span className="checkout-input-help">Creative is uploaded privately before you are redirected to Stripe. You may also provide it after checkout.</span>
+          </label>
+
+          <div className="county-picker">
+            <label>
+              Add a county
+              <input value={countyQuery} onChange={(event) => setCountyQuery(event.target.value)} placeholder="Search county or state" />
+            </label>
+            {matches.length ? (
+              <div className="county-search-results">
+                {matches.map((county) => (
+                  <button key={county.fips} type="button" onClick={() => void addCounty(county)} disabled={status === "loading"}>
+                    {county.displayName}, {county.state.abbr}
                   </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+                ))}
+              </div>
+            ) : null}
+          </div>
 
-      <section className="card payments-block">
-        <p className="kicker">Multi-County</p>
-        <h2>Additional adjacent county add-ons</h2>
-        <p>
-          Subscribe to your base county at full tier price first, then add contiguous neighboring counties at half price.
-          Each add-on should be a separate Stripe product rather than a discount code on the primary checkout.
-        </p>
-        <div className="payments-table-wrap">
-          <table className="payments-table">
-            <thead>
-              <tr>
-                <th scope="col">Add-on product</th>
-                <th scope="col">Matches base tier</th>
-                <th scope="col">Monthly add-on</th>
-                <th scope="col">Annual add-on</th>
-                <th scope="col">Checkout</th>
-              </tr>
-            </thead>
-            <tbody>
-              {adjacentCountyAddOns.map((addOn) => (
-                <tr key={addOn.name}>
-                  <td data-label="Add-on product">
-                    <strong>{addOn.name}</strong>
-                  </td>
-                  <td data-label="Matches base tier">{addOn.matchesTier}</td>
-                  <td data-label="Monthly add-on">{formatAdPrice(addOn.monthly)}/mo</td>
-                  <td data-label="Annual add-on">{formatAdPrice(addOn.yearly)}/yr</td>
-                  <td data-label="Checkout">
-                    <button className="button placeholder-payment-button" type="button" disabled>
-                      Add-on link coming soon
+          <div className="checkout-counties" aria-live="polite">
+            <h3>Selected counties</h3>
+            {counties.length ? (
+              <ul>
+                {counties.map(({ county, population, estimateVintage }) => (
+                  <li key={county.fips}>
+                    <span>
+                      <strong>{county.displayName}, {county.state.abbr}</strong>
+                      <small>Population {population.toLocaleString("en-US")} (Census {estimateVintage})</small>
+                    </span>
+                    <button type="button" onClick={() => setCounties((current) => current.filter(({ county: selected }) => selected.fips !== county.fips))}>
+                      Remove
                     </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="muted">Search and add the counties where you want your advertisement displayed.</p>
+            )}
+          </div>
+
+          <div className="checkout-summary">
+            <span>{placement === "color-card" ? "Color card" : "Section sponsorship"} · {billing === "annual" ? "Annual plan" : "Monthly plan"}</span>
+            <strong>{formatAdPrice(checkoutTotal)}{billing === "annual" ? "/year" : "/month"}</strong>
+            {counties.length > 1 ? <small>Highest-priced county is full rate; additional counties are 50% of their tier rate.</small> : null}
+          </div>
+          {message ? <p className={status === "error" ? "error" : "muted"}>{message}</p> : null}
+          <button className="button primary checkout-button" type="submit" disabled={status === "loading" || !counties.length}>
+            {status === "loading" ? "Preparing checkout…" : "Continue to secure Stripe checkout"}
+          </button>
+        </form>
       </section>
 
       <section className="card payments-block">
-        <p className="kicker">Ad Assets</p>
-        <h2>Sponsor creative specifications</h2>
-        <ul className="payments-list">
-          <li>
-            <strong>Square ads:</strong> {adAssetSpecs.square}.
-          </li>
-          <li>
-            <strong>Bottom banners:</strong> {adAssetSpecs.banner}.
-          </li>
-          <li>
-            <strong>Delivery:</strong> send finished creatives or setup questions to{" "}
-            <a href={`mailto:${adAssetSpecs.email}`}>{adAssetSpecs.email}</a>.
-          </li>
-        </ul>
-      </section>
-
-      <section className="card payments-block">
-        <p className="kicker">Placement Inventory</p>
-        <h2>Website placement pricing</h2>
-        <div className="payments-inventory-grid">
-          {placements.map((placement) => (
-            <article className="payments-placement-card" key={placement.key}>
-              <div className={`payments-placement-preview${placement.key === "page-bottom-banner" ? " payments-placement-preview-banner" : ""}`}>
-                <span>{placement.key === "page-bottom-banner" ? "980x300" : "250x250"}</span>
-                <strong>Advertiser creative</strong>
-              </div>
-              <div>
-                <h3>{placement.label}</h3>
-                <p className="payments-placement-tier">{placement.tier}</p>
-                <p>
-                  {placement.quoteOnly
-                    ? placement.quoteLabel
-                    : `${formatAdPrice(placement.monthly)}/mo · ${formatAdPrice(placement.yearly)}/yr`}
-                </p>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="card payments-block">
-        <p className="kicker">Placement Guide</p>
-        <h2>How placements map to tiers</h2>
+        <p className="kicker">County inventory</p>
+        <h2>Monthly rates by county size</h2>
         <div className="payments-table-wrap">
           <table className="payments-table">
             <thead>
               <tr>
-                <th scope="col">Placement</th>
-                <th scope="col">Tier</th>
-                <th scope="col">Notes</th>
+                <th scope="col">County population</th>
+                <th scope="col">Color card / month</th>
+                <th scope="col">Section sponsorship / month</th>
               </tr>
             </thead>
             <tbody>
-              {placementGuide.map((row) => (
-                <tr key={row.placement}>
-                  <td data-label="Placement">{row.placement}</td>
-                  <td data-label="Tier">{row.tier}</td>
-                  <td data-label="Notes">{row.note}</td>
+              {countyRateTiers.map((tier) => (
+                <tr key={tier.population}>
+                  <td data-label="County population">{tier.population}</td>
+                  <td data-label="Color card / month">{formatAdPrice(tier.colorCardMonthly)}</td>
+                  <td data-label="Section sponsorship / month">{formatAdPrice(tier.sectionSponsorMonthly)}</td>
                 </tr>
               ))}
             </tbody>
@@ -232,69 +200,15 @@ export function PaymentsPage() {
       </section>
 
       <section className="card payments-block">
-        <p className="kicker">Discounts</p>
-        <h2>Discounts and premiums</h2>
+        <p className="kicker">Creative &amp; launch</p>
+        <h2>Getting started</h2>
         <ul className="payments-list">
-          {discounts.map((item) => (
-            <li key={item.label}>
-              <strong>{item.label}:</strong> {item.detail}
-            </li>
-          ))}
+          <li><strong>Color card:</strong> {adAssetSpecs.square}.</li>
+          <li><strong>Network band:</strong> {adAssetSpecs.banner}.</li>
+          <li><strong>Review:</strong> payment reserves your request; creative and exclusive placement availability are confirmed by the ad team.</li>
         </ul>
-      </section>
-
-      <section className="card payments-block">
-        <p className="kicker">Add-Ons</p>
-        <h2>Optional add-on pricing</h2>
-        <ul className="payments-list">
-          {addOns.map((item) => (
-            <li key={item.label}>
-              <strong>{item.label}:</strong> {item.detail}
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="card payments-block">
-        <p className="kicker">Next Step</p>
-        <h2>Ready for Stripe links</h2>
-        <p>
-          When the Stripe products are ready, replace the disabled placeholder buttons with monthly and annual payment
-          links for each tier and add-on.
-        </p>
-        <Link className="button-link" to="/advertise">
-          Back to advertiser preview
-        </Link>
+        <Link className="button-link" to="/advertise">View advertiser placement previews</Link>
       </section>
     </div>
   );
-}
-
-function PlaceholderButtons({ monthly, yearly }: { monthly: number; yearly: number }) {
-  return (
-    <div className="payments-actions">
-      <button className="button primary placeholder-payment-button" type="button" disabled>
-        Monthly checkout coming soon — {formatAdPrice(monthly)}
-      </button>
-      <button className="button placeholder-payment-button" type="button" disabled>
-        Annual checkout coming soon — {formatAdPrice(yearly)}
-      </button>
-    </div>
-  );
-}
-
-function tierIncludes(tierName: string) {
-  if (tierName === "Preferred Advertiser") {
-    return ["Clickable advertiser directory listing", "Business logo and short description", "Link to website or social profile"];
-  }
-
-  if (tierName === "Gold Advertiser") {
-    return ["Everything in Preferred", "One primary Presented By or feed sponsorship", "Rotating county sponsor carousel inclusion"];
-  }
-
-  if (tierName === "Platinum Advertiser") {
-    return ["Everything in Gold", "Priority county sponsor carousel rotation", "Bottom banner carousel placement", "Feed and weather sponsorship priority"];
-  }
-
-  return ["County hero Presented By logo and link", "Premium county-specific visibility", "Ideal for category leaders in one county"];
 }
