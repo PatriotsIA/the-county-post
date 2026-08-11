@@ -1051,9 +1051,14 @@ body::before {
 
 .hero-card {
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(230, 230, 226, 0.94)),
+    url("../county-post-final-logo.png"),
     repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.018) 0, rgba(0, 0, 0, 0.018) 1px, transparent 1px, transparent 8px),
     var(--panel);
+  background-position: right 22px center, center, center;
+  background-repeat: no-repeat, repeat, repeat;
+  background-size: min(330px, 34%) auto, auto, auto;
+  min-height: 260px;
+  padding-right: clamp(290px, 36vw, 430px);
 }
 
 .hero-card h1 {
@@ -1949,6 +1954,13 @@ button:disabled {
   font-size: 12px;
 }
 
+.footer-logo {
+  display: block;
+  width: min(230px, 70vw);
+  height: auto;
+  margin: 0 auto 10px;
+}
+
 .footer-links {
   display: flex;
   justify-content: center;
@@ -1983,6 +1995,14 @@ button:disabled {
     margin: 0 -18px 14px;
     padding: 8px 14px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.32);
+  }
+
+  .hero-card {
+    min-height: 0;
+    padding-right: 18px;
+    padding-bottom: min(78vw, 290px);
+    background-position: center bottom 16px, center, center;
+    background-size: min(280px, 72vw) auto, auto, auto;
   }
 
   .nav {

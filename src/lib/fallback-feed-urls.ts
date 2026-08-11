@@ -24,10 +24,16 @@ export function buildNationalFallbackFeedUrls(kind: Topic) {
     crime: ["United States crime", "courts", "justice department", "police", "public safety"],
     obituaries: ["United States obituaries", "obituary", "funeral", "death notice"],
     opinion: ["United States opinion", "editorial", "column", "commentary", "op-ed"],
-    "sound-money": ["sound money", "gold standard", "central bank", "Federal Reserve", "inflation", "currency"],
-    "paper-elections": ["paper ballots", "paper elections", "election integrity", "hand count", "voting machines", "election audit"],
-    "bond-issues": ["bond issue", "municipal bond", "school bond", "public debt", "bond election"],
-    "property-taxes": ["property taxes", "property tax", "appraisal district", "tax levy", "homestead exemption"],
+    "monetary-policy": ["inflation", "interest rates", "Federal Reserve", "central bank", "currency policy"],
+    "markets-investing": ["markets", "commodities", "stocks", "bonds", "investing"],
+    "jobs-business": ["jobs", "employment", "small business", "industry", "economic development"],
+    "property-taxes": ["property taxes", "property tax", "assessment", "appraisal", "tax levy", "homestead exemption"],
+    "municipal-bonds": ["municipal bond", "school bond", "public debt", "bond election"],
+    "budgets-levies": ["public budget", "county budget", "city budget", "school budget", "tax rate"],
+    "voting-systems": ["voting systems", "ballot processing", "voting equipment", "ballot certification"],
+    "election-administration": ["election administration", "election office", "polling place", "voter registration"],
+    "audits-recounts": ["election audit", "recount", "canvass", "post-election review"],
+    "open-records": ["public records", "open records", "FOIA", "government transparency"],
   };
 
   return [
@@ -54,10 +60,16 @@ export function buildStateFallbackFeedUrls(state: StateSite, kind: Topic) {
     crime: ["crime", "courts", "police", "sheriff", "arrests", "trial"],
     obituaries: ["obituaries", "obituary", "funeral home", "death notice"],
     opinion: ["opinion", "editorial", "column", "commentary", "op-ed"],
-    "sound-money": ["sound money", "gold standard", "central bank", "Federal Reserve", "inflation", "currency"],
-    "paper-elections": ["paper ballots", "paper elections", "election integrity", "hand count", "voting machines", "election audit"],
-    "bond-issues": ["bond issue", "municipal bond", "school bond", "public debt", "bond election"],
-    "property-taxes": ["property taxes", "property tax", "appraisal district", "tax levy", "homestead exemption"],
+    "monetary-policy": ["inflation", "interest rates", "Federal Reserve", "central bank", "currency policy"],
+    "markets-investing": ["markets", "commodities", "stocks", "bonds", "investing"],
+    "jobs-business": ["jobs", "employment", "small business", "industry", "economic development"],
+    "property-taxes": ["property taxes", "property tax", "assessment", "appraisal", "tax levy", "homestead exemption"],
+    "municipal-bonds": ["municipal bond", "school bond", "public debt", "bond election"],
+    "budgets-levies": ["public budget", "county budget", "city budget", "school budget", "tax rate"],
+    "voting-systems": ["voting systems", "ballot processing", "voting equipment", "ballot certification"],
+    "election-administration": ["election administration", "election office", "polling place", "voter registration"],
+    "audits-recounts": ["election audit", "recount", "canvass", "post-election review"],
+    "open-records": ["public records", "open records", "FOIA", "government transparency"],
   };
 
   const topicQuery = topics[kind].join(" OR ");
@@ -94,10 +106,16 @@ type CountyFallbackKind =
   | "economy"
   | "crime"
   | "opinion"
-  | "sound-money"
-  | "paper-elections"
-  | "bond-issues"
-  | "property-taxes";
+  | "monetary-policy"
+  | "markets-investing"
+  | "jobs-business"
+  | "property-taxes"
+  | "municipal-bonds"
+  | "budgets-levies"
+  | "voting-systems"
+  | "election-administration"
+  | "audits-recounts"
+  | "open-records";
 
 function countyDisambiguationExclusions(countyName: string, stateAbbr: string) {
   return getOtherStatesWithCountyName(countyName, stateAbbr)
@@ -135,14 +153,26 @@ function buildCountyFeedUrl(kind: CountyFallbackKind, countyName: string, state:
       return googleNewsRssUrl(scopedTopicQuery(scoped, ["crime", "courts", "sheriff", "police", "arrests"]));
     case "opinion":
       return googleNewsRssUrl(scopedTopicQuery(scoped, ["opinion", "editorial", "column"]));
-    case "sound-money":
-      return googleNewsRssUrl(scopedTopicQuery(scoped, ["sound money", "gold standard", "central bank", "inflation", "currency"]));
-    case "paper-elections":
-      return googleNewsRssUrl(scopedTopicQuery(scoped, ["paper ballots", "paper elections", "election integrity", "hand count", "voting machines"]));
-    case "bond-issues":
-      return googleNewsRssUrl(scopedTopicQuery(scoped, ["bond issue", "municipal bond", "school bond", "public debt", "bond election"]));
+    case "monetary-policy":
+      return googleNewsRssUrl(scopedTopicQuery(scoped, ["inflation", "interest rates", "Federal Reserve", "central bank", "currency policy"]));
+    case "markets-investing":
+      return googleNewsRssUrl(scopedTopicQuery(scoped, ["markets", "commodities", "stocks", "bonds", "investing"]));
+    case "jobs-business":
+      return googleNewsRssUrl(scopedTopicQuery(scoped, ["jobs", "employment", "small business", "industry", "economic development"]));
     case "property-taxes":
-      return googleNewsRssUrl(scopedTopicQuery(scoped, ["property taxes", "property tax", "appraisal district", "tax levy", "homestead exemption"]));
+      return googleNewsRssUrl(scopedTopicQuery(scoped, ["property taxes", "property tax", "assessment", "appraisal", "tax levy", "homestead exemption"]));
+    case "municipal-bonds":
+      return googleNewsRssUrl(scopedTopicQuery(scoped, ["municipal bond", "school bond", "public debt", "bond election"]));
+    case "budgets-levies":
+      return googleNewsRssUrl(scopedTopicQuery(scoped, ["public budget", "county budget", "city budget", "school budget", "tax rate"]));
+    case "voting-systems":
+      return googleNewsRssUrl(scopedTopicQuery(scoped, ["voting systems", "ballot processing", "voting equipment", "ballot certification"]));
+    case "election-administration":
+      return googleNewsRssUrl(scopedTopicQuery(scoped, ["election administration", "election office", "polling place", "voter registration"]));
+    case "audits-recounts":
+      return googleNewsRssUrl(scopedTopicQuery(scoped, ["election audit", "recount", "canvass", "post-election review"]));
+    case "open-records":
+      return googleNewsRssUrl(scopedTopicQuery(scoped, ["public records", "open records", "FOIA", "government transparency"]));
   }
 }
 
@@ -164,13 +194,25 @@ function buildMarketFeedUrl(kind: CountyFallbackKind, placeName: string, state: 
       return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["crime", "police", "sheriff", "courts"]));
     case "opinion":
       return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["opinion", "editorial", "column"]));
-    case "sound-money":
-      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["sound money", "inflation", "central bank", "currency"]));
-    case "paper-elections":
-      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["paper ballots", "election integrity", "voting machines", "election audit"]));
-    case "bond-issues":
-      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["bond issue", "school bond", "municipal bond", "public debt"]));
+    case "monetary-policy":
+      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["inflation", "interest rates", "Federal Reserve", "currency policy"]));
+    case "markets-investing":
+      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["markets", "commodities", "stocks", "bonds", "investing"]));
+    case "jobs-business":
+      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["jobs", "employment", "business", "industry"]));
     case "property-taxes":
-      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["property taxes", "property tax", "appraisal district", "tax levy"]));
+      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["property taxes", "property tax", "assessment", "appraisal", "tax levy"]));
+    case "municipal-bonds":
+      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["municipal bond", "school bond", "public debt", "bond election"]));
+    case "budgets-levies":
+      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["public budget", "county budget", "city budget", "school budget", "tax rate"]));
+    case "voting-systems":
+      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["voting systems", "ballot processing", "voting equipment"]));
+    case "election-administration":
+      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["election administration", "election office", "polling place", "voter registration"]));
+    case "audits-recounts":
+      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["election audit", "recount", "canvass"]));
+    case "open-records":
+      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["public records", "open records", "FOIA", "government transparency"]));
   }
 }

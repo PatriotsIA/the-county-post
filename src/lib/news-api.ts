@@ -17,10 +17,16 @@ export type Topic =
   | "crime"
   | "obituaries"
   | "opinion"
-  | "sound-money"
-  | "paper-elections"
-  | "bond-issues"
-  | "property-taxes";
+  | "monetary-policy"
+  | "markets-investing"
+  | "jobs-business"
+  | "property-taxes"
+  | "municipal-bonds"
+  | "budgets-levies"
+  | "voting-systems"
+  | "election-administration"
+  | "audits-recounts"
+  | "open-records";
 
 export type FeedResponse = {
   scope?: Record<string, string>;
