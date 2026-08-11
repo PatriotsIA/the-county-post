@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
-import { Link, NavLink, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
+import { Link, Navigate, NavLink, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
 import { SubmissionForm } from "./components/SubmissionForm";
 import { ClassifiedSubmissionForm } from "./components/ClassifiedSubmissionForm";
 import { AdSlot } from "./components/AdSlot";
@@ -12,9 +12,14 @@ import { site } from "./data/site";
 import { getStateBySlug, searchStates, states } from "./data/states";
 import { buildCountyFallbackFeedUrls, buildNationalFallbackFeedUrls, buildStateFallbackFeedUrls } from "./lib/fallback-feed-urls";
 import { fetchNewsApiPage, isNewsApiConfigured, type NewsFeedItem, type Topic } from "./lib/news-api";
+import countyPostFinalLogo from "../county-post-final-logo.png";
+import countyPostLogo from "../county-post-square-logo.png";
 import "./index.css";
 
 type TopicFeedKind = Topic;
+type SubjectPageBase = { kind: TopicFeedKind; slug: string; title: string; kicker: string; description: string };
+type SubjectGroup = { slug: string; title: string; kicker: string; description: string; subjects: SubjectPageBase[] };
+type SubjectPage = SubjectPageBase & { categorySlug: string; categoryTitle: string };
 
 const topicSections: { kind: TopicFeedKind; title: string; kicker: string }[] = [
   { kind: "sports", title: "Sports", kicker: "Scores & highlights" },
@@ -25,36 +30,116 @@ const topicSections: { kind: TopicFeedKind; title: string; kicker: string }[] = 
   { kind: "opinion", title: "Opinion & op-eds", kicker: "Columns & analysis" },
 ];
 
-const subjectPages: { kind: TopicFeedKind; slug: string; title: string; kicker: string; description: string }[] = [
+const subjectGroups: SubjectGroup[] = [
   {
-    kind: "sound-money",
-    slug: "sound-money",
-    title: "Sound Money",
-    kicker: "Money desk",
-    description: "Coverage of inflation, currency, precious metals, central banking, and local impacts of monetary policy.",
+    slug: "economy-markets",
+    title: "Economy & Markets",
+    kicker: "Markets desk",
+    description: "Coverage of money, markets, jobs, local business, and the economic forces shaping county life.",
+    subjects: [
+      {
+        kind: "monetary-policy",
+        slug: "monetary-policy",
+        title: "Monetary Policy",
+        kicker: "Money desk",
+        description: "Coverage of inflation, interest rates, the Federal Reserve, currency policy, and local economic impacts.",
+      },
+      {
+        kind: "markets-investing",
+        slug: "markets-investing",
+        title: "Markets & Investing",
+        kicker: "Market watch",
+        description: "Coverage of commodities, stocks, bonds, investing, and market moves that matter outside Wall Street.",
+      },
+      {
+        kind: "jobs-business",
+        slug: "jobs-business",
+        title: "Jobs & Business",
+        kicker: "Business desk",
+        description: "Coverage of employers, small businesses, hiring, industry, and local economic development.",
+      },
+    ],
   },
   {
-    kind: "paper-elections",
-    slug: "paper-elections",
-    title: "Paper Elections",
-    kicker: "Election desk",
-    description: "Coverage of paper ballots, election audits, voting machines, hand counts, and election integrity debates.",
+    slug: "taxes-public-finance",
+    title: "Taxes & Public Finance",
+    kicker: "Public finance",
+    description: "Coverage of taxes, public budgets, bonds, levies, school finance, and local government spending.",
+    subjects: [
+      {
+        kind: "property-taxes",
+        slug: "property-taxes",
+        title: "Property Taxes",
+        kicker: "Tax desk",
+        description: "Coverage of property taxes, appraisals, assessments, tax levies, and homestead exemptions.",
+      },
+      {
+        kind: "municipal-bonds",
+        slug: "municipal-bonds",
+        title: "Municipal Bonds",
+        kicker: "Public debt",
+        description: "Coverage of municipal bonds, school bonds, bond elections, public debt, and borrowing proposals.",
+      },
+      {
+        kind: "budgets-levies",
+        slug: "budgets-levies",
+        title: "Budgets & Levies",
+        kicker: "Budget desk",
+        description: "Coverage of county, city, and school budgets, tax rates, levies, and public finance decisions.",
+      },
+    ],
   },
   {
-    kind: "bond-issues",
-    slug: "bond-issues",
-    title: "Bond Issues",
-    kicker: "Public debt",
-    description: "Coverage of public debt, school bonds, municipal bonds, bond elections, and local borrowing proposals.",
-  },
-  {
-    kind: "property-taxes",
-    slug: "property-taxes",
-    title: "Property Taxes",
-    kicker: "Tax desk",
-    description: "Coverage of property taxes, appraisals, tax levies, homestead exemptions, and local tax policy.",
+    slug: "elections-transparency",
+    title: "Elections & Transparency",
+    kicker: "Civic records",
+    description: "Coverage of elections, public records, open government, audits, recounts, and election administration.",
+    subjects: [
+      {
+        kind: "voting-systems",
+        slug: "voting-systems",
+        title: "Voting Systems",
+        kicker: "Election systems",
+        description: "Coverage of voting equipment, ballot processing, certification, and election technology.",
+      },
+      {
+        kind: "election-administration",
+        slug: "election-administration",
+        title: "Election Administration",
+        kicker: "Election desk",
+        description: "Coverage of election offices, polling places, voter registration, ballot access, and election calendars.",
+      },
+      {
+        kind: "audits-recounts",
+        slug: "audits-recounts",
+        title: "Audits & Recounts",
+        kicker: "Results desk",
+        description: "Coverage of election audits, recounts, canvassing, post-election reviews, and certification disputes.",
+      },
+      {
+        kind: "open-records",
+        slug: "open-records",
+        title: "Open Records",
+        kicker: "Transparency desk",
+        description: "Coverage of public records, FOIA requests, open meetings, and government transparency.",
+      },
+    ],
   },
 ];
+
+const subjectPages: SubjectPage[] = subjectGroups.flatMap((group) =>
+  group.subjects.map((subject) => ({
+    ...subject,
+    categorySlug: group.slug,
+    categoryTitle: group.title,
+  })),
+);
+
+const legacySubjectGroups: Record<string, SubjectGroup["slug"]> = {
+  "sound-money": "economy-markets",
+  "paper-elections": "elections-transparency",
+  "bond-issues": "taxes-public-finance",
+};
 
 const pageLeadSections = ["general"] as const;
 const pageBackgroundSections = ["sports", "politics", "economy", "crime", "obituaries", "opinion"] as const;
@@ -62,7 +147,6 @@ const countyLeadSections = ["localNews"] as const;
 const countyBackgroundSections = ["localSports", "politics", "economy", "crime", "obituaries", "opinion"] as const;
 const LEAD_PREFETCH_LIMIT = 32;
 const PAGE_PREFETCH_LIMIT = 96;
-const soundMoneyFeaturedVideoIds = ["pjlmcqWTPPg", "1CDpb0G3v2g", "QZcVYmEJ9x4"];
 
 type NewsPageState = {
   status: "idle" | "loading" | "loaded" | "error";
@@ -211,8 +295,7 @@ function App() {
             <span>Today Is: {todayLabel}</span>
           </p>
           <Link to="/" className="wordmark">
-            <span className="wordmark-main">{site.name}</span>
-            <span className="wordmark-sub">{site.tagline}</span>
+            <img className="wordmark-logo" src={countyPostLogo} alt={`${site.name} — Every county. Every community. One nation.`} />
           </Link>
         </div>
         <button
@@ -286,6 +369,7 @@ function App() {
 
       <AdSlot slot="banner" limit={4} />
       <footer className="footer">
+        <img className="footer-logo" src={countyPostFinalLogo} alt={site.name} />
         <p>
           {site.name} • County-by-county newswire • Contact the desk:{" "}
           <a href={`mailto:${site.contact.email}`}>{site.contact.email}</a>
@@ -339,7 +423,7 @@ function contextLinks(county?: NonNullable<ReturnType<typeof getCounty>>, state?
     const base = `/${county.state.slug}/${county.slug}`;
     return [
       { to: base, label: "County Home", end: true },
-      ...subjectPages.map((subject) => ({ to: `${base}/${subject.slug}`, label: subject.title })),
+      ...subjectGroups.map((group) => ({ to: `${base}/${group.slug}`, label: group.title })),
       { to: `${base}/op-eds`, label: "County Op-Eds" },
       { to: `${base}/classifieds`, label: "Classifieds" },
       { to: `${base}/submit`, label: "Submit A Story" },
@@ -350,7 +434,7 @@ function contextLinks(county?: NonNullable<ReturnType<typeof getCounty>>, state?
     const base = `/states/${state.slug}`;
     return [
       { to: base, label: "State Home", end: true },
-      ...subjectPages.map((subject) => ({ to: `${base}/${subject.slug}`, label: subject.title })),
+      ...subjectGroups.map((group) => ({ to: `${base}/${group.slug}`, label: group.title })),
       { to: `${base}/op-eds`, label: "State Op-Eds" },
       { to: `${base}/submit`, label: "Submit A Story" },
     ];
@@ -358,7 +442,7 @@ function contextLinks(county?: NonNullable<ReturnType<typeof getCounty>>, state?
 
   return [
     { to: "/", label: "National Home", end: true },
-    ...subjectPages.map((subject) => ({ to: `/topics/${subject.slug}`, label: subject.title })),
+    ...subjectGroups.map((group) => ({ to: `/topics/${group.slug}`, label: group.title })),
     { to: "/op-eds", label: "National Op-Eds" },
     { to: "/submit", label: "Submit A Story" },
   ];
@@ -479,7 +563,6 @@ function HomePage() {
           {section.kind === "sports" ? <AdSlot slot="inline" /> : null}
         </Fragment>
       ))}
-      <HardAssetsFeed />
 
       <section className="card">
         <header className="section-heading">
@@ -680,7 +763,6 @@ function StatePage() {
           {section.kind === "sports" ? <AdSlot slot="inline" /> : null}
         </Fragment>
       ))}
-      <HardAssetsFeed />
       <NewsFeedSection
         title="National briefing"
         kicker="Context"
@@ -696,6 +778,12 @@ function StatePage() {
 
 function NationalSubjectPage() {
   const { subjectSlug } = useParams<{ subjectSlug: string }>();
+  const legacySubjectGroup = legacySubjectGroups[subjectSlug || ""];
+  if (legacySubjectGroup) return <Navigate to={`/topics/${legacySubjectGroup}`} replace />;
+
+  const group = getSubjectGroup(subjectSlug);
+  if (group) return <NationalSubjectGroupPage group={group} />;
+
   const subject = getSubjectPage(subjectSlug);
   if (!subject) return <NotFound />;
 
@@ -706,18 +794,43 @@ function NationalSubjectPage() {
         <h1>{subject.title}</h1>
         <p className="lead">{subject.description}</p>
       </section>
-      {subject.kind === "sound-money" ? (
-        <HardAssetsFeed featuredVideoIds={soundMoneyFeaturedVideoIds} />
-      ) : (
+      <NewsFeedSection
+        title={`${subject.title} headlines`}
+        kicker="National desk"
+        apiPath={nationalApiPath(subject.kind)}
+        fallbackFeedUrls={buildNationalFallbackFeedUrls(subject.kind)}
+        pageSize={18}
+        kind={subject.kind}
+      />
+    </div>
+  );
+}
+
+function NationalSubjectGroupPage({ group }: { group: SubjectGroup }) {
+  const loader = useSequentialFeedLoader(true, group.subjects.length, `national:${group.slug}`);
+
+  return (
+    <div className="layout-grid">
+      <section className="hero-card">
+        <p className="kicker">{group.kicker}</p>
+        <h1>{group.title}</h1>
+        <p className="lead">{group.description}</p>
+      </section>
+      {group.slug === "economy-markets" ? <HardAssetsFeed /> : null}
+      {group.subjects.map((subject, index) => (
         <NewsFeedSection
-          title={`${subject.title} headlines`}
-          kicker="National desk"
+          key={subject.slug}
+          title={subject.title}
+          kicker={subject.kicker}
           apiPath={nationalApiPath(subject.kind)}
           fallbackFeedUrls={buildNationalFallbackFeedUrls(subject.kind)}
-          pageSize={18}
+          pageSize={14}
           kind={subject.kind}
+          actionLink={{ to: `/topics/${subject.slug}`, label: "Open subcategory" }}
+          loadEnabled={loader.isEnabled(index)}
+          onLoadSettled={() => loader.markSettled(index)}
         />
-      )}
+      ))}
     </div>
   );
 }
@@ -726,6 +839,12 @@ function StateSubjectPage() {
   const { stateSlug, subjectSlug } = useParams<{ stateSlug: string; subjectSlug: string }>();
   const state = getStateBySlug(stateSlug);
   if (!state) return <NotFound />;
+
+  const legacySubjectGroup = legacySubjectGroups[subjectSlug || ""];
+  if (legacySubjectGroup) return <Navigate to={`/states/${state.slug}/${legacySubjectGroup}`} replace />;
+
+  const group = getSubjectGroup(subjectSlug);
+  if (group) return <StateSubjectGroupPage state={state} group={group} />;
 
   const subject =
     subjectSlug === "op-eds"
@@ -742,19 +861,47 @@ function StateSubjectPage() {
         </h1>
         <p className="lead">{subject.description}</p>
       </section>
-      {subject.kind === "sound-money" ? (
-        <HardAssetsFeed />
-      ) : (
+      <NewsFeedSection
+        title={`${state.name} ${subject.title}`}
+        kicker="State desk"
+        apiPath={stateApiPath(state.slug, subject.kind)}
+        fallbackFeedUrls={buildStateFallbackFeedUrls(state, subject.kind)}
+        pageSize={18}
+        kind={subject.kind}
+        locality={{ stateName: state.name, stateAbbr: state.abbr, strict: true }}
+      />
+    </div>
+  );
+}
+
+function StateSubjectGroupPage({ state, group }: { state: NonNullable<ReturnType<typeof getStateBySlug>>; group: SubjectGroup }) {
+  const loader = useSequentialFeedLoader(true, group.subjects.length, `${state.slug}:${group.slug}`);
+
+  return (
+    <div className="layout-grid">
+      <section className="hero-card">
+        <p className="kicker">{group.kicker}</p>
+        <h1>
+          {state.name} {group.title} <span className="muted">({state.abbr})</span>
+        </h1>
+        <p className="lead">{group.description}</p>
+      </section>
+      {group.slug === "economy-markets" ? <HardAssetsFeed /> : null}
+      {group.subjects.map((subject, index) => (
         <NewsFeedSection
+          key={subject.slug}
           title={`${state.name} ${subject.title}`}
-          kicker="State desk"
+          kicker={subject.kicker}
           apiPath={stateApiPath(state.slug, subject.kind)}
           fallbackFeedUrls={buildStateFallbackFeedUrls(state, subject.kind)}
-          pageSize={18}
+          pageSize={14}
           kind={subject.kind}
           locality={{ stateName: state.name, stateAbbr: state.abbr, strict: true }}
+          actionLink={{ to: `/states/${state.slug}/${subject.slug}`, label: "Open subcategory" }}
+          loadEnabled={loader.isEnabled(index)}
+          onLoadSettled={() => loader.markSettled(index)}
         />
-      )}
+      ))}
     </div>
   );
 }
@@ -915,7 +1062,6 @@ function CountyPage() {
         loadEnabled={countyBackgroundLoader.isEnabled(7)}
         onLoadSettled={() => countyBackgroundLoader.markSettled(7)}
       />
-      <HardAssetsFeed />
 
       <SubmissionForm county={county} />
 
@@ -945,6 +1091,12 @@ function CountySubjectPage() {
   const county = getCounty(stateSlug, countySlug);
   if (!county) return <NotFound />;
 
+  const legacySubjectGroup = legacySubjectGroups[subjectSlug || ""];
+  if (legacySubjectGroup) return <Navigate to={`/${county.state.slug}/${county.slug}/${legacySubjectGroup}`} replace />;
+
+  const group = getSubjectGroup(subjectSlug);
+  if (group) return <CountySubjectGroupPage county={county} group={group} />;
+
   const subject = getSubjectPage(subjectSlug);
   if (!subject) return <NotFound />;
 
@@ -961,16 +1113,52 @@ function CountySubjectPage() {
         </h1>
         <p className="lead">{subject.description}</p>
       </section>
-      {subject.kind === "sound-money" ? (
-        <HardAssetsFeed />
-      ) : (
+      <NewsFeedSection
+        title={`${county.displayName} ${subject.title}`}
+        kicker="County desk"
+        apiPath={countyApiPath(county.state.slug, county.slug, subject.kind)}
+        fallbackFeedUrls={buildCountyFallbackFeedUrls(county, subject.kind)}
+        expandedLabel={`nearby markets including ${localCities.join(" and ")}`}
+        pageSize={18}
+        kind={subject.kind}
+        locality={{
+          countyName: county.name,
+          stateName: county.state.name,
+          stateAbbr: county.state.abbr,
+          cities: localCities,
+          strict: true,
+        }}
+      />
+    </div>
+  );
+}
+
+function CountySubjectGroupPage({ county, group }: { county: NonNullable<ReturnType<typeof getCounty>>; group: SubjectGroup }) {
+  const loader = useSequentialFeedLoader(true, group.subjects.length, `${county.fips || county.slug}:${group.slug}`);
+  const marketCities = getCountyMarketCities(county, 3);
+  const fallbackCity = marketCities[0] || getCountyMarketCity(county);
+  const localCities = Array.from(new Set([fallbackCity, ...marketCities.slice(1), ...(county.localCities || [])]));
+  const expandedLabel = localCities.length > 1 ? `nearby markets including ${localCities.join(" and ")}` : `${fallbackCity}, ${county.state.abbr}`;
+
+  return (
+    <div className="layout-grid">
+      <section className="hero-card">
+        <p className="kicker">{group.kicker}</p>
+        <h1>
+          {county.displayName} {group.title} <span className="muted">({county.state.abbr})</span>
+        </h1>
+        <p className="lead">{group.description}</p>
+      </section>
+      {group.slug === "economy-markets" ? <HardAssetsFeed /> : null}
+      {group.subjects.map((subject, index) => (
         <NewsFeedSection
+          key={subject.slug}
           title={`${county.displayName} ${subject.title}`}
-          kicker="County desk"
+          kicker={subject.kicker}
           apiPath={countyApiPath(county.state.slug, county.slug, subject.kind)}
           fallbackFeedUrls={buildCountyFallbackFeedUrls(county, subject.kind)}
-          expandedLabel={`nearby markets including ${localCities.join(" and ")}`}
-          pageSize={18}
+          expandedLabel={expandedLabel}
+          pageSize={14}
           kind={subject.kind}
           locality={{
             countyName: county.name,
@@ -979,8 +1167,11 @@ function CountySubjectPage() {
             cities: localCities,
             strict: true,
           }}
+          actionLink={{ to: `/${county.state.slug}/${county.slug}/${subject.slug}`, label: "Open subcategory" }}
+          loadEnabled={loader.isEnabled(index)}
+          onLoadSettled={() => loader.markSettled(index)}
         />
-      )}
+      ))}
     </div>
   );
 }
@@ -1106,6 +1297,10 @@ function SubmitPage() {
 
 function getSubjectPage(subjectSlug?: string) {
   return subjectPages.find((subject) => subject.slug === subjectSlug);
+}
+
+function getSubjectGroup(subjectSlug?: string) {
+  return subjectGroups.find((group) => group.slug === subjectSlug);
 }
 
 function AboutPage() {

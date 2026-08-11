@@ -74,7 +74,10 @@ The `SubmissionForm` component posts to EmailJS using the three `VITE_EMAILJS_*`
 ## Routes
 
 - `/` front page with county search, national feeds, and state directory
-- `/topics/:subjectSlug` national subject pages for `sound-money`, `paper-elections`, `bond-issues`, and `property-taxes`
+- `/topics/:subjectSlug` national editorial desk and subcategory pages:
+  - Economy & Markets: `economy-markets`, `monetary-policy`, `markets-investing`, `jobs-business`
+  - Taxes & Public Finance: `taxes-public-finance`, `property-taxes`, `municipal-bonds`, `budgets-levies`
+  - Elections & Transparency: `elections-transparency`, `voting-systems`, `election-administration`, `audits-recounts`, `open-records`
 - `/submit` national submit op-eds/stories page
 - `/states` state and county directory
 - `/states/:stateSlug` state news page
@@ -82,10 +85,11 @@ The `SubmissionForm` component posts to EmailJS using the three `VITE_EMAILJS_*`
 - `/states/:stateSlug/submit` state submit op-eds/stories page
 - `/:stateSlug/:countySlug` county news page with feeds and submission form
 - `/:stateSlug/:countySlug/op-eds` county opinion page
-- `/:stateSlug/:countySlug/:subjectSlug` county subject pages for `sound-money`, `paper-elections`, `bond-issues`, and `property-taxes`
+- `/:stateSlug/:countySlug/:subjectSlug` county editorial desk and subcategory pages using the same slugs
 - `/:stateSlug/:countySlug/submit` county submit op-eds/stories page
 
 The contextual navigation bar appears below the masthead and links to the active national, state, or county section pages.
+Legacy `sound-money`, `paper-elections`, and `bond-issues` links redirect to their replacement desk pages.
 
 ## Deployment Notes
 

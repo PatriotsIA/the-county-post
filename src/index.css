@@ -114,19 +114,12 @@ body::before {
   color: var(--white);
 }
 
-.wordmark-main {
-  font-family: "Playfair Display", "Libre Baskerville", serif;
-  font-size: 42px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.78);
-}
-
-.wordmark-sub {
-  font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  color: rgba(255, 255, 255, 0.86);
+.wordmark-logo {
+  display: block;
+  width: clamp(150px, 16vw, 250px);
+  max-height: 150px;
+  object-fit: contain;
+  object-position: left center;
 }
 
 .nav {
@@ -576,9 +569,12 @@ body::before {
 
 .hero-card {
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(230, 230, 226, 0.94)),
+    url("../county-post-final-logo.png"),
     repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.018) 0, rgba(0, 0, 0, 0.018) 1px, transparent 1px, transparent 8px),
     var(--panel);
+  background-position: right 22px center, center, center;
+  background-repeat: no-repeat, repeat, repeat;
+  background-size: min(340px, 36vw) auto, auto, auto;
 }
 
 .hero-card h1 {
@@ -1187,6 +1183,30 @@ button:disabled {
   min-width: 0;
 }
 
+.hard-assets-sponsor {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 5px;
+  color: var(--ink);
+  font-family: "Roboto Mono", monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.hard-assets-sponsor:hover {
+  color: var(--news-blue);
+}
+
+.hard-assets-sponsor img {
+  display: block;
+  width: 74px;
+  height: auto;
+}
+
 .hard-assets-featured {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1474,6 +1494,13 @@ button:disabled {
   font-size: 12px;
 }
 
+.footer-logo {
+  display: block;
+  width: min(230px, 70vw);
+  height: auto;
+  margin: 0 auto 10px;
+}
+
 .footer-links {
   display: flex;
   justify-content: center;
@@ -1550,14 +1577,6 @@ button:disabled {
     flex: 0 0 auto;
   }
 
-  .wordmark-main {
-    font-size: 25px;
-  }
-
-  .wordmark-sub {
-    font-size: 10px;
-  }
-
   .masthead-kicker {
     font-size: 9px;
   }
@@ -1577,6 +1596,14 @@ button:disabled {
 
   .market-weather-bar {
     min-height: var(--ticker-height);
+  }
+
+  .hero-card {
+    min-height: 0;
+    padding-right: 18px;
+    padding-bottom: min(78vw, 290px);
+    background-position: center bottom 16px, center, center;
+    background-size: min(280px, 72vw) auto, auto, auto;
   }
 
   .precious-metals-ticker {

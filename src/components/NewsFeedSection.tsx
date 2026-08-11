@@ -1,21 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ads } from "../data/ads";
-import { fetchNewsApiFeed, isNewsApiConfigured, type NewsFeedItem } from "../lib/news-api";
+import { fetchNewsApiFeed, isNewsApiConfigured, type NewsFeedItem, type Topic } from "../lib/news-api";
 import { fetchNewsFeeds } from "../lib/rss";
 
-type FeedKind =
-  | "general"
-  | "sports"
-  | "politics"
-  | "economy"
-  | "crime"
-  | "obituaries"
-  | "opinion"
-  | "sound-money"
-  | "paper-elections"
-  | "bond-issues"
-  | "property-taxes";
+type FeedKind = Topic;
 
 type LocalityScope = {
   countyName?: string;
@@ -343,10 +332,16 @@ const feedSponsorIds: Record<FeedKind, string> = {
   crime: "pasture-exchange-inline",
   obituaries: "patriot-trailer-inline",
   opinion: "cbt-inline",
-  "sound-money": "brown-gmc-inline",
-  "paper-elections": "canyon-ridge-inline",
-  "bond-issues": "catchings-inline",
+  "monetary-policy": "brown-gmc-inline",
+  "markets-investing": "canyon-ridge-inline",
+  "jobs-business": "catchings-inline",
   "property-taxes": "dyers-inline",
+  "municipal-bonds": "hoffbrau-inline",
+  "budgets-levies": "lawyers-title-inline",
+  "voting-systems": "pestcon-inline",
+  "election-administration": "patriot-dispatch-inline",
+  "audits-recounts": "amberwood-brush-inline",
+  "open-records": "arw-inline",
 };
 
 function FeedSponsor({ kind, sponsorId }: { kind: FeedKind; sponsorId?: string }) {
@@ -442,20 +437,44 @@ const categoryRules: Record<FeedKind, { include?: string[]; exclude?: string[] }
     include: ["opinion", "editorial", "column", "letter to the editor", "commentary", "op-ed", "op ed"],
     exclude: obituaryTerms,
   },
-  "sound-money": {
-    include: ["sound money", "gold", "silver", "inflation", "central bank", "federal reserve", "currency", "monetary"],
+  "monetary-policy": {
+    include: ["inflation", "interest rate", "federal reserve", "central bank", "currency", "monetary policy"],
     exclude: obituaryTerms,
   },
-  "paper-elections": {
-    include: ["paper ballot", "paper ballots", "paper election", "hand count", "voting machine", "election audit", "election integrity"],
+  "markets-investing": {
+    include: ["market", "markets", "commodity", "commodities", "stock", "stocks", "bond", "bonds", "investing"],
     exclude: obituaryTerms,
   },
-  "bond-issues": {
-    include: ["bond issue", "school bond", "municipal bond", "public debt", "bond election", "bond proposal"],
+  "jobs-business": {
+    include: ["job", "jobs", "employment", "employer", "business", "industry", "economic development"],
     exclude: obituaryTerms,
   },
   "property-taxes": {
     include: ["property tax", "property taxes", "appraisal", "tax levy", "homestead exemption", "tax assessor"],
+    exclude: obituaryTerms,
+  },
+  "municipal-bonds": {
+    include: ["municipal bond", "school bond", "bond election", "bond proposal", "public debt"],
+    exclude: obituaryTerms,
+  },
+  "budgets-levies": {
+    include: ["public budget", "county budget", "city budget", "school budget", "tax rate", "public finance"],
+    exclude: obituaryTerms,
+  },
+  "voting-systems": {
+    include: ["voting system", "ballot processing", "voting equipment", "ballot certification", "election technology"],
+    exclude: obituaryTerms,
+  },
+  "election-administration": {
+    include: ["election administration", "election office", "polling place", "voter registration", "election date"],
+    exclude: obituaryTerms,
+  },
+  "audits-recounts": {
+    include: ["election audit", "recount", "canvass", "post-election review", "election results certification"],
+    exclude: obituaryTerms,
+  },
+  "open-records": {
+    include: ["public records", "open records", "freedom of information", "foia", "government transparency"],
     exclude: obituaryTerms,
   },
 };
