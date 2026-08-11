@@ -74,7 +74,7 @@ The `SubmissionForm` component posts to EmailJS using the three `VITE_EMAILJS_*`
 ## Routes
 
 - `/` front page with county search, national feeds, and state directory
-- `/topics/:subjectSlug` national subject pages for `sound-money`, `paper-elections`, `bond-issues`, and `property-taxes`
+- `/topics/:subjectSlug` national category and subcategory pages. Parent categories are `economy-markets`, `taxes-public-finance`, and `elections-transparency`; subcategories include `monetary-policy`, `markets-investing`, `jobs-business`, `property-taxes`, `municipal-bonds`, `budgets-levies`, `voting-systems`, `election-administration`, `audits-recounts`, and `open-records`
 - `/submit` national submit op-eds/stories page
 - `/states` state and county directory
 - `/states/:stateSlug` state news page
@@ -82,7 +82,7 @@ The `SubmissionForm` component posts to EmailJS using the three `VITE_EMAILJS_*`
 - `/states/:stateSlug/submit` state submit op-eds/stories page
 - `/:stateSlug/:countySlug` county news page with feeds and submission form
 - `/:stateSlug/:countySlug/op-eds` county opinion page
-- `/:stateSlug/:countySlug/:subjectSlug` county subject pages for `sound-money`, `paper-elections`, `bond-issues`, and `property-taxes`
+- `/:stateSlug/:countySlug/:subjectSlug` county category and subcategory pages using the same category and subcategory slugs
 - `/:stateSlug/:countySlug/submit` county submit op-eds/stories page
 
 The contextual navigation bar appears below the masthead and links to the active national, state, or county section pages.

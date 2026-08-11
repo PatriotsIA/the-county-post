@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
 import type { NewsFeedItem } from "../lib/news-api";
 import { fetchNewsFeed } from "../lib/rss";
+import itmTradingAd from "../../ad-assets/ad-itmtrading.JPG";
 
 const itmTradingFeedUrl = "https://www.youtube.com/feeds/videos.xml?channel_id=UCom1i7_NVeSUNyJyuR_NbMQ";
 const rssToJsonUrl = "https://api.rss2json.com/v1/api.json";
+const evergreenVideoIds = ["pjlmcqWTPPg", "1CDpb0G3v2g", "QZcVYmEJ9x4"];
 
 type Props = {
   featuredVideoIds?: string[];
 };
 
-export function HardAssetsFeed({ featuredVideoIds = [] }: Props) {
+export function HardAssetsFeed({ featuredVideoIds = evergreenVideoIds }: Props) {
   const [videos, setVideos] = useState<NewsFeedItem[]>([]);
   const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
 
@@ -36,6 +38,10 @@ export function HardAssetsFeed({ featuredVideoIds = [] }: Props) {
         <div>
           <p className="kicker">ITM Trading video desk</p>
           <h2>Hard Assets</h2>
+          <a className="hard-assets-sponsor" href="https://www.itmtrading.com/" target="_blank" rel="noreferrer sponsored">
+            <span>Presented by</span>
+            <img src={itmTradingAd} alt="ITM Trading" />
+          </a>
         </div>
         <div className="section-heading-rule" aria-hidden />
       </header>

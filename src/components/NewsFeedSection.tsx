@@ -2,27 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ads } from "../data/ads";
 import { PresentedByPreview } from "./AdPreviewPlaceholder";
-import { fetchNewsApiFeed, isNewsApiConfigured, type NewsFeedItem } from "../lib/news-api";
+import { fetchNewsApiFeed, isNewsApiConfigured, type NewsFeedItem, type Topic } from "../lib/news-api";
 import { fetchNewsFeeds } from "../lib/rss";
 
-type FeedKind =
-  | "general"
-  | "sports"
-  | "politics"
-  | "economy"
-  | "crime"
-  | "obituaries"
-  | "opinion"
-  | "monetary-policy"
-  | "markets-investing"
-  | "jobs-business"
-  | "property-taxes"
-  | "municipal-bonds"
-  | "budgets-levies"
-  | "voting-systems"
-  | "election-administration"
-  | "audits-recounts"
-  | "open-records";
+type FeedKind = Topic;
 
 type LocalityScope = {
   countyName?: string;
@@ -358,7 +341,7 @@ const feedSponsorIds: Record<FeedKind, string> = {
   "municipal-bonds": "hoffbrau-inline",
   "budgets-levies": "lawyers-title-inline",
   "voting-systems": "pestcon-inline",
-  "election-administration": "patriot-messaging-inline",
+  "election-administration": "patriot-dispatch-inline",
   "audits-recounts": "amberwood-brush-inline",
   "open-records": "arw-inline",
 };
@@ -456,11 +439,20 @@ const categoryRules: Record<FeedKind, { include?: string[]; exclude?: string[] }
     include: ["opinion", "editorial", "column", "letter to the editor", "commentary", "op-ed", "op ed"],
     exclude: obituaryTerms,
   },
-  "monetary-policy": { include: ["inflation", "interest rate", "federal reserve", "central bank", "currency", "monetary policy"], exclude: obituaryTerms },
-  "markets-investing": { include: ["market", "markets", "commodity", "commodities", "stock", "stocks", "bond", "bonds", "investing"], exclude: obituaryTerms },
-  "jobs-business": { include: ["job", "jobs", "employment", "employer", "business", "industry", "economic development"], exclude: obituaryTerms },
+  "monetary-policy": {
+    include: ["inflation", "interest rate", "federal reserve", "central bank", "currency", "monetary policy"],
+    exclude: obituaryTerms,
+  },
+  "markets-investing": {
+    include: ["market", "markets", "commodity", "commodities", "stock", "stocks", "bond", "bonds", "investing"],
+    exclude: obituaryTerms,
+  },
+  "jobs-business": {
+    include: ["job", "jobs", "employment", "employer", "business", "industry", "economic development"],
+    exclude: obituaryTerms,
+  },
   "property-taxes": {
-    include: ["property tax", "property taxes", "assessment", "appraisal", "tax levy", "homestead exemption"],
+    include: ["property tax", "property taxes", "appraisal", "tax levy", "homestead exemption", "tax assessor"],
     exclude: obituaryTerms,
   },
   "municipal-bonds": {

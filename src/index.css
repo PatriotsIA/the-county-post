@@ -1667,6 +1667,30 @@ button:disabled {
   min-width: 0;
 }
 
+.hard-assets-sponsor {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 5px;
+  color: var(--ink);
+  font-family: "Roboto Mono", monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.hard-assets-sponsor:hover {
+  color: var(--news-blue);
+}
+
+.hard-assets-sponsor img {
+  display: block;
+  width: 74px;
+  height: auto;
+}
+
 .hard-assets-featured {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
