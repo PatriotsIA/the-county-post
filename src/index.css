@@ -568,6 +568,7 @@ body::before {
 }
 
 .hero-card {
+  padding-right: calc(min(340px, 36vw) + 54px);
   background:
     url("../county-post-final-logo.png"),
     repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.018) 0, rgba(0, 0, 0, 0.018) 1px, transparent 1px, transparent 8px),
