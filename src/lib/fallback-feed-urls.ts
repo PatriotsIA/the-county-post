@@ -124,11 +124,8 @@ function countyDisambiguationExclusions(countyName: string, stateAbbr: string) {
 }
 
 function countyScopedTerms(countyName: string, state: StateSite) {
-  const exclusions = countyDisambiguationExclusions(countyName, state.abbr);
-  if (isAmbiguousCountyName(countyName)) {
-    return `"${countyName} County ${state.name}" OR "${countyName} County ${state.abbr}" OR "${countyName} ${state.abbr}" ${exclusions}`.trim();
-  }
-  return `${countyName} County ${state.name} OR ${countyName} ${state.abbr} ${exclusions}`.trim();
+  const exclusions = isAmbiguousCountyName(countyName) ? countyDisambiguationExclusions(countyName, state.abbr) : "";
+  return `("${countyName} County" "${state.name}" OR "${countyName} County" "${state.abbr}") ${exclusions}`.trim();
 }
 
 function scopedTopicQuery(scopedPlace: string, topics: string[]) {

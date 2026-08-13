@@ -201,11 +201,21 @@ function newest(items: NewsFeedItem[], maxItems: number) {
 function dedupeItems(items: NewsFeedItem[]) {
   const seen = new Set<string>();
   return items.filter((item) => {
-    const key = normalizeDedupeKey(item.link || item.title);
+    const key = normalizeTitle(item.title, item.source) || normalizeDedupeKey(item.link);
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
+}
+
+function normalizeTitle(value: string, source?: string) {
+  const sourceSuffix = source ? ` - ${source}`.toLowerCase() : "";
+  const withoutSource = sourceSuffix && value.toLowerCase().endsWith(sourceSuffix) ? value.slice(0, -sourceSuffix.length) : value;
+  return withoutSource
+    .toLowerCase()
+    .replace(/[’']/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 }
 
 function normalizeDedupeKey(value: string) {

@@ -75,7 +75,7 @@ export function NewsFeedSection({
   const hasInitialPageData = initialItems !== undefined || initialStatus === "loading" || initialStatus === "error";
   const shouldUseServerFilteredItems = source === "api";
   const filteredItems = useMemo(
-    () => (shouldUseServerFilteredItems ? items : filterFeedItems(items, kind, locality)),
+    () => dedupeTitles(shouldUseServerFilteredItems ? items : filterFeedItems(items, kind, locality)),
     [items, kind, locality, shouldUseServerFilteredItems],
   );
   const feedEntries = useMemo(
@@ -550,13 +550,30 @@ function matchesLocality(contentHaystack: string, fullHaystack: string, locality
   const mentionsOtherState = stateNames.some((stateName) => stateName !== allowedStateName && includesTerm(contentHaystack, stateName));
   if (mentionsOtherState) return false;
 
-  const localityTerms = locality.countyName
-    ? [locality.countyName, `${locality.countyName} county`, ...(locality.cities || [])]
-    : [locality.stateName, locality.stateAbbr, ...(locality.cities || [])];
+  if (locality.countyName) {
+    const explicitlyInState = Boolean(allowedStateName && includesTerm(fullHaystack, allowedStateName));
+    if (!explicitlyInState) return false;
 
+    const countyOrNearbyMarketTerms = [`${locality.countyName} county`, ...(locality.cities || [])];
+    return countyOrNearbyMarketTerms.some((term) => includesTerm(fullHaystack, term.toLowerCase()));
+  }
+
+  const localityTerms = [locality.stateName, locality.stateAbbr, ...(locality.cities || [])];
   const normalizedLocalityTerms = localityTerms.filter(Boolean).map((term) => term!.toLowerCase());
 
   return normalizedLocalityTerms.length ? normalizedLocalityTerms.some((term) => includesTerm(fullHaystack, term)) : true;
+}
+
+function dedupeTitles(items: NewsFeedItem[]) {
+  const seenTitles = new Set<string>();
+  return items.filter((item) => {
+    const sourceSuffix = item.source ? ` - ${item.source}`.toLowerCase() : "";
+    const withoutSource = sourceSuffix && item.title.toLowerCase().endsWith(sourceSuffix) ? item.title.slice(0, -sourceSuffix.length) : item.title;
+    const title = withoutSource.toLowerCase().replace(/[’']/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+    if (!title || seenTitles.has(title)) return false;
+    seenTitles.add(title);
+    return true;
+  });
 }
 
 function includesTerm(value: string, term: string) {
