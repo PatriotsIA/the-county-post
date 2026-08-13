@@ -565,15 +565,42 @@ function matchesLocality(contentHaystack: string, fullHaystack: string, locality
 }
 
 function dedupeTitles(items: NewsFeedItem[]) {
-  const seenTitles = new Set<string>();
+  const accepted: Array<{ title: string; item: NewsFeedItem }> = [];
   return items.filter((item) => {
-    const sourceSuffix = item.source ? ` - ${item.source}`.toLowerCase() : "";
-    const withoutSource = sourceSuffix && item.title.toLowerCase().endsWith(sourceSuffix) ? item.title.slice(0, -sourceSuffix.length) : item.title;
-    const title = withoutSource.toLowerCase().replace(/[’']/g, "").replace(/[^a-z0-9]+/g, " ").trim();
-    if (!title || seenTitles.has(title)) return false;
-    seenTitles.add(title);
+    const title = normalizeDuplicateTitle(item.title, item.source);
+    if (!title || accepted.some((existing) => isNearDuplicate(item, title, existing.item, existing.title))) return false;
+    accepted.push({ title, item });
     return true;
   });
+}
+
+function normalizeDuplicateTitle(value: string, source?: string) {
+  const sourceSuffix = source ? ` - ${source}`.toLowerCase() : "";
+  const withoutSource = sourceSuffix && value.toLowerCase().endsWith(sourceSuffix) ? value.slice(0, -sourceSuffix.length) : value;
+  return withoutSource.toLowerCase().replace(/[’']/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function isNearDuplicate(item: NewsFeedItem, title: string, existingItem: NewsFeedItem, existingTitle: string) {
+  if (title === existingTitle || title.includes(existingTitle) || existingTitle.includes(title)) return true;
+  if (tokenSimilarity(title, existingTitle) >= 0.82) return true;
+
+  if (!isDvidsItem(item) || !isDvidsItem(existingItem)) return false;
+  const description = normalizeDuplicateTitle(item.description || "");
+  const existingDescription = normalizeDuplicateTitle(existingItem.description || "");
+  return description.length >= 36 && existingDescription.length >= 36 && tokenSimilarity(description, existingDescription) >= 0.72;
+}
+
+function tokenSimilarity(left: string, right: string) {
+  const leftTokens = new Set(left.split(" ").filter((token) => token.length > 2));
+  const rightTokens = new Set(right.split(" ").filter((token) => token.length > 2));
+  if (!leftTokens.size || !rightTokens.size) return 0;
+
+  const shared = [...leftTokens].filter((token) => rightTokens.has(token)).length;
+  return shared / (leftTokens.size + rightTokens.size - shared);
+}
+
+function isDvidsItem(item: NewsFeedItem) {
+  return Boolean(item.source?.toLowerCase().includes("dvids") || item.link.toLowerCase().includes("dvidshub.net"));
 }
 
 function includesTerm(value: string, term: string) {
