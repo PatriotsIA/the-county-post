@@ -565,11 +565,12 @@ function matchesLocality(contentHaystack: string, fullHaystack: string, locality
 }
 
 function dedupeTitles(items: NewsFeedItem[]) {
-  const accepted: Array<{ title: string; item: NewsFeedItem }> = [];
+  const accepted: Array<{ title: string; image: string; item: NewsFeedItem }> = [];
   return items.filter((item) => {
     const title = normalizeDuplicateTitle(item.title, item.source);
-    if (!title || accepted.some((existing) => isNearDuplicate(item, title, existing.item, existing.title))) return false;
-    accepted.push({ title, item });
+    const image = normalizeImageKey(item.imageUrl);
+    if (!title || accepted.some((existing) => (image && existing.image === image) || isNearDuplicate(item, title, existing.item, existing.title))) return false;
+    accepted.push({ title, image, item });
     return true;
   });
 }
@@ -577,12 +578,14 @@ function dedupeTitles(items: NewsFeedItem[]) {
 function normalizeDuplicateTitle(value: string, source?: string) {
   const sourceSuffix = source ? ` - ${source}`.toLowerCase() : "";
   const withoutSource = sourceSuffix && value.toLowerCase().endsWith(sourceSuffix) ? value.slice(0, -sourceSuffix.length) : value;
-  return withoutSource.toLowerCase().replace(/[’']/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+  const headline = withoutSource.split(/\s[-–—]\s/)[0] || withoutSource;
+  return headline.toLowerCase().replace(/[’']/g, "").replace(/[^a-z0-9]+/g, " ").trim();
 }
 
 function isNearDuplicate(item: NewsFeedItem, title: string, existingItem: NewsFeedItem, existingTitle: string) {
   if (title === existingTitle || title.includes(existingTitle) || existingTitle.includes(title)) return true;
   if (tokenSimilarity(title, existingTitle) >= 0.82) return true;
+  if (samePublisher(item, existingItem) && sharesEventContext(title, existingTitle)) return true;
 
   if (!isDvidsItem(item) || !isDvidsItem(existingItem)) return false;
   const description = normalizeDuplicateTitle(item.description || "");
@@ -599,8 +602,48 @@ function tokenSimilarity(left: string, right: string) {
   return shared / (leftTokens.size + rightTokens.size - shared);
 }
 
+function sharesEventContext(left: string, right: string) {
+  const leftTokens = new Set(left.split(" ").map(stemToken).filter((token) => token.length > 2));
+  const rightTokens = new Set(right.split(" ").map(stemToken).filter((token) => token.length > 2));
+  const shared = [...leftTokens].filter((token) => rightTokens.has(token));
+  return shared.length >= 3 && shared.some((token) => !genericStoryTokens.has(token));
+}
+
+function stemToken(token: string) {
+  if (token.startsWith("escape")) return "escape";
+  return token.replace(/(ing|ed|es|s)$/u, "");
+}
+
+const genericStoryTokens = new Set(["county", "local", "news", "official", "officials", "report", "update", "today"]);
+
+function samePublisher(left: NewsFeedItem, right: NewsFeedItem) {
+  const leftPublisher = publisherKey(left.source);
+  const rightPublisher = publisherKey(right.source);
+  return Boolean(leftPublisher && leftPublisher === rightPublisher);
+}
+
+function publisherKey(value?: string) {
+  return (value || "")
+    .toLowerCase()
+    .replace(/\b(the|north|south|east|west|northeast|northwest|southeast|southwest)\b/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
 function isDvidsItem(item: NewsFeedItem) {
   return Boolean(item.source?.toLowerCase().includes("dvids") || item.link.toLowerCase().includes("dvidshub.net"));
+}
+
+function normalizeImageKey(value?: string) {
+  if (!value) return "";
+  try {
+    const url = new URL(value);
+    url.search = "";
+    url.hash = "";
+    return url.toString();
+  } catch {
+    return value.toLowerCase().replace(/\s+/g, "");
+  }
 }
 
 function includesTerm(value: string, term: string) {
