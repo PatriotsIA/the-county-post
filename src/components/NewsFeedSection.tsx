@@ -271,7 +271,7 @@ export function NewsFeedSection({
               </a>
             ) : (
               <article key={entry.item.id} className="feed-card">
-                <ArticleMedia item={entry.item} />
+                <ArticleMedia item={entry.item} locality={locality} />
                 <div className="feed-card-body">
                   <a href={entry.item.link} target="_blank" rel="noreferrer" className="feed-title">
                     {entry.item.title}
@@ -355,7 +355,7 @@ function FeedSponsor({ kind, sponsorId }: { kind: FeedKind; sponsorId?: string }
   );
 }
 
-function ArticleMedia({ item }: { item: NewsFeedItem }) {
+function ArticleMedia({ item, locality }: { item: NewsFeedItem; locality?: LocalityScope }) {
   const [imageAvailable, setImageAvailable] = useState(Boolean(item.imageUrl));
 
   useEffect(() => {
@@ -363,9 +363,10 @@ function ArticleMedia({ item }: { item: NewsFeedItem }) {
   }, [item.imageUrl]);
 
   if (!imageAvailable || !item.imageUrl) {
+    const label = fallbackThumbnailLabel(locality);
     return (
-      <div className="feed-source-mark" aria-label={`Publication: ${publicationName(item)}`}>
-        {publicationName(item)}
+      <div className="feed-source-mark" aria-label={label}>
+        {label}
       </div>
     );
   }
@@ -383,10 +384,10 @@ function ArticleMedia({ item }: { item: NewsFeedItem }) {
   );
 }
 
-function publicationName(item: NewsFeedItem) {
-  if (item.source?.trim()) return item.source.trim().replace(/\s+\|\s*$/, "");
-  const titleSource = item.title.match(/\s[-–—]\s([^-–—]+)$/)?.[1]?.trim();
-  return titleSource || "News source";
+function fallbackThumbnailLabel(locality?: LocalityScope) {
+  if (locality?.countyName) return `${locality.countyName} County News`;
+  if (locality?.stateName) return `${locality.stateName} News`;
+  return "County Post News";
 }
 
 async function loadFallbackItems(requestedCount: number, fallbackFeedUrls: string[]) {
