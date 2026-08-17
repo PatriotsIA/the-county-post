@@ -7,6 +7,7 @@ import { HardAssetsFeed } from "./components/HardAssetsFeed";
 import { NewsFeedSection } from "./components/NewsFeedSection";
 import { CountyEconomicData, CountyEconomicSnapshot } from "./components/CountyEconomicData";
 import { CountyDataSnapshot } from "./components/CountyDataSnapshot";
+import { CountyShowUpMeter } from "./components/CountyShowUpMeter";
 import { TopTicker } from "./components/TopTicker";
 import { ads } from "./data/ads";
 import { getCounty, getCountiesForState, getCountyMarketCities, getCountyMarketCity, searchCounties } from "./data/counties";
@@ -1013,6 +1014,7 @@ function CountyPage() {
         </div>
       </section>
 
+      <CountyShowUpMeter county={county} />
       <CountyDataSnapshot county={county} />
 
       <NewsFeedSection
