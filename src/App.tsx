@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { Link, Navigate, NavLink, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
 import { SubmissionForm } from "./components/SubmissionForm";
 import { ClassifiedSubmissionForm } from "./components/ClassifiedSubmissionForm";
@@ -6,16 +6,25 @@ import { AdSlot } from "./components/AdSlot";
 import { HardAssetsFeed } from "./components/HardAssetsFeed";
 import { NewsFeedSection } from "./components/NewsFeedSection";
 import { CountyEconomicData, CountyEconomicSnapshot } from "./components/CountyEconomicData";
+import { CountyDataSnapshot } from "./components/CountyDataSnapshot";
 import { TopTicker } from "./components/TopTicker";
 import { ads } from "./data/ads";
 import { getCounty, getCountiesForState, getCountyMarketCities, getCountyMarketCity, searchCounties } from "./data/counties";
 import { site } from "./data/site";
 import { getStateBySlug, searchStates, states } from "./data/states";
 import { buildCountyFallbackFeedUrls, buildNationalFallbackFeedUrls, buildStateFallbackFeedUrls } from "./lib/fallback-feed-urls";
+import { countyAtlasDomains, type CountyAtlasDomain } from "./lib/county-atlas-api";
 import { fetchNewsApiPage, isNewsApiConfigured, type NewsFeedItem, type Topic } from "./lib/news-api";
 import countyPostFinalLogo from "../county-post-final-logo.png";
 import countyPostLogo from "../county-post-square-logo.png";
 import "./index.css";
+
+const LazyCountyDataAtlasHub = lazy(() =>
+  import("./components/CountyDataAtlas").then((module) => ({ default: module.CountyDataAtlasHub })),
+);
+const LazyCountyAtlasDomainPage = lazy(() =>
+  import("./components/CountyDataAtlas").then((module) => ({ default: module.CountyAtlasDomainPage })),
+);
 
 type TopicFeedKind = Topic;
 type SubjectPageBase = { kind: TopicFeedKind; slug: string; title: string; kicker: string; description: string };
@@ -360,6 +369,8 @@ function App() {
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/:stateSlug/:countySlug" element={<CountyPage />} />
+          <Route path="/:stateSlug/:countySlug/data" element={<CountyDataAtlasPage />} />
+          <Route path="/:stateSlug/:countySlug/data/:domain" element={<CountyDataAtlasDomainRoute />} />
           <Route path="/:stateSlug/:countySlug/economic-data" element={<CountyEconomicDataPage />} />
           <Route path="/:stateSlug/:countySlug/op-eds" element={<CountyOpEdPage />} />
           <Route path="/:stateSlug/:countySlug/submit" element={<CountySubmitPage />} />
@@ -425,6 +436,7 @@ function contextLinks(county?: NonNullable<ReturnType<typeof getCounty>>, state?
     const base = `/${county.state.slug}/${county.slug}`;
     return [
       { to: base, label: "County Home", end: true },
+      { to: `${base}/data`, label: "County Data" },
       { to: `${base}/economic-data`, label: "Economic Data" },
       ...subjectGroups.map((group) => ({ to: `${base}/${group.slug}`, label: group.title })),
       { to: `${base}/op-eds`, label: "County Op-Eds" },
@@ -916,6 +928,41 @@ function CountyEconomicDataPage() {
   return <CountyEconomicData county={county} />;
 }
 
+function CountyDataAtlasPage() {
+  const { stateSlug, countySlug } = useParams<{ stateSlug: string; countySlug: string }>();
+  const county = getCounty(stateSlug, countySlug);
+  if (!county) return <NotFound />;
+  return (
+    <Suspense fallback={<AtlasRouteLoading />}>
+      <LazyCountyDataAtlasHub county={county} />
+    </Suspense>
+  );
+}
+
+function CountyDataAtlasDomainRoute() {
+  const { stateSlug, countySlug, domain } = useParams<{
+    stateSlug: string;
+    countySlug: string;
+    domain: string;
+  }>();
+  const county = getCounty(stateSlug, countySlug);
+  if (!county || !isCountyAtlasDomain(domain)) return <NotFound />;
+  return (
+    <Suspense fallback={<AtlasRouteLoading />}>
+      <LazyCountyAtlasDomainPage county={county} domain={domain} />
+    </Suspense>
+  );
+}
+
+function AtlasRouteLoading() {
+  return (
+    <section className="card atlas-status" aria-live="polite">
+      <p className="kicker">County Data Atlas</p>
+      <h1>Opening the county data desk…</h1>
+    </section>
+  );
+}
+
 function CountyPage() {
   const { stateSlug, countySlug } = useParams<{ stateSlug: string; countySlug: string }>();
   const county = getCounty(stateSlug, countySlug);
@@ -966,7 +1013,7 @@ function CountyPage() {
         </div>
       </section>
 
-      <CountyEconomicSnapshot county={county} />
+      <CountyDataSnapshot county={county} />
 
       <NewsFeedSection
         title="Local headlines"
@@ -1001,6 +1048,7 @@ function CountyPage() {
         pageSize={12}
         kind="politics"
         locality={locality}
+        actionLink={{ to: `/${county.state.slug}/${county.slug}/data/civic-elections`, label: "View county civic data" }}
         loadEnabled={countyBackgroundLoader.isEnabled(1)}
         onLoadSettled={() => countyBackgroundLoader.markSettled(1)}
       />
@@ -1013,7 +1061,7 @@ function CountyPage() {
         pageSize={12}
         kind="economy"
         locality={locality}
-        actionLink={{ to: `/${county.state.slug}/${county.slug}/economic-data`, label: "View county economic data" }}
+        actionLink={{ to: `/${county.state.slug}/${county.slug}/data/economy`, label: "View county economic data" }}
         loadEnabled={countyBackgroundLoader.isEnabled(2)}
         onLoadSettled={() => countyBackgroundLoader.markSettled(2)}
       />
@@ -1026,6 +1074,7 @@ function CountyPage() {
         pageSize={12}
         kind="crime"
         locality={locality}
+        actionLink={{ to: `/${county.state.slug}/${county.slug}/data/public-safety`, label: "View county safety data" }}
         loadEnabled={countyBackgroundLoader.isEnabled(3)}
         onLoadSettled={() => countyBackgroundLoader.markSettled(3)}
       />
@@ -1141,6 +1190,14 @@ function CountySubjectPage() {
           cities: localCities,
           strict: true,
         }}
+        actionLink={
+          atlasDomainForTopic(subject.kind)
+            ? {
+                to: `/${county.state.slug}/${county.slug}/data/${atlasDomainForTopic(subject.kind)}`,
+                label: `View related county data`,
+              }
+            : undefined
+        }
       />
     </div>
   );
@@ -1162,6 +1219,14 @@ function CountySubjectGroupPage({ county, group }: { county: NonNullable<ReturnT
         </h1>
         <p className="lead">{group.description}</p>
       </section>
+      {atlasDomainForGroup(group.slug) ? (
+        <aside className="atlas-desk-link">
+          <span>Reporting context</span>
+          <Link to={`/${county.state.slug}/${county.slug}/data/${atlasDomainForGroup(group.slug)}`}>
+            Open related county data
+          </Link>
+        </aside>
+      ) : null}
       {group.slug === "economy-markets" ? <CountyEconomicSnapshot county={county} /> : null}
       {group.slug === "economy-markets" ? <HardAssetsFeed /> : null}
       {group.subjects.map((subject, index) => (
@@ -1315,6 +1380,36 @@ function getSubjectPage(subjectSlug?: string) {
 
 function getSubjectGroup(subjectSlug?: string) {
   return subjectGroups.find((group) => group.slug === subjectSlug);
+}
+
+function isCountyAtlasDomain(value?: string): value is CountyAtlasDomain {
+  return Boolean(value && (countyAtlasDomains as readonly string[]).includes(value));
+}
+
+function atlasDomainForTopic(topic: TopicFeedKind): CountyAtlasDomain | undefined {
+  const domainByTopic: Partial<Record<TopicFeedKind, CountyAtlasDomain>> = {
+    economy: "economy",
+    "monetary-policy": "economy",
+    "markets-investing": "economy",
+    "jobs-business": "jobs-business",
+    crime: "public-safety",
+    politics: "civic-elections",
+    "voting-systems": "civic-elections",
+    "election-administration": "civic-elections",
+    "audits-recounts": "civic-elections",
+    "open-records": "civic-elections",
+    "property-taxes": "government-finance",
+    "municipal-bonds": "government-finance",
+    "budgets-levies": "government-finance",
+  };
+  return domainByTopic[topic];
+}
+
+function atlasDomainForGroup(groupSlug: string): CountyAtlasDomain | undefined {
+  if (groupSlug === "economy-markets") return "economy";
+  if (groupSlug === "taxes-public-finance") return "government-finance";
+  if (groupSlug === "elections-transparency") return "civic-elections";
+  return undefined;
 }
 
 function AboutPage() {

@@ -11,6 +11,7 @@
 2) On API error or CORS failure, the client backs off API calls for 5 minutes and switches to RSS fallback feeds.
 3) RSS feeds are fetched through rss2json (or a configured proxy) and cached on the client for 5 minutes per feed URL.
 4) The UI labels the active source per section: “County News API” or “Fallback RSS”.
+5) County atlas pages request a compact county overview or one domain document from the same News API. Atlas requests are cached and deduplicated in the browser; chart code is loaded only on detail pages.
 
 ## API Surfaces
 - Health: `GET /health` on the Lambda base URL.
@@ -19,6 +20,21 @@
   - State: `GET /v1/feeds/states/{stateSlug}/{topic}`
   - County: `GET /v1/feeds/counties/{stateSlug}/{countySlug}/{topic}`
 - Page bundles (prefetch multiple sections): `GET /v1/pages/{national|states/{stateSlug}|counties/{stateSlug}/{countySlug}}`
+- County Data Atlas:
+  - Overview: `GET /v1/counties/{stateSlug}/{countySlug}/atlas`
+  - Domain: `GET /v1/counties/{stateSlug}/{countySlug}/atlas/{domain}`
+
+## County Data Atlas
+- Frontend routes:
+  - `/{stateSlug}/{countySlug}/data` — cross-domain hub
+  - `/{stateSlug}/{countySlug}/data/{domain}` — domain measures, visualizations, citations, and downloads
+- The overview payload contains domain availability, featured metrics, warnings, sources, generation/retrieval timestamps, and a `partial` flag. Domain documents add full metrics with observations, state/national benchmarks, distributions, suppression metadata, coverage, vintages, and provenance.
+- Values are displayed exactly as supplied by the API. Missing and disclosure-suppressed observations remain unavailable rather than becoming zero.
+- Every metric shows its latest date or vintage and official source. Modeled estimates, preliminary releases, margins of error, geography vintages, and incomplete coverage stay visible near the value.
+- Trend, comparison, distribution, and composition graphics are secondary to an accessible text summary and table. The `recharts` bundle is split from news and county-home code.
+- Domain pages expose the returned document as JSON and a flat metric CSV where data exists. Source URLs remain official external links.
+- The current browser cache follows the API `cacheTtlSeconds` value (capped at 24 hours), shares in-flight requests, and lets individual views abort their wait without cancelling a shared request.
+- The legacy `/{stateSlug}/{countySlug}/economic-data` FRED route remains active. It is not redirected until the atlas economy endpoint can preserve the live FRED series behavior.
 
 ## Frontend Behavior (News Loading)
 - Prefers API when configured; uses fallback RSS otherwise.
@@ -33,6 +49,8 @@
 - `VITE_RSS_PROVIDER_URL` — Optional RSS-to-JSON endpoint override (defaults to rss2json.com).
 - `VITE_RSS_RAW_PROXY_URL` — Optional CORS proxy for raw RSS.
 - `VITE_EMAILJS_SERVICE_ID`, `VITE_EMAILJS_TEMPLATE_ID`, `VITE_EMAILJS_PUBLIC_KEY` — Submission form delivery.
+
+The atlas introduces no browser credential or additional environment variable. Official-source keys and ingestion credentials stay behind the News API; the browser uses only `VITE_NEWS_API_URL`.
 
 ## Deployment (Amplify)
 1) Set the env vars above in Amplify. Vite inlines them at build time—rebuild is required after changes.

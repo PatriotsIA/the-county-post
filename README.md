@@ -1,6 +1,6 @@
 # The County Post
 
-An old-timey, black-and-white county news desk. Every U.S. county gets a page with live headlines, market and crypto tickers, local county weather, and a reader submission form powered by EmailJS.
+An old-timey, black-and-white county news desk. Every U.S. county gets live headlines, market and weather context, a sourced County Data Atlas, and a reader submission form powered by EmailJS.
 
 ## Getting Started
 
@@ -84,6 +84,8 @@ The `SubmissionForm` component posts to EmailJS using the three `VITE_EMAILJS_*`
 - `/states/:stateSlug/:subjectSlug` state subject pages, including `op-eds`
 - `/states/:stateSlug/submit` state submit op-eds/stories page
 - `/:stateSlug/:countySlug` county news page with feeds and submission form
+- `/:stateSlug/:countySlug/data` County Data Atlas hub with compact cross-domain measures and coverage status
+- `/:stateSlug/:countySlug/data/:domain` atlas domain detail with trends, comparisons, compositions, citations, vintages, and downloads
 - `/:stateSlug/:countySlug/economic-data` county FRED economic profile with unemployment, income, and GDP history
 - `/:stateSlug/:countySlug/op-eds` county opinion page
 - `/:stateSlug/:countySlug/:subjectSlug` county editorial desk and subcategory pages using the same slugs
@@ -91,7 +93,11 @@ The `SubmissionForm` component posts to EmailJS using the three `VITE_EMAILJS_*`
 
 The contextual navigation bar appears below the masthead and links to the active national, state, or county section pages.
 
-County home pages load a compact economic snapshot from the News API. The dedicated economic-data route expands those FRED observations into recent trend cards and links each indicator to its source series. The FRED key remains server-side; the frontend uses only `VITE_NEWS_API_URL`.
+County home pages load a compact, cross-domain atlas snapshot from the News API. The data hub calls `GET /v1/counties/:stateSlug/:countySlug/atlas`; domain routes call the matching `/atlas/:domain` endpoint and lazy-load chart code. The UI preserves source links, metric vintages, modeled/preliminary flags, margins of error, coverage notices, suppression reasons, and partial-release warnings. Missing values are never rendered as zero.
+
+Atlas domains are `demographics`, `economy`, `housing`, `jobs-business`, `education`, `health`, `civic-elections`, `public-safety`, `agriculture`, `environment-disasters`, `government-finance`, and `infrastructure`. Domain pages provide CSV and JSON downloads when measures are available, and every chart includes a text summary and data table.
+
+The existing `/economic-data` route remains available for the live FRED profile and source-series links. FRED and official-source credentials remain server-side: the atlas adds no frontend secret and uses only the existing `VITE_NEWS_API_URL`.
 Legacy `sound-money`, `paper-elections`, and `bond-issues` links redirect to their replacement desk pages.
 
 ## Deployment Notes

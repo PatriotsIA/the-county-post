@@ -151,8 +151,14 @@ function EconomicMetricCard({ metric }: { metric: CountyEconomicMetric }) {
       ) : null}
       <TrendLine observations={metric.observations} label={`${metric.label} recent trend`} />
       <p className="economic-metric-description">{metric.description}</p>
-      <a className="economic-series-link" href={metric.seriesUrl} target="_blank" rel="noreferrer">
-        FRED series {metric.seriesId} ↗
+      <a
+        className="economic-history-button"
+        href={metric.seriesUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`${metric.label}: See Historical Data on FRED (opens in a new tab)`}
+      >
+        See Historical Data
       </a>
     </article>
   );
