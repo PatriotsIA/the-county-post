@@ -61,6 +61,70 @@ test.beforeEach(async ({ page }) => {
       }),
     });
   });
+
+  await page.route("http://localhost:8787/v1/counties/**/economic-data", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        county: {
+          name: "Polk",
+          displayName: "Polk County",
+          slug: "polk",
+          fips: "05113",
+          stateName: "Arkansas",
+          stateSlug: "arkansas",
+          stateAbbr: "AR",
+        },
+        metrics: [
+          {
+            key: "unemployment-rate",
+            label: "Unemployment rate",
+            description: "Annual share of the county labor force that was unemployed.",
+            seriesId: "LAUCN051130000000003A",
+            seriesUrl: "https://fred.stlouisfed.org/series/LAUCN051130000000003A",
+            units: "Percent",
+            frequency: "Annual",
+            valueKind: "percent",
+            source: "U.S. Bureau of Labor Statistics",
+            latest: { date: "2025-01-01", value: 4.5 },
+            previous: { date: "2024-01-01", value: 4.2 },
+            change: { absolute: 0.3, percent: 7.14 },
+            observations: [
+              { date: "2024-01-01", value: 4.2 },
+              { date: "2025-01-01", value: 4.5 },
+            ],
+          },
+          {
+            key: "median-household-income",
+            label: "Median household income",
+            description: "Estimated annual household income.",
+            seriesId: "MHIAR05113A052NCEN",
+            seriesUrl: "https://fred.stlouisfed.org/series/MHIAR05113A052NCEN",
+            units: "Dollars",
+            frequency: "Annual",
+            valueKind: "currency",
+            source: "U.S. Census Bureau",
+            latest: { date: "2024-01-01", value: 47544 },
+            previous: { date: "2023-01-01", value: 45100 },
+            change: { absolute: 2444, percent: 5.42 },
+            observations: [
+              { date: "2023-01-01", value: 45100 },
+              { date: "2024-01-01", value: 47544 },
+            ],
+          },
+        ],
+        meta: {
+          source: "FRED",
+          sourceName: "Federal Reserve Bank of St. Louis",
+          sourceUrl: "https://fred.stlouisfed.org/",
+          fetchedAt: "2026-08-17T12:00:00.000Z",
+          latestObservationDate: "2025-01-01",
+          cacheTtlSeconds: 21600,
+        },
+      }),
+    });
+  });
 });
 
 function topicForSection(section: string) {
@@ -105,10 +169,23 @@ function makeRouteItems({
       });
 }
 
+test("county pages link to a dedicated FRED economic data profile", async ({ page }) => {
+  await page.goto("/arkansas/polk");
+
+  await expect(page.getByRole("heading", { name: "Polk County economic snapshot" })).toBeVisible();
+  await expect(page.getByText("4.5%")).toBeVisible();
+  await page.getByRole("link", { name: "View full economic data" }).click();
+
+  await expect(page).toHaveURL(/\/arkansas\/polk\/economic-data$/);
+  await expect(page.getByRole("heading", { name: /Polk County Economic Data/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Unemployment rate" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Median household income" })).toBeVisible();
+});
+
 test("county feeds merge nearby-market stories, sort newest first, filter sections, and load more on scroll", async ({ page }) => {
   await page.goto("/texas/randall");
 
-  await expect(page.getByRole("heading", { name: /Randall County/i })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: /Randall County/i })).toBeVisible();
   await expect(page.getByText("Amarillo, TX")).toBeVisible();
 
   const localSection = page.locator("section", { has: page.getByRole("heading", { name: "Local headlines" }) });
@@ -146,7 +223,7 @@ test("state pages populate state headlines from broad in-state feeds", async ({ 
 test("rural counties expand to nearby hubs while keeping county matches first", async ({ page }) => {
   await page.goto("/texas/briscoe");
 
-  await expect(page.getByRole("heading", { name: /Briscoe County/i })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: /Briscoe County/i })).toBeVisible();
   await expect(page.getByText("Amarillo, TX")).toBeVisible();
   await expect(page.getByText(/expands to nearby markets including Amarillo and Lubbock/i).first()).toBeVisible();
   await expect(page.getByText(/Houston Daily Test/)).toHaveCount(0);

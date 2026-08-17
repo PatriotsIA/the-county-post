@@ -5,6 +5,7 @@ import { ClassifiedSubmissionForm } from "./components/ClassifiedSubmissionForm"
 import { AdSlot } from "./components/AdSlot";
 import { HardAssetsFeed } from "./components/HardAssetsFeed";
 import { NewsFeedSection } from "./components/NewsFeedSection";
+import { CountyEconomicData, CountyEconomicSnapshot } from "./components/CountyEconomicData";
 import { TopTicker } from "./components/TopTicker";
 import { ads } from "./data/ads";
 import { getCounty, getCountiesForState, getCountyMarketCities, getCountyMarketCity, searchCounties } from "./data/counties";
@@ -359,6 +360,7 @@ function App() {
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/:stateSlug/:countySlug" element={<CountyPage />} />
+          <Route path="/:stateSlug/:countySlug/economic-data" element={<CountyEconomicDataPage />} />
           <Route path="/:stateSlug/:countySlug/op-eds" element={<CountyOpEdPage />} />
           <Route path="/:stateSlug/:countySlug/submit" element={<CountySubmitPage />} />
           <Route path="/:stateSlug/:countySlug/classifieds" element={<CountyClassifiedsPage />} />
@@ -423,6 +425,7 @@ function contextLinks(county?: NonNullable<ReturnType<typeof getCounty>>, state?
     const base = `/${county.state.slug}/${county.slug}`;
     return [
       { to: base, label: "County Home", end: true },
+      { to: `${base}/economic-data`, label: "Economic Data" },
       ...subjectGroups.map((group) => ({ to: `${base}/${group.slug}`, label: group.title })),
       { to: `${base}/op-eds`, label: "County Op-Eds" },
       { to: `${base}/classifieds`, label: "Classifieds" },
@@ -906,6 +909,13 @@ function StateSubjectGroupPage({ state, group }: { state: NonNullable<ReturnType
   );
 }
 
+function CountyEconomicDataPage() {
+  const { stateSlug, countySlug } = useParams<{ stateSlug: string; countySlug: string }>();
+  const county = getCounty(stateSlug, countySlug);
+  if (!county) return <NotFound />;
+  return <CountyEconomicData county={county} />;
+}
+
 function CountyPage() {
   const { stateSlug, countySlug } = useParams<{ stateSlug: string; countySlug: string }>();
   const county = getCounty(stateSlug, countySlug);
@@ -956,6 +966,8 @@ function CountyPage() {
         </div>
       </section>
 
+      <CountyEconomicSnapshot county={county} />
+
       <NewsFeedSection
         title="Local headlines"
         kicker="County desk"
@@ -1001,6 +1013,7 @@ function CountyPage() {
         pageSize={12}
         kind="economy"
         locality={locality}
+        actionLink={{ to: `/${county.state.slug}/${county.slug}/economic-data`, label: "View county economic data" }}
         loadEnabled={countyBackgroundLoader.isEnabled(2)}
         onLoadSettled={() => countyBackgroundLoader.markSettled(2)}
       />
@@ -1149,6 +1162,7 @@ function CountySubjectGroupPage({ county, group }: { county: NonNullable<ReturnT
         </h1>
         <p className="lead">{group.description}</p>
       </section>
+      {group.slug === "economy-markets" ? <CountyEconomicSnapshot county={county} /> : null}
       {group.slug === "economy-markets" ? <HardAssetsFeed /> : null}
       {group.subjects.map((subject, index) => (
         <NewsFeedSection

@@ -1473,6 +1473,190 @@ button:disabled {
   object-fit: contain;
 }
 
+.county-economic-snapshot {
+  border-top: 5px solid var(--news-blue);
+}
+
+.economic-snapshot-heading,
+.economic-metric-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.economic-snapshot-heading h2,
+.economic-metric-heading h3 {
+  margin: 0;
+}
+
+.economic-snapshot-heading .section-action {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.economic-snapshot-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.economic-snapshot-grid article {
+  border: 1px solid var(--border);
+  padding: 14px;
+  background: var(--panel-soft);
+}
+
+.economic-snapshot-value,
+.economic-metric-value {
+  margin: 5px 0 0;
+  font-family: "Roboto Mono", monospace;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.economic-snapshot-value {
+  font-size: clamp(20px, 3vw, 30px);
+}
+
+.economic-snapshot-date,
+.economic-source-note {
+  color: var(--muted);
+  font-family: "Roboto Mono", monospace;
+  font-size: 10px;
+}
+
+.economic-snapshot-date {
+  margin: 7px 0 0;
+}
+
+.economic-source-note {
+  margin: 12px 0 0;
+}
+
+.economic-data-hero {
+  border-top: 6px solid var(--news-blue);
+}
+
+.economic-data-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 18px;
+  margin-top: 14px;
+  color: var(--muted);
+  font-family: "Roboto Mono", monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.economic-data-meta a,
+.economic-methodology a {
+  color: var(--news-blue);
+  font-weight: 700;
+}
+
+.economic-data-status {
+  text-align: center;
+}
+
+.economic-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.economic-metric-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  padding: 16px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(235, 235, 232, 0.9)),
+    var(--panel-soft);
+}
+
+.economic-metric-heading h3 {
+  font-size: 22px;
+  line-height: 1.25;
+}
+
+.economic-metric-year {
+  border: 1px solid var(--border);
+  padding: 3px 6px;
+  background: var(--ink);
+  color: var(--white);
+  font-family: "Roboto Mono", monospace;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.economic-metric-value {
+  font-size: clamp(30px, 5vw, 46px);
+}
+
+.economic-metric-change {
+  margin: 4px 0 12px;
+  color: var(--muted);
+  font-family: "Roboto Mono", monospace;
+  font-size: 11px;
+}
+
+.economic-trend {
+  margin: 4px 0 12px;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  padding: 8px 0 4px;
+}
+
+.economic-trend svg {
+  display: block;
+  width: 100%;
+  height: 84px;
+}
+
+.economic-trend line {
+  stroke: #b5b5b1;
+  stroke-width: 1;
+}
+
+.economic-trend polyline {
+  fill: none;
+  stroke: var(--news-blue);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
+}
+
+.economic-trend-years {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-family: "Roboto Mono", monospace;
+  font-size: 9px;
+}
+
+.economic-metric-description {
+  flex: 1;
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.economic-series-link {
+  color: var(--news-blue);
+  font-family: "Roboto Mono", monospace;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.economic-methodology ul {
+  margin: 0;
+  padding-left: 22px;
+}
+
 .button-link {
   display: inline-block;
   margin-top: 10px;
@@ -1523,6 +1707,23 @@ button:disabled {
 @media (max-width: 720px) {
   :root {
     --ticker-height: 32px;
+  }
+
+  .economic-snapshot-heading {
+    display: grid;
+  }
+
+  .economic-snapshot-heading .section-action {
+    width: 100%;
+    text-align: center;
+  }
+
+  .economic-snapshot-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .economic-metric-grid {
+    grid-template-columns: 1fr;
   }
 
   .masthead {

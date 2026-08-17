@@ -84,11 +84,14 @@ The `SubmissionForm` component posts to EmailJS using the three `VITE_EMAILJS_*`
 - `/states/:stateSlug/:subjectSlug` state subject pages, including `op-eds`
 - `/states/:stateSlug/submit` state submit op-eds/stories page
 - `/:stateSlug/:countySlug` county news page with feeds and submission form
+- `/:stateSlug/:countySlug/economic-data` county FRED economic profile with unemployment, income, and GDP history
 - `/:stateSlug/:countySlug/op-eds` county opinion page
 - `/:stateSlug/:countySlug/:subjectSlug` county editorial desk and subcategory pages using the same slugs
 - `/:stateSlug/:countySlug/submit` county submit op-eds/stories page
 
 The contextual navigation bar appears below the masthead and links to the active national, state, or county section pages.
+
+County home pages load a compact economic snapshot from the News API. The dedicated economic-data route expands those FRED observations into recent trend cards and links each indicator to its source series. The FRED key remains server-side; the frontend uses only `VITE_NEWS_API_URL`.
 Legacy `sound-money`, `paper-elections`, and `bond-issues` links redirect to their replacement desk pages.
 
 ## Deployment Notes
