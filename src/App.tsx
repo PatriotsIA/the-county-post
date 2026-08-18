@@ -1014,8 +1014,8 @@ function CountyPage() {
         </div>
       </section>
 
-      <CountyShowUpMeter county={county} />
       <CountyDataSnapshot county={county} />
+      <CountyShowUpMeter county={county} />
 
       <NewsFeedSection
         title="Local headlines"
@@ -1221,6 +1221,7 @@ function CountySubjectGroupPage({ county, group }: { county: NonNullable<ReturnT
         </h1>
         <p className="lead">{group.description}</p>
       </section>
+      {group.slug === "elections-transparency" ? <CountyShowUpMeter county={county} /> : null}
       {atlasDomainForGroup(group.slug) ? (
         <aside className="atlas-desk-link">
           <span>Reporting context</span>

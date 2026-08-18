@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import type { CountySite } from "../data/counties";
+import { CountyShowUpMeter } from "./CountyShowUpMeter";
 import {
   countyAtlasDomains,
   fetchCountyAtlasDomain,
@@ -55,6 +56,7 @@ export function CountyDataAtlasHub({ county }: { county: CountySite }) {
         description="A concise, sourced view of county people, economy, housing, public life, health, safety, land, government, and infrastructure."
         meta={data?.meta}
       />
+      <CountyShowUpMeter county={county} />
       <AtlasDomainNav county={county} />
 
       {state.status === "loading" ? (
@@ -143,6 +145,7 @@ export function CountyAtlasDomainPage({
         description={data?.domain.description || "County measures with provenance, vintages, coverage notes, and comparisons."}
         meta={data?.meta}
       />
+      {domain === "civic-elections" ? <CountyShowUpMeter county={county} /> : null}
       <AtlasDomainNav county={county} />
 
       {state.status === "loading" ? (

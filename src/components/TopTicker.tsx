@@ -22,6 +22,19 @@ type WeatherResponse = {
 };
 
 const itmTradingUrl = "https://www.itmtrading.com/";
+const mintedMetalUrl = "https://mintedmetal.com";
+const stockTickerSymbols = [
+  "FOREXCOM:SPXUSD",
+  "FOREXCOM:NSXUSD",
+  "NASDAQ:AAPL",
+  "NASDAQ:MSFT",
+  "NASDAQ:NVDA",
+  "NASDAQ:AMZN",
+  "NASDAQ:GOOGL",
+  "NASDAQ:META",
+  "NASDAQ:TSLA",
+  "NYSE:JNJ",
+].join(",");
 const metalSymbols = {
   gold: "Au",
   silver: "Ag",
@@ -52,27 +65,21 @@ function TradingViewTicker() {
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-
+    let active = true;
     container.textContent = "";
-    if (!document.getElementById("tradingview-tickers-script")) {
-      const script = document.createElement("script");
-      script.id = "tradingview-tickers-script";
-      script.type = "module";
-      script.src = "https://widgets.tradingview-widget.com/w/en/tv-tickers.js";
-      document.head.append(script);
-    }
 
-    const ticker = document.createElement("tv-tickers");
-    ticker.setAttribute(
-      "symbols",
-      "FOREXCOM:SPXUSD,FOREXCOM:NSXUSD,FX:EURUSD,BITSTAMP:BTCUSD,BITSTAMP:ETHUSD,TVC:GOLD,CMCMARKETS:SILVERU2026,SPARKS:BEEF,COINBASE:ETHUSD,FOREXCOM:WHEAT,CAPITALCOM:COTTON,NASDAQ:TSLA,NASDAQ:AAPL",
-    );
-    ticker.setAttribute("hide-chart", "");
-    ticker.setAttribute("item-size", "compact");
-    ticker.setAttribute("show-hover", "");
-    container.append(ticker);
+    void loadTickerTape().then(() => {
+      if (!active) return;
+      const ticker = document.createElement("tv-ticker-tape");
+      ticker.setAttribute("symbols", stockTickerSymbols);
+      ticker.setAttribute("direction", "horizontal");
+      ticker.setAttribute("item-size", "compact");
+      ticker.setAttribute("show-hover", "");
+      container.append(ticker);
+    }).catch(() => undefined);
 
     return () => {
+      active = false;
       container.textContent = "";
     };
   }, []);
@@ -80,8 +87,27 @@ function TradingViewTicker() {
   return <div className="tradingview-widget-container market-ticker-widget" ref={containerRef} />;
 }
 
+function loadTickerTape() {
+  if (customElements.get("tv-ticker-tape")) return Promise.resolve();
+
+  const existing = document.getElementById("tradingview-ticker-tape-script") as HTMLScriptElement | null;
+  if (existing) return customElements.whenDefined("tv-ticker-tape").then(() => undefined);
+
+  return new Promise<void>((resolve, reject) => {
+    const script = document.createElement("script");
+    script.id = "tradingview-ticker-tape-script";
+    script.type = "module";
+    script.src = "https://www.tradingview-widget.com/w/en/tv-ticker-tape.js";
+    script.addEventListener("load", () => {
+      customElements.whenDefined("tv-ticker-tape").then(() => resolve());
+    }, { once: true });
+    script.addEventListener("error", () => reject(new Error("TradingView ticker tape failed to load.")), { once: true });
+    document.head.append(script);
+  });
+}
+
 function PreciousMetalsTicker() {
-  const [quotes, setQuotes] = useState<Awaited<ReturnType<typeof fetchMetalsTicker>>["items"]>();
+  const [ticker, setTicker] = useState<Awaited<ReturnType<typeof fetchMetalsTicker>>>();
   const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
 
   useEffect(() => {
@@ -89,7 +115,7 @@ function PreciousMetalsTicker() {
     const loadQuotes = () => {
       fetchMetalsTicker(controller.signal)
         .then((data) => {
-          setQuotes(data.items);
+          setTicker(data);
           setStatus("loaded");
         })
         .catch(() => {
@@ -98,7 +124,7 @@ function PreciousMetalsTicker() {
     };
 
     loadQuotes();
-    const refresh = window.setInterval(loadQuotes, 60 * 1000);
+    const refresh = window.setInterval(loadQuotes, 15 * 60 * 1000);
 
     return () => {
       controller.abort();
@@ -106,7 +132,7 @@ function PreciousMetalsTicker() {
     };
   }, []);
 
-  const metals = quotes || [
+  const metals = ticker?.items || [
     { key: "gold", label: "Gold" },
     { key: "silver", label: "Silver" },
     { key: "platinum", label: "Platinum" },
@@ -133,10 +159,15 @@ function PreciousMetalsTicker() {
           );
         })}
       </div>
-      <a className="precious-metals-sponsor" href={itmTradingUrl} target="_blank" rel="noreferrer sponsored">
-        <span>Presented by ITM Trading</span>
-        <img src={itmTradingAd} alt="ITM Trading" />
-      </a>
+      <div className="precious-metals-attribution">
+        <a href={ticker?.provider.url || mintedMetalUrl} target="_blank" rel="noreferrer">
+          {ticker?.stale ? "Last verified LBMA benchmark" : `LBMA benchmark via ${ticker?.provider.name || "Minted Metal"}`}
+        </a>
+        <a className="precious-metals-sponsor" href={itmTradingUrl} target="_blank" rel="noreferrer sponsored">
+          <span>Presented by ITM Trading</span>
+          <img src={itmTradingAd} alt="ITM Trading" />
+        </a>
+      </div>
     </aside>
   );
 }

@@ -287,18 +287,32 @@ body::before {
   color: var(--ink);
 }
 
-.precious-metals-sponsor {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+.precious-metals-attribution {
+  display: grid;
+  justify-items: end;
+  gap: 3px;
+}
+
+.precious-metals-attribution > a {
   color: var(--ink);
   white-space: nowrap;
   font-family: "Roboto Mono", monospace;
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-decoration: none;
   text-transform: uppercase;
+}
+
+.precious-metals-sponsor {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px !important;
+}
+
+.precious-metals-attribution > a:hover {
+  color: var(--news-blue);
 }
 
 .precious-metals-sponsor:hover {
@@ -487,6 +501,12 @@ body::before {
   min-width: 0;
   height: var(--ticker-height);
   overflow: hidden;
+}
+
+.market-ticker-widget tv-ticker-tape {
+  display: block;
+  width: 100%;
+  height: var(--ticker-height);
 }
 
 .crypto-ticker-widget {

@@ -2,6 +2,11 @@ type MetalsTickerResponse = {
   currency: string;
   unit: string;
   updatedAt?: string;
+  provider: {
+    name: string;
+    url: string;
+  };
+  stale?: boolean;
   items: Array<{
     key: "gold" | "silver" | "platinum" | "palladium";
     label: string;
