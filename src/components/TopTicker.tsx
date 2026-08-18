@@ -23,18 +23,8 @@ type WeatherResponse = {
 
 const itmTradingUrl = "https://www.itmtrading.com/";
 const mintedMetalUrl = "https://mintedmetal.com";
-const stockTickerSymbols = [
-  "FOREXCOM:SPXUSD",
-  "FOREXCOM:NSXUSD",
-  "NASDAQ:AAPL",
-  "NASDAQ:MSFT",
-  "NASDAQ:NVDA",
-  "NASDAQ:AMZN",
-  "NASDAQ:GOOGL",
-  "NASDAQ:META",
-  "NASDAQ:TSLA",
-  "NYSE:JNJ",
-].join(",");
+const stockTickerSymbols =
+  "FOREXCOM:SPXUSD,FOREXCOM:NSXUSD,FOREXCOM:DJI,FX:EURUSD,BITSTAMP:BTCUSD,BITSTAMP:ETHUSD,CMCMARKETS:GOLD,NASDAQ:NVDA,EASYMARKETS:OILUSD,NASDAQ:AAPL,NASDAQ:AMZN,NASDAQ:MSFT,NASDAQ:META,NASDAQ:AMD,NASDAQ:PLTR,NASDAQ:GOOGL,NASDAQ:NFLX,NYSE:DELL,NYSE:XOM,NYSE:JPM,NYSE:BAC";
 const metalSymbols = {
   gold: "Au",
   silver: "Ag",
@@ -72,9 +62,6 @@ function TradingViewTicker() {
       if (!active) return;
       const ticker = document.createElement("tv-ticker-tape");
       ticker.setAttribute("symbols", stockTickerSymbols);
-      ticker.setAttribute("direction", "horizontal");
-      ticker.setAttribute("item-size", "compact");
-      ticker.setAttribute("show-hover", "");
       container.append(ticker);
     }).catch(() => undefined);
 
@@ -97,7 +84,7 @@ function loadTickerTape() {
     const script = document.createElement("script");
     script.id = "tradingview-ticker-tape-script";
     script.type = "module";
-    script.src = "https://www.tradingview-widget.com/w/en/tv-ticker-tape.js";
+    script.src = "https://widgets.tradingview-widget.com/w/en/tv-ticker-tape.js";
     script.addEventListener("load", () => {
       customElements.whenDefined("tv-ticker-tape").then(() => resolve());
     }, { once: true });

@@ -17,7 +17,8 @@
   --white: #fff;
   --shadow: 0 10px 0 rgba(0, 0, 0, 0.82);
   --soft-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 16px 40px rgba(0, 0, 0, 0.14);
-  --ticker-height: 42px;
+  --ticker-height: 46px;
+  --tradingview-ticker-height: 92px;
   --ticker-speed: 36s;
 
   font-family: "Libre Baskerville", Georgia, "Times New Roman", serif;
@@ -273,6 +274,7 @@ body::before {
 }
 
 .market-weather-bar {
+  min-height: var(--tradingview-ticker-height);
   border-bottom: 1px solid var(--rule);
 }
 
@@ -281,6 +283,9 @@ body::before {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 14px;
+  position: relative;
+  z-index: 1;
+  margin-top: -5px;
   padding: 5px 12px;
   border-bottom: 1px solid var(--rule);
   background: #fff;
@@ -499,14 +504,14 @@ body::before {
 
 .market-ticker-widget {
   min-width: 0;
-  height: var(--ticker-height);
+  height: var(--tradingview-ticker-height);
   overflow: hidden;
 }
 
 .market-ticker-widget tv-ticker-tape {
   display: block;
   width: 100%;
-  height: var(--ticker-height);
+  height: var(--tradingview-ticker-height);
 }
 
 .crypto-ticker-widget {
@@ -1918,7 +1923,7 @@ button:disabled {
   }
 
   .market-weather-bar {
-    min-height: var(--ticker-height);
+    min-height: var(--tradingview-ticker-height);
   }
 
   .hero-card {
@@ -1971,7 +1976,7 @@ button:disabled {
   }
 
   .market-ticker-widget {
-    height: var(--ticker-height);
+    height: var(--tradingview-ticker-height);
   }
 
   .crypto-weather-bar,
