@@ -218,10 +218,32 @@ test("county ticker links current conditions and only shows active alerts", asyn
   await expect(alertStrip).toContainText("Severe weather alert");
   await expect(alertStrip).toContainText("Expires");
   await expect(alertStrip.getByRole("link")).toHaveAttribute("href", "/arkansas/polk/weather");
+  await expect(page.getByRole("alert").filter({ hasText: "Flood Watch" })).toBeVisible();
 
   await page.goto("/texas/briscoe");
   await expect(page.locator(".market-weather-weather-bar")).toContainText("Silverton");
   await expect(page.locator(".county-weather-alert")).toHaveCount(0);
+});
+
+test("Potter County shows drought conditions without mislabeling them as an NWS alert", async ({ page }) => {
+  await page.goto("/texas/potter");
+
+  await expect(page.locator(".county-weather-alert[role='alert']")).toHaveCount(0);
+  const droughtNotice = page.locator(".county-drought-condition");
+  await expect(droughtNotice).toBeVisible();
+  await expect(droughtNotice).toContainText("USDM D3");
+  await expect(droughtNotice).toContainText("Extreme Drought affects 68.5% of Potter County");
+  await expect(droughtNotice.getByRole("link")).toHaveAttribute("href", "/texas/potter/weather");
+
+  await droughtNotice.getByRole("link").click();
+  await expect(page).toHaveURL(/\/texas\/potter\/weather$/);
+  const droughtSection = page.locator(".weather-drought-section");
+  await expect(droughtSection.getByRole("heading", { name: "Drought conditions" })).toBeVisible();
+  await expect(droughtSection).toContainText("100% of the county is in moderate drought or worse");
+  await expect(droughtSection.getByRole("link", { name: "View official county drought conditions" })).toHaveAttribute(
+    "href",
+    "https://www.drought.gov/states/Texas/county/Potter",
+  );
 });
 
 test("county weather page shows alerts, forecasts, hourly data, sources, and stories", async ({ page }) => {
@@ -239,7 +261,9 @@ test("county weather page shows alerts, forecasts, hourly data, sources, and sto
 
   const alerts = page.locator(".weather-alerts-section");
   await expect(alerts.getByRole("heading", { name: "Severe Thunderstorm Warning for Polk County" })).toBeVisible();
-  const officialAlert = alerts.getByRole("link", { name: "Open official NWS alert" });
+  const officialAlert = alerts
+    .locator(".weather-alert-card", { has: page.getByRole("heading", { name: "Severe Thunderstorm Warning for Polk County" }) })
+    .getByRole("link", { name: "Open official NWS alert" });
   await expect(officialAlert).toHaveAttribute("href", "https://api.weather.gov/alerts/test-alert");
   await expect(officialAlert).toHaveAttribute("target", "_blank");
 
@@ -283,7 +307,7 @@ test("county weather remains keyboard usable at 320px", async ({ page }) => {
   await weatherNavigation.focus();
   await expect(weatherNavigation).toBeFocused();
 
-  const alertLink = page.locator(".county-weather-alert").getByRole("link");
+  const alertLink = page.locator(".county-weather-alert").getByRole("link").first();
   await alertLink.focus();
   await expect(alertLink).toBeFocused();
   await expect(alertLink).toContainText("Severe Thunderstorm Warning");
@@ -688,7 +712,8 @@ function makeEconomyMetrics() {
 function makeWeatherResponse(stateSlug: string, countySlug: string) {
   const isArkansas = stateSlug === "arkansas";
   const isBriscoe = countySlug === "briscoe";
-  const countyName = isBriscoe ? "Briscoe" : countySlug === "randall" ? "Randall" : "Polk";
+  const isPotter = countySlug === "potter";
+  const countyName = isBriscoe ? "Briscoe" : isPotter ? "Potter" : countySlug === "randall" ? "Randall" : "Polk";
   const stateName = isArkansas ? "Arkansas" : "Texas";
   const stateAbbr = isArkansas ? "AR" : "TX";
   const city = isBriscoe ? "Silverton" : isArkansas ? "Mena" : "Amarillo";
@@ -729,7 +754,7 @@ function makeWeatherResponse(stateSlug: string, countySlug: string) {
       name: countyName,
       displayName: `${countyName} County`,
       slug: countySlug,
-      fips: isArkansas ? "05113" : isBriscoe ? "48045" : "48381",
+      fips: isArkansas ? "05113" : isBriscoe ? "48045" : isPotter ? "48375" : "48381",
       stateName,
       stateSlug,
       stateAbbr,
@@ -762,7 +787,7 @@ function makeWeatherResponse(stateSlug: string, countySlug: string) {
     },
     forecast,
     hourly,
-    alerts: isBriscoe
+    alerts: isBriscoe || isPotter
       ? []
       : [{
           id: "test-alert",
@@ -776,7 +801,37 @@ function makeWeatherResponse(stateSlug: string, countySlug: string) {
           effective: "2026-08-19T13:15:00-05:00",
           expires: "2026-08-19T15:00:00-05:00",
           link: "https://api.weather.gov/alerts/test-alert",
+        }, {
+          id: "test-flood-watch",
+          event: "Flood Watch",
+          headline: `Flood Watch for ${countyName} County`,
+          description: "Heavy rain may cause flooding.",
+          instruction: "Monitor later forecasts.",
+          severity: "Moderate",
+          urgency: "Expected",
+          certainty: "Likely",
+          effective: "2026-08-19T13:00:00-05:00",
+          expires: "2026-08-20T01:00:00-05:00",
+          link: "https://api.weather.gov/alerts/test-flood-watch",
         }],
+    droughtCondition: isPotter
+      ? {
+          category: "D3",
+          label: "Extreme Drought",
+          areaPercent: 68.51,
+          totalDroughtPercent: 100,
+          categories: { d0: 100, d1: 100, d2: 100, d3: 68.51, d4: 0 },
+          mapDate: "2026-08-11T00:00:00",
+          validStart: "2026-08-11T00:00:00",
+          validEnd: "2026-08-17T23:59:59",
+          source: {
+            name: "U.S. Drought Monitor",
+            agency: "National Drought Mitigation Center, NOAA, and USDA",
+            url: "https://usdmdataservices.unl.edu/api/CountyStatistics/GetDroughtSeverityStatisticsByAreaPercent?aoi=48375",
+            countyUrl: "https://www.drought.gov/states/Texas/county/Potter",
+          },
+        }
+      : undefined,
     warnings: [],
     meta: {
       fetchedAt: "2026-08-19T18:05:00.000Z",

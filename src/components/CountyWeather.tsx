@@ -7,6 +7,7 @@ import {
 import { buildCountyFallbackFeedUrls } from "../lib/fallback-feed-urls";
 import {
   weatherSeverityClass,
+  type CountyDroughtCondition,
   type CountyWeatherResponse,
   type WeatherAlert,
   type WeatherForecastPeriod,
@@ -140,6 +141,27 @@ function WeatherReport({ weather, atlasPath }: { weather: CountyWeatherResponse;
         )}
       </section>
 
+      <section className="card weather-drought-section" aria-labelledby="drought-conditions-heading">
+        <header className="weather-section-heading">
+          <div>
+            <p className="kicker">Weekly conditions</p>
+            <h2 id="drought-conditions-heading">Drought conditions</h2>
+          </div>
+          {weather.droughtCondition ? (
+            <span className={`weather-count-badge drought-category-${weather.droughtCondition.category.toLowerCase()}`}>
+              {weather.droughtCondition.category}
+            </span>
+          ) : null}
+        </header>
+        {weather.droughtCondition ? (
+          <DroughtConditionCard condition={weather.droughtCondition} countyName={weather.county.displayName} />
+        ) : (
+          <p className="weather-empty">
+            The latest U.S. Drought Monitor does not classify this county in D1–D4 drought.
+          </p>
+        )}
+      </section>
+
       <section className="card weather-forecast-section" aria-labelledby="weather-forecast-heading">
         <header className="weather-section-heading">
           <div>
@@ -230,6 +252,38 @@ function WeatherReport({ weather, atlasPath }: { weather: CountyWeatherResponse;
   );
 }
 
+function DroughtConditionCard({
+  condition,
+  countyName,
+}: {
+  condition: CountyDroughtCondition;
+  countyName: string;
+}) {
+  return (
+    <article className={`weather-drought-card drought-category-${condition.category.toLowerCase()}`}>
+      <div>
+        <p className="weather-drought-category">{condition.category} · {condition.label}</p>
+        <h3>{condition.label} affects {formatDroughtPercent(condition.areaPercent)} of {countyName}</h3>
+        <p>
+          {formatDroughtPercent(condition.totalDroughtPercent)} of the county is in moderate drought or worse.
+          U.S. Drought Monitor categories are cumulative and update weekly.
+        </p>
+      </div>
+      <dl className="weather-drought-breakdown">
+        <WeatherDatum label="Moderate or worse (D1+)" value={formatDroughtPercent(condition.categories.d1)} />
+        <WeatherDatum label="Severe or worse (D2+)" value={formatDroughtPercent(condition.categories.d2)} />
+        <WeatherDatum label="Extreme or worse (D3+)" value={formatDroughtPercent(condition.categories.d3)} />
+        <WeatherDatum label="Exceptional (D4)" value={formatDroughtPercent(condition.categories.d4)} />
+        <WeatherDatum label="Map date" value={formatDate(condition.mapDate)} />
+      </dl>
+      <div className="weather-official-links">
+        <OfficialLink href={condition.source.countyUrl} label="View official county drought conditions" />
+        <OfficialLink href={condition.source.url} label="Open U.S. Drought Monitor data" />
+      </div>
+    </article>
+  );
+}
+
 function WeatherAlertCard({ alert }: { alert: WeatherAlert }) {
   const severity = alert.severity || "Unknown";
   return (
@@ -317,6 +371,16 @@ function formatPressure(measurement?: WeatherMeasurement) {
   return typeof measurement?.value === "number"
     ? `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(measurement.value)} Pa`
     : "Unavailable";
+}
+
+function formatDroughtPercent(value: number) {
+  return `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }).format(value)}%`;
+}
+
+function formatDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "UTC" }).format(date);
 }
 
 function formatDateTime(value: string) {

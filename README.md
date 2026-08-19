@@ -60,7 +60,7 @@ This allows the frontend to deploy now without the localhost API. Once the API i
 - County and state market selection uses county centroids and nearest in-state news hubs.
 - Feeds prefer `VITE_NEWS_API_URL` when available, then fall back to RSS.
 - The top strip includes a TradingView stock ticker, LiveCoinWatch crypto ticker, and county weather on county pages.
-- County weather comes from the County Post News API, which fetches National Weather Service observations, forecasts, and alerts. The ticker, alert strip, and weather page share one metadata-driven browser cache.
+- County weather comes from the County Post News API, which fetches National Weather Service observations, forecasts, and active alerts plus weekly U.S. Drought Monitor county conditions. The ticker, notice strips, and weather page share one metadata-driven browser cache.
 - Styling is intentionally monochrome with bold, newspaper-inspired typography.
 - `.env` must stay local. If secrets were ever committed, rotate them and rewrite/purge GitHub history separately.
 
@@ -85,7 +85,7 @@ The `SubmissionForm` component posts to EmailJS using the three `VITE_EMAILJS_*`
 - `/states/:stateSlug/:subjectSlug` state subject pages, including `op-eds`
 - `/states/:stateSlug/submit` state submit op-eds/stories page
 - `/:stateSlug/:countySlug` county news page with feeds and submission form
-- `/:stateSlug/:countySlug/weather` county current conditions, active NWS alerts, seven-day/period and hourly forecasts, and weather stories
+- `/:stateSlug/:countySlug/weather` county current conditions, active NWS alerts, weekly drought conditions, seven-day/period and hourly forecasts, and weather stories
 - `/:stateSlug/:countySlug/data` County Data Atlas hub with compact cross-domain measures and coverage status
 - `/:stateSlug/:countySlug/data/:domain` atlas domain detail with trends, comparisons, compositions, citations, vintages, and downloads
 - `/:stateSlug/:countySlug/economic-data` county FRED economic profile with unemployment, income, and GDP history
@@ -97,7 +97,7 @@ The contextual navigation bar appears below the masthead and links to the active
 
 County home pages load a compact, cross-domain atlas snapshot from the News API. The data hub calls `GET /v1/counties/:stateSlug/:countySlug/atlas`; domain routes call the matching `/atlas/:domain` endpoint and lazy-load chart code. The UI preserves source links, metric vintages, modeled/preliminary flags, margins of error, coverage notices, suppression reasons, and partial-release warnings. Missing values are never rendered as zero.
 
-County routes call `GET /v1/counties/:stateSlug/:countySlug/weather` through `VITE_NEWS_API_URL`; the weather stories section calls `GET /v1/feeds/counties/:stateSlug/:countySlug/weather` and retains RSS fallback. Responses are cached using the API weather and alert TTL metadata, and in-flight requests are shared without letting one unmounted view cancel another subscriber. Official attribution and source details link to the [National Weather Service API](https://www.weather.gov/documentation/services-web-api) and [NWS alerts documentation](https://www.weather.gov/documentation/services-web-alerts).
+County routes call `GET /v1/counties/:stateSlug/:countySlug/weather` through `VITE_NEWS_API_URL`; the weather stories section calls `GET /v1/feeds/counties/:stateSlug/:countySlug/weather` and retains RSS fallback. Responses are cached using the API weather and alert TTL metadata, and in-flight requests are shared without letting one unmounted view cancel another subscriber. Active NWS CAP alerts and weekly U.S. Drought Monitor conditions are displayed separately so persistent drought is not mislabeled as a current warning. Official attribution links to the [National Weather Service API](https://www.weather.gov/documentation/services-web-api), [NWS alerts documentation](https://www.weather.gov/documentation/services-web-alerts), and [U.S. Drought Monitor](https://www.droughtmonitor.unl.edu/DmData/DataDownload/WebServiceInfo.aspx).
 
 Atlas domains are `demographics`, `economy`, `housing`, `jobs-business`, `education`, `health`, `civic-elections`, `public-safety`, `agriculture`, `environment-disasters`, `government-finance`, and `infrastructure`. Domain pages provide CSV and JSON downloads when measures are available, and every chart includes a text summary and data table.
 

@@ -12,7 +12,7 @@
 3) RSS feeds are fetched through rss2json (or a configured proxy) and cached on the client for 5 minutes per feed URL.
 4) The UI labels the active source per section: “County News API” or “Fallback RSS”.
 5) County atlas pages request a compact county overview or one domain document from the same News API. Atlas requests are cached and deduplicated in the browser; chart code is loaded only on detail pages.
-6) Every county route requests its weather document from the same News API. The top ticker, active-alert strip, and weather page share an in-flight request and cache the response for the shorter of the response and alert TTLs.
+6) Every county route requests its weather document from the same News API. The top ticker, active-alert/drought strips, and weather page share an in-flight request and cache the response for the shorter of the response and alert TTLs.
 
 ## API Surfaces
 - Health: `GET /health` on the Lambda base URL.
@@ -25,14 +25,15 @@
   - Overview: `GET /v1/counties/{stateSlug}/{countySlug}/atlas`
   - Domain: `GET /v1/counties/{stateSlug}/{countySlug}/atlas/{domain}`
 - County weather:
-  - Conditions, forecasts, and alerts: `GET /v1/counties/{stateSlug}/{countySlug}/weather`
+  - Conditions, forecasts, NWS alerts, and weekly drought classification: `GET /v1/counties/{stateSlug}/{countySlug}/weather`
   - Local weather stories: `GET /v1/feeds/counties/{stateSlug}/{countySlug}/weather`
 
 ## County Weather
 - Frontend route: `/{stateSlug}/{countySlug}/weather`.
-- `TopTicker` uses the active county on every county subroute, links its compact current conditions to the weather page, and renders the highest-severity active alert directly below the weather row.
-- The weather page presents the optional station observation, all returned forecast and hourly periods, active alert details, partial-response warnings, county/forecast zones, source freshness, and the NWS local UTC offset carried by forecast timestamps.
-- Alert detail links and forecast/observation/zone provenance link directly to official NWS resources in a new tab. Attribution references the [NWS API](https://www.weather.gov/documentation/services-web-api) and [NWS alerts API](https://www.weather.gov/documentation/services-web-alerts).
+- `TopTicker` uses the active county on every county subroute, links its compact current conditions to the weather page, and renders every active NWS alert in severity order directly below the weather row.
+- When the U.S. Drought Monitor reports D1–D4 conditions, a separate, plainly labeled weekly drought notice appears beneath the weather row. It is never assigned `role="alert"` or described as an NWS warning.
+- The weather page presents the optional station observation, all returned forecast and hourly periods, active alert details, U.S. Drought Monitor category/area percentages, partial-response warnings, county/forecast zones, source freshness, and the NWS time zone.
+- Alert detail links and forecast/observation/zone provenance link directly to official NWS resources in a new tab. Drought details link to the official county page and REST data. Attribution references the [NWS API](https://www.weather.gov/documentation/services-web-api), [NWS alerts API](https://www.weather.gov/documentation/services-web-alerts), and [U.S. Drought Monitor web service](https://www.droughtmonitor.unl.edu/DmData/DataDownload/WebServiceInfo.aspx).
 - Weather stories use topic `weather` through the county News API feed. If that feed is unavailable, state-qualified county and nearby-market RSS queries provide the existing browser fallback without relaxing county locality checks.
 - The typed weather client validates the response envelope, shares in-flight requests, and lets each React subscriber abort its own wait. The network request is cancelled only when no subscribers remain.
 - The response cache uses the shorter of `meta.cacheTtlSeconds` and `meta.alertsCacheTtlSeconds`, capped at one hour, so active alerts are not held for the longer forecast window.

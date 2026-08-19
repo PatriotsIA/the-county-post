@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { type CountySite } from "../data/counties";
 import {
-  selectHighestSeverityAlert,
   weatherSeverityClass,
 } from "../lib/county-weather-api";
 import { fetchCattleTicker, fetchMetalsTicker } from "../lib/markets-api";
@@ -211,7 +210,8 @@ function CountyWeather({ county }: { county: CountySite }) {
   const weather = useCountyWeather(county.state.slug, county.slug);
   const observation = weather.data?.currentObservation;
   const locationName = weather.data?.location.city || county.primaryCity || county.displayName;
-  const alert = selectHighestSeverityAlert(weather.data?.alerts || []);
+  const alerts = weather.data?.alerts || [];
+  const drought = weather.data?.droughtCondition;
   const temperature = observation?.temperature?.value;
   const condition = observation?.textDescription;
 
@@ -240,16 +240,32 @@ function CountyWeather({ county }: { county: CountySite }) {
           )}
         </Link>
       </div>
-      {alert ? (
+      {alerts.map((alert) => (
         <aside
+          key={alert.id}
           className={`county-weather-alert weather-severity-${weatherSeverityClass(alert.severity)}`}
           role="alert"
-          aria-live="assertive"
+          aria-live="polite"
         >
           <span className="county-weather-alert-label">{alert.severity || "Unknown"} weather alert</span>
           <Link to={weatherPath}>
             <strong>{alert.headline || alert.event}</strong>
             {alert.expires ? <span>Expires {formatTickerTime(alert.expires)}</span> : null}
+          </Link>
+        </aside>
+      ))}
+      {drought ? (
+        <aside
+          className={`county-weather-alert county-drought-condition drought-category-${drought.category.toLowerCase()}`}
+          role="status"
+          aria-live="polite"
+        >
+          <span className="county-weather-alert-label">USDM {drought.category}</span>
+          <Link to={weatherPath}>
+            <strong>
+              {drought.label} affects {formatDroughtPercent(drought.areaPercent)} of {county.displayName}
+            </strong>
+            <span>Map updated {formatTickerDate(drought.mapDate)}</span>
           </Link>
         </aside>
       ) : null}
@@ -277,4 +293,17 @@ function formatTickerTime(value: string) {
     hour: "numeric",
     minute: "2-digit",
   }).format(date);
+}
+
+function formatTickerDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+  }).format(date);
+}
+
+function formatDroughtPercent(value: number) {
+  return `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }).format(value)}%`;
 }

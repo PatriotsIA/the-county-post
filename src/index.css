@@ -654,6 +654,26 @@ body::before {
   background: #fff8d8;
 }
 
+.county-drought-condition.drought-category-d1 {
+  border-left-color: #b98818;
+  background: #fff4cf;
+}
+
+.county-drought-condition.drought-category-d2 {
+  border-left-color: #d87500;
+  background: #ffead0;
+}
+
+.county-drought-condition.drought-category-d3 {
+  border-left-color: #b5121b;
+  background: #ffe1dc;
+}
+
+.county-drought-condition.drought-category-d4 {
+  border-left-color: #730000;
+  background: #f8d4d4;
+}
+
 .weather-hero {
   border-top: 6px solid var(--news-blue);
 }
@@ -728,6 +748,7 @@ body::before {
 
 .weather-current-section,
 .weather-alerts-section,
+.weather-drought-section,
 .weather-forecast-section,
 .weather-hourly-section,
 .weather-source-section {
@@ -836,6 +857,77 @@ body::before {
 
 .weather-alert-card.weather-severity-moderate {
   border-top-color: #b46305;
+}
+
+.weather-drought-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
+  gap: 18px 24px;
+  border-top: 5px solid #b98818;
+  padding: 16px;
+  background: #fffaf0;
+}
+
+.weather-drought-card.drought-category-d2 {
+  border-top-color: #d87500;
+  background: #fff7ec;
+}
+
+.weather-drought-card.drought-category-d3 {
+  border-top-color: #b5121b;
+  background: #fff4f1;
+}
+
+.weather-drought-card.drought-category-d4 {
+  border-top-color: #730000;
+  background: #fff0f0;
+}
+
+.weather-drought-category {
+  margin: 0 0 6px;
+  font-family: "Roboto Mono", monospace;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.weather-drought-card h3 {
+  margin: 0 0 8px;
+  font-family: "Roboto Slab", Georgia, serif;
+}
+
+.weather-drought-card p {
+  margin-block: 0 8px;
+}
+
+.weather-drought-breakdown {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.weather-drought-breakdown div {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 7px;
+}
+
+.weather-drought-breakdown dt {
+  color: var(--muted);
+  font-family: "Roboto Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.weather-drought-breakdown dd {
+  margin: 3px 0 0;
+  font-weight: 800;
+}
+
+.weather-drought-card .weather-official-links {
+  grid-column: 1 / -1;
 }
 
 .weather-alert-meta {
@@ -2450,6 +2542,7 @@ button:disabled {
 
   .weather-section-heading,
   .weather-current-grid,
+  .weather-drought-card,
   .weather-source-section {
     display: grid;
     grid-template-columns: 1fr;
@@ -3146,6 +3239,10 @@ button:disabled {
 
   .weather-forecast-grid,
   .weather-alert-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .weather-drought-breakdown {
     grid-template-columns: 1fr;
   }
 
