@@ -1,25 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { getCountyMarketCity, type CountySite } from "../data/counties";
+import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { type CountySite } from "../data/counties";
+import {
+  selectHighestSeverityAlert,
+  weatherSeverityClass,
+} from "../lib/county-weather-api";
 import { fetchCattleTicker, fetchMetalsTicker } from "../lib/markets-api";
+import { useCountyWeather } from "../lib/useCountyWeather";
 import itmTradingAd from "../../ad-assets/ad-itmtrading.JPG";
-
-type WeatherStatus = {
-  label: string;
-  temperature?: number;
-  condition?: string;
-  windSpeed?: number;
-  updatedAt?: string;
-  loading: boolean;
-};
-
-type WeatherResponse = {
-  current?: {
-    time?: string;
-    temperature_2m?: number;
-    weather_code?: number;
-    wind_speed_10m?: number;
-  };
-};
 
 const itmTradingUrl = "https://www.itmtrading.com/";
 const mintedMetalUrl = "https://mintedmetal.com";
@@ -40,11 +28,7 @@ export function TopTicker({ county }: { county?: CountySite }) {
       </div>
       <PreciousMetalsTicker />
       <CattleTicker />
-      {county ? (
-        <div className="market-weather-weather-bar">
-          <CountyWeather county={county} />
-        </div>
-      ) : null}
+      {county ? <CountyWeather county={county} /> : null}
     </section>
   );
 }
@@ -223,110 +207,74 @@ function formatCattlePrice(value: number, unit: string) {
 }
 
 function CountyWeather({ county }: { county: CountySite }) {
-  const locationName = useMemo(() => weatherLocationName(county), [county]);
-  const [weather, setWeather] = useState<WeatherStatus>(() => ({
-    label: locationName,
-    loading: true,
-  }));
-
-  useEffect(() => {
-    let active = true;
-
-    setWeather({ label: locationName, loading: true });
-    fetchCountyWeather(county, locationName)
-      .then((nextWeather) => {
-        if (active) setWeather(nextWeather);
-      })
-      .catch(() => {
-        if (active) setWeather({ label: locationName, condition: "Weather unavailable", loading: false });
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [county, locationName]);
-
-  if (weather.loading) {
-    return (
-      <span className="weather-pill">
-        <span aria-hidden="true">WX</span>
-        <span>{weather.label} weather loading</span>
-      </span>
-    );
-  }
-
-  if (typeof weather.temperature !== "number") {
-    return (
-      <span className="weather-pill">
-        <span aria-hidden="true">--</span>
-        <span>{weather.condition || weather.label}</span>
-      </span>
-    );
-  }
+  const weatherPath = `/${county.state.slug}/${county.slug}/weather`;
+  const weather = useCountyWeather(county.state.slug, county.slug);
+  const observation = weather.data?.currentObservation;
+  const locationName = weather.data?.location.city || county.primaryCity || county.displayName;
+  const alert = selectHighestSeverityAlert(weather.data?.alerts || []);
+  const temperature = observation?.temperature?.value;
+  const condition = observation?.textDescription;
 
   return (
-    <span className="weather-pill" title={weather.updatedAt ? `Updated ${weather.updatedAt}` : undefined}>
-      <span aria-hidden="true">{weatherIcon(weather.condition)}</span>
-      <strong>{weather.label}</strong>
-      <span>{Math.round(weather.temperature)}{"\u00b0F"}</span>
-      {weather.condition ? <span>{weather.condition}</span> : null}
-      {typeof weather.windSpeed === "number" ? <span>Wind {Math.round(weather.windSpeed)} mph</span> : null}
-    </span>
+    <>
+      <div className="market-weather-weather-bar">
+        <Link
+          className="weather-pill"
+          to={weatherPath}
+          title={observation?.observedAt ? `Observed ${formatTickerTime(observation.observedAt)}` : undefined}
+        >
+          <span aria-hidden="true">{weatherIcon(condition)}</span>
+          {weather.status === "loading" && !weather.data ? (
+            <span>{locationName} weather loading</span>
+          ) : weather.status === "error" ? (
+            <span>{locationName} weather unavailable</span>
+          ) : (
+            <>
+              <strong>{locationName}</strong>
+              {typeof temperature === "number" ? <span>{Math.round(temperature)}{"\u00b0F"}</span> : null}
+              {condition ? <span>{condition}</span> : <span>Current observation unavailable</span>}
+              {typeof observation?.windSpeed?.value === "number" ? (
+                <span>Wind {Math.round(observation.windSpeed.value)} mph</span>
+              ) : null}
+            </>
+          )}
+        </Link>
+      </div>
+      {alert ? (
+        <aside
+          className={`county-weather-alert weather-severity-${weatherSeverityClass(alert.severity)}`}
+          role="alert"
+          aria-live="assertive"
+        >
+          <span className="county-weather-alert-label">{alert.severity || "Unknown"} weather alert</span>
+          <Link to={weatherPath}>
+            <strong>{alert.headline || alert.event}</strong>
+            {alert.expires ? <span>Expires {formatTickerTime(alert.expires)}</span> : null}
+          </Link>
+        </aside>
+      ) : null}
+    </>
   );
-}
-
-async function fetchCountyWeather(county: CountySite, label: string): Promise<WeatherStatus> {
-  const latitude = county.latitude;
-  const longitude = county.longitude;
-  if (latitude === undefined || longitude === undefined) throw new Error("County coordinates unavailable");
-
-  const params = new URLSearchParams({
-    latitude: String(latitude),
-    longitude: String(longitude),
-    current: "temperature_2m,weather_code,wind_speed_10m",
-    temperature_unit: "fahrenheit",
-    wind_speed_unit: "mph",
-    timezone: "auto",
-    forecast_days: "1",
-  });
-  const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`);
-  if (!response.ok) throw new Error("Weather request failed");
-  const data = (await response.json()) as WeatherResponse;
-  const current = data.current;
-
-  return {
-    label,
-    temperature: current?.temperature_2m,
-    condition: weatherDescription(current?.weather_code),
-    windSpeed: current?.wind_speed_10m,
-    updatedAt: current?.time,
-    loading: false,
-  };
-}
-
-function weatherLocationName(county: CountySite) {
-  return county.primaryCity || getCountyMarketCity(county) || county.displayName;
-}
-
-function weatherDescription(code?: number) {
-  if (code === undefined) return undefined;
-  if (code === 0) return "Clear";
-  if ([1, 2].includes(code)) return "Partly cloudy";
-  if (code === 3) return "Overcast";
-  if ([45, 48].includes(code)) return "Fog";
-  if ([51, 53, 55, 56, 57].includes(code)) return "Drizzle";
-  if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return "Rain";
-  if ([71, 73, 75, 77, 85, 86].includes(code)) return "Snow";
-  if ([95, 96, 99].includes(code)) return "Thunderstorm";
-  return "Weather";
 }
 
 function weatherIcon(condition?: string) {
   if (!condition) return "WX";
-  if (condition.includes("Clear")) return "Sun";
-  if (condition.includes("cloud") || condition.includes("Overcast")) return "Cloud";
-  if (condition.includes("Rain") || condition.includes("Drizzle")) return "Rain";
-  if (condition.includes("Snow")) return "Snow";
-  if (condition.includes("Thunderstorm")) return "Storm";
+  const normalized = condition.toLowerCase();
+  if (normalized.includes("clear") || normalized.includes("sunny")) return "Sun";
+  if (normalized.includes("cloud") || normalized.includes("overcast")) return "Cloud";
+  if (normalized.includes("rain") || normalized.includes("drizzle")) return "Rain";
+  if (normalized.includes("snow")) return "Snow";
+  if (normalized.includes("thunder")) return "Storm";
   return "WX";
+}
+
+function formatTickerTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
 }

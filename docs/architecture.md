@@ -12,6 +12,7 @@
 3) RSS feeds are fetched through rss2json (or a configured proxy) and cached on the client for 5 minutes per feed URL.
 4) The UI labels the active source per section: “County News API” or “Fallback RSS”.
 5) County atlas pages request a compact county overview or one domain document from the same News API. Atlas requests are cached and deduplicated in the browser; chart code is loaded only on detail pages.
+6) Every county route requests its weather document from the same News API. The top ticker, active-alert strip, and weather page share an in-flight request and cache the response for the shorter of the response and alert TTLs.
 
 ## API Surfaces
 - Health: `GET /health` on the Lambda base URL.
@@ -23,6 +24,18 @@
 - County Data Atlas:
   - Overview: `GET /v1/counties/{stateSlug}/{countySlug}/atlas`
   - Domain: `GET /v1/counties/{stateSlug}/{countySlug}/atlas/{domain}`
+- County weather:
+  - Conditions, forecasts, and alerts: `GET /v1/counties/{stateSlug}/{countySlug}/weather`
+  - Local weather stories: `GET /v1/feeds/counties/{stateSlug}/{countySlug}/weather`
+
+## County Weather
+- Frontend route: `/{stateSlug}/{countySlug}/weather`.
+- `TopTicker` uses the active county on every county subroute, links its compact current conditions to the weather page, and renders the highest-severity active alert directly below the weather row.
+- The weather page presents the optional station observation, all returned forecast and hourly periods, active alert details, partial-response warnings, county/forecast zones, source freshness, and the NWS local UTC offset carried by forecast timestamps.
+- Alert detail links and forecast/observation/zone provenance link directly to official NWS resources in a new tab. Attribution references the [NWS API](https://www.weather.gov/documentation/services-web-api) and [NWS alerts API](https://www.weather.gov/documentation/services-web-alerts).
+- Weather stories use topic `weather` through the county News API feed. If that feed is unavailable, state-qualified county and nearby-market RSS queries provide the existing browser fallback without relaxing county locality checks.
+- The typed weather client validates the response envelope, shares in-flight requests, and lets each React subscriber abort its own wait. The network request is cancelled only when no subscribers remain.
+- The response cache uses the shorter of `meta.cacheTtlSeconds` and `meta.alertsCacheTtlSeconds`, capped at one hour, so active alerts are not held for the longer forecast window.
 
 ## County Data Atlas
 - Frontend routes:
@@ -50,7 +63,7 @@
 - `VITE_RSS_RAW_PROXY_URL` — Optional CORS proxy for raw RSS.
 - `VITE_EMAILJS_SERVICE_ID`, `VITE_EMAILJS_TEMPLATE_ID`, `VITE_EMAILJS_PUBLIC_KEY` — Submission form delivery.
 
-The atlas introduces no browser credential or additional environment variable. Official-source keys and ingestion credentials stay behind the News API; the browser uses only `VITE_NEWS_API_URL`.
+The atlas and county weather experience introduce no browser credential or additional environment variable. NWS user-agent configuration, official-source keys, and ingestion credentials stay behind the News API; the browser uses only `VITE_NEWS_API_URL`.
 
 ## Deployment (Amplify)
 1) Set the env vars above in Amplify. Vite inlines them at build time—rebuild is required after changes.

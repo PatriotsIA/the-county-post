@@ -62,6 +62,15 @@ test.beforeEach(async ({ page }) => {
     });
   });
 
+  await page.route(/http:\/\/localhost:8787\/v1\/counties\/[^/]+\/[^/]+\/weather(?:\?.*)?$/, async (route) => {
+    const parts = new URL(route.request().url()).pathname.split("/").filter(Boolean);
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(makeWeatherResponse(parts[2], parts[3])),
+    });
+  });
+
   await page.route("http://localhost:8787/v1/counties/**/economic-data", async (route) => {
     await route.fulfill({
       status: 200,
@@ -178,10 +187,11 @@ function makeRouteItems({
   const isObituary = topicSlug === "obituaries";
   const isSports = topicSlug === "sports";
   const isCrime = topicSlug === "crime";
+  const isWeather = topicSlug === "weather";
   const isBriscoe = countySlug === "briscoe";
   const isArkansas = stateSlug === "arkansas";
 
-  const topic = isObituary ? "Obituary" : isSports ? "Sports" : isCrime ? "Crime" : "Local News";
+  const topic = isObituary ? "Obituary" : isSports ? "Sports" : isCrime ? "Crime" : isWeather ? "Weather" : "Local News";
   return isBriscoe
     ? [
         ...makeItems({ source: "Briscoe County Test", topic, count: Math.min(4, limit), stateLabel: "Texas" }),
@@ -194,6 +204,98 @@ function makeRouteItems({
         stateLabel: isArkansas ? "Arkansas" : "Texas",
       });
 }
+
+test("county ticker links current conditions and only shows active alerts", async ({ page }) => {
+  await page.goto("/arkansas/polk");
+
+  const weatherTicker = page.locator(".market-weather-weather-bar");
+  const weatherLink = weatherTicker.getByRole("link", { name: /Mena.*72°F.*Clear.*Wind 8 mph/i });
+  await expect(weatherLink).toBeVisible();
+  await expect(weatherLink).toHaveAttribute("href", "/arkansas/polk/weather");
+
+  const alertStrip = page.getByRole("alert").filter({ hasText: "Severe Thunderstorm Warning" });
+  await expect(alertStrip).toBeVisible();
+  await expect(alertStrip).toContainText("Severe weather alert");
+  await expect(alertStrip).toContainText("Expires");
+  await expect(alertStrip.getByRole("link")).toHaveAttribute("href", "/arkansas/polk/weather");
+
+  await page.goto("/texas/briscoe");
+  await expect(page.locator(".market-weather-weather-bar")).toContainText("Silverton");
+  await expect(page.locator(".county-weather-alert")).toHaveCount(0);
+});
+
+test("county weather page shows alerts, forecasts, hourly data, sources, and stories", async ({ page }) => {
+  const weatherRequests: string[] = [];
+  page.on("request", (request) => {
+    if (/\/v1\/counties\/arkansas\/polk\/weather$/.test(request.url())) weatherRequests.push(request.url());
+  });
+
+  await page.goto("/arkansas/polk/weather");
+
+  await expect(page.getByRole("heading", { level: 1, name: "Polk County Weather" })).toBeVisible();
+  const currentConditions = page.locator(".weather-current-section");
+  await expect(currentConditions.getByText("72°F", { exact: true })).toBeVisible();
+  await expect(currentConditions.getByText("Clear", { exact: true })).toBeVisible();
+
+  const alerts = page.locator(".weather-alerts-section");
+  await expect(alerts.getByRole("heading", { name: "Severe Thunderstorm Warning for Polk County" })).toBeVisible();
+  const officialAlert = alerts.getByRole("link", { name: "Open official NWS alert" });
+  await expect(officialAlert).toHaveAttribute("href", "https://api.weather.gov/alerts/test-alert");
+  await expect(officialAlert).toHaveAttribute("target", "_blank");
+
+  const forecast = page.locator(".weather-forecast-section");
+  await expect(forecast.getByRole("heading", { name: "Today" })).toBeVisible();
+  await expect(forecast.getByRole("heading", { name: "Tonight" })).toBeVisible();
+  await expect(forecast.getByText("Sunny", { exact: true }).first()).toBeVisible();
+
+  const hourlyTable = page.getByRole("table", { name: /Next-hours forecast/ });
+  await expect(hourlyTable).toBeVisible();
+  await expect(hourlyTable.getByRole("row")).toHaveCount(25);
+  await expect(hourlyTable).toContainText("20%");
+
+  const stories = page.locator("section", { has: page.getByRole("heading", { name: "Polk County weather stories" }) });
+  await expect(stories.locator(".feed-card").first()).toContainText("Arkansas Weather story 01");
+  await expect(page.getByRole("link", { name: "Environment & disasters atlas" }).first()).toHaveAttribute(
+    "href",
+    "/arkansas/polk/data/environment-disasters",
+  );
+  await expect(page.getByRole("link", { name: "NWS API documentation" })).toHaveAttribute("target", "_blank");
+  await expect(page.locator(".weather-source-details")).toContainText("America/Chicago");
+  await expect.poll(() => weatherRequests.length).toBe(1);
+});
+
+test("county weather direct reload preserves the report", async ({ page }) => {
+  await page.goto("/arkansas/polk/weather");
+  await expect(page.getByRole("heading", { level: 1, name: "Polk County Weather" })).toBeVisible();
+
+  await page.reload();
+
+  await expect(page).toHaveURL(/\/arkansas\/polk\/weather$/);
+  await expect(page.getByRole("heading", { name: "Forecast periods" })).toBeVisible();
+  await expect(page.getByRole("table", { name: /Next-hours forecast/ })).toBeVisible();
+});
+
+test("county weather remains keyboard usable at 320px", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.goto("/arkansas/polk/weather");
+
+  const weatherNavigation = page.getByRole("navigation", { name: "Polk County pages" }).getByRole("link", { name: "Weather" });
+  await weatherNavigation.focus();
+  await expect(weatherNavigation).toBeFocused();
+
+  const alertLink = page.locator(".county-weather-alert").getByRole("link");
+  await alertLink.focus();
+  await expect(alertLink).toBeFocused();
+  await expect(alertLink).toContainText("Severe Thunderstorm Warning");
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1)).toBe(true);
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/arkansas\/polk\/weather$/);
+
+  const hourlyStrip = page.getByLabel("Scrollable hourly forecast");
+  await hourlyStrip.focus();
+  await expect(hourlyStrip).toBeFocused();
+  await page.keyboard.press("ArrowRight");
+});
 
 test("the existing FRED economic data profile remains functional", async ({ page }) => {
   await page.goto("/arkansas/polk/economic-data");
@@ -581,6 +683,123 @@ function makeEconomyMetrics() {
       ],
     },
   ];
+}
+
+function makeWeatherResponse(stateSlug: string, countySlug: string) {
+  const isArkansas = stateSlug === "arkansas";
+  const isBriscoe = countySlug === "briscoe";
+  const countyName = isBriscoe ? "Briscoe" : countySlug === "randall" ? "Randall" : "Polk";
+  const stateName = isArkansas ? "Arkansas" : "Texas";
+  const stateAbbr = isArkansas ? "AR" : "TX";
+  const city = isBriscoe ? "Silverton" : isArkansas ? "Mena" : "Amarillo";
+  const measurement = (value: number | null, unit: "F" | "mph" | "percent" | "degrees" | "Pa") => ({
+    value,
+    unit,
+    source: { value, unitCode: `wmoUnit:${unit}`, rawValue: value },
+  });
+  const forecast = Array.from({ length: 14 }, (_, index) => ({
+    number: index + 1,
+    name: index === 0 ? "Today" : index === 1 ? "Tonight" : `${index % 2 ? "Night" : "Day"} ${Math.ceil((index + 1) / 2)}`,
+    startTime: `2026-08-${String(19 + Math.floor(index / 2)).padStart(2, "0")}T${index % 2 ? "18" : "06"}:00:00-05:00`,
+    endTime: `2026-08-${String(19 + Math.floor(index / 2)).padStart(2, "0")}T${index % 2 ? "23" : "17"}:00:00-05:00`,
+    isDaytime: index % 2 === 0,
+    temperature: measurement(index % 2 === 0 ? 84 - index : 66 - index, "F"),
+    windSpeed: measurement(10, "mph"),
+    windDirection: "S",
+    precipitationProbability: measurement(index === 0 ? 20 : 10, "percent"),
+    shortForecast: index === 0 ? "Sunny" : index === 1 ? "Mostly Clear" : "Partly Cloudy",
+    detailedForecast: "Seasonable conditions are expected across the county.",
+  }));
+  const hourly = Array.from({ length: 24 }, (_, index) => ({
+    number: index + 1,
+    name: "",
+    startTime: `2026-08-${index < 11 ? "19" : "20"}T${String((13 + index) % 24).padStart(2, "0")}:00:00-05:00`,
+    endTime: `2026-08-${index < 10 ? "19" : "20"}T${String((14 + index) % 24).padStart(2, "0")}:00:00-05:00`,
+    isDaytime: index < 7,
+    temperature: measurement(72 + (index < 6 ? index : 12 - index), "F"),
+    windSpeed: measurement(8, "mph"),
+    windDirection: "S",
+    precipitationProbability: measurement(index < 4 ? 20 : 10, "percent"),
+    shortForecast: index < 7 ? "Sunny" : "Mostly Clear",
+    detailedForecast: "Hourly test forecast.",
+  }));
+
+  return {
+    county: {
+      name: countyName,
+      displayName: `${countyName} County`,
+      slug: countySlug,
+      fips: isArkansas ? "05113" : isBriscoe ? "48045" : "48381",
+      stateName,
+      stateSlug,
+      stateAbbr,
+    },
+    location: {
+      latitude: isArkansas ? 34.49 : 34.5,
+      longitude: isArkansas ? -94.23 : -101.3,
+      city,
+      state: stateAbbr,
+      gridOffice: isArkansas ? "SHV" : "AMA",
+      gridX: 42,
+      gridY: 61,
+      timeZone: "America/Chicago",
+    },
+    zones: {
+      forecast: { id: isArkansas ? "ARZ040" : "TXZ016", link: `https://api.weather.gov/zones/forecast/${isArkansas ? "ARZ040" : "TXZ016"}` },
+      county: { id: isArkansas ? "ARC113" : "TXC045", link: `https://api.weather.gov/zones/county/${isArkansas ? "ARC113" : "TXC045"}` },
+    },
+    currentObservation: {
+      stationId: isArkansas ? "KMEZ" : "KAMA",
+      stationName: `${city} Municipal Airport`,
+      observedAt: "2026-08-19T13:00:00-05:00",
+      textDescription: "Clear",
+      temperature: measurement(72, "F"),
+      relativeHumidity: measurement(48, "percent"),
+      windSpeed: measurement(8, "mph"),
+      windGust: measurement(14, "mph"),
+      windDirection: measurement(180, "degrees"),
+      barometricPressure: measurement(101325, "Pa"),
+    },
+    forecast,
+    hourly,
+    alerts: isBriscoe
+      ? []
+      : [{
+          id: "test-alert",
+          event: "Severe Thunderstorm Warning",
+          headline: `Severe Thunderstorm Warning for ${countyName} County`,
+          description: "A severe thunderstorm is moving through the county.",
+          instruction: "Move indoors and stay away from windows.",
+          severity: "Severe",
+          urgency: "Immediate",
+          certainty: "Observed",
+          effective: "2026-08-19T13:15:00-05:00",
+          expires: "2026-08-19T15:00:00-05:00",
+          link: "https://api.weather.gov/alerts/test-alert",
+        }],
+    warnings: [],
+    meta: {
+      fetchedAt: "2026-08-19T18:05:00.000Z",
+      partial: false,
+      cacheTtlSeconds: 600,
+      alertsCacheTtlSeconds: 180,
+      pointsCacheTtlSeconds: 86400,
+      units: { temperature: "F", windSpeed: "mph", precipitationProbability: "percent" },
+      source: {
+        name: "National Weather Service",
+        documentation: "https://www.weather.gov/documentation/services-web-api",
+        alertsDocumentation: "https://www.weather.gov/documentation/services-web-alerts",
+        links: {
+          points: "https://api.weather.gov/points/34.49,-94.23",
+          forecast: "https://api.weather.gov/gridpoints/SHV/42,61/forecast",
+          hourly: "https://api.weather.gov/gridpoints/SHV/42,61/forecast/hourly",
+          observationStations: "https://api.weather.gov/gridpoints/SHV/42,61/stations",
+          latestObservation: "https://api.weather.gov/stations/KMEZ/observations/latest",
+          alerts: ["https://api.weather.gov/alerts/active?point=34.49,-94.23"],
+        },
+      },
+    },
+  };
 }
 
 function makeItems({

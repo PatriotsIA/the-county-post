@@ -6,6 +6,7 @@ import { AdSlot } from "./components/AdSlot";
 import { HardAssetsFeed } from "./components/HardAssetsFeed";
 import { NewsFeedSection } from "./components/NewsFeedSection";
 import { CountyEconomicData, CountyEconomicSnapshot } from "./components/CountyEconomicData";
+import { CountyWeatherPage } from "./components/CountyWeather";
 import { CountyDataSnapshot } from "./components/CountyDataSnapshot";
 import { CountyShowUpMeter } from "./components/CountyShowUpMeter";
 import { TopTicker } from "./components/TopTicker";
@@ -370,6 +371,7 @@ function App() {
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/:stateSlug/:countySlug" element={<CountyPage />} />
+          <Route path="/:stateSlug/:countySlug/weather" element={<CountyWeatherRoute />} />
           <Route path="/:stateSlug/:countySlug/data" element={<CountyDataAtlasPage />} />
           <Route path="/:stateSlug/:countySlug/data/:domain" element={<CountyDataAtlasDomainRoute />} />
           <Route path="/:stateSlug/:countySlug/economic-data" element={<CountyEconomicDataPage />} />
@@ -437,6 +439,7 @@ function contextLinks(county?: NonNullable<ReturnType<typeof getCounty>>, state?
     const base = `/${county.state.slug}/${county.slug}`;
     return [
       { to: base, label: "County Home", end: true },
+      { to: `${base}/weather`, label: "Weather" },
       { to: `${base}/data`, label: "County Data" },
       { to: `${base}/economic-data`, label: "Economic Data" },
       ...subjectGroups.map((group) => ({ to: `${base}/${group.slug}`, label: group.title })),
@@ -927,6 +930,13 @@ function CountyEconomicDataPage() {
   const county = getCounty(stateSlug, countySlug);
   if (!county) return <NotFound />;
   return <CountyEconomicData county={county} />;
+}
+
+function CountyWeatherRoute() {
+  const { stateSlug, countySlug } = useParams<{ stateSlug: string; countySlug: string }>();
+  const county = getCounty(stateSlug, countySlug);
+  if (!county) return <NotFound />;
+  return <CountyWeatherPage county={county} />;
 }
 
 function CountyDataAtlasPage() {

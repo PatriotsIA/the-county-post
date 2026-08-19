@@ -11,6 +11,7 @@ export type NewsFeedItem = {
 
 export type Topic =
   | "general"
+  | "weather"
   | "sports"
   | "politics"
   | "economy"

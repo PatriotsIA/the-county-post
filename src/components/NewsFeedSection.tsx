@@ -326,6 +326,7 @@ function hashFeedIdentity(value: string) {
 
 const feedSponsorIds: Record<FeedKind, string> = {
   general: "guerrilla-gear-inline",
+  weather: "arw-inline",
   sports: "lemc-inline",
   politics: "patriot-dispatch-inline",
   economy: "plains-bank-inline",
@@ -413,6 +414,22 @@ const sportsTerms = ["sports", "football", "basketball", "baseball", "softball",
 const categoryRules: Record<FeedKind, { include?: string[]; exclude?: string[] }> = {
   general: {
     exclude: [...obituaryTerms, ...sportsTerms],
+  },
+  weather: {
+    include: [
+      "weather",
+      "forecast",
+      "national weather service",
+      "storm",
+      "flood",
+      "tornado",
+      "hurricane",
+      "snow",
+      "ice",
+      "heat",
+      "drought",
+    ],
+    exclude: obituaryTerms,
   },
   sports: {
     include: sportsTerms,

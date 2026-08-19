@@ -18,6 +18,7 @@ function googleNewsRssUrl(query: string) {
 export function buildNationalFallbackFeedUrls(kind: Topic) {
   const topics: Record<Topic, string[]> = {
     general: ["United States news", "U.S. news", "national news", "breaking news"],
+    weather: ["United States weather", "National Weather Service", "severe weather", "forecast", "storm"],
     sports: ["United States sports", "NFL", "NBA", "MLB", "college sports", "high school sports"],
     politics: ["United States politics", "Congress", "White House", "federal government", "elections"],
     economy: ["United States economy", "business", "jobs", "housing market", "markets", "Federal Reserve"],
@@ -54,6 +55,7 @@ export function buildStateFallbackFeedUrls(state: StateSite, kind: Topic) {
   }
 
   const topics: Record<Exclude<Topic, "general">, string[]> = {
+    weather: ["weather", "forecast", "National Weather Service", "storm", "flood", "tornado", "winter weather"],
     sports: ["sports", "high school sports", "college sports", "football", "basketball", "baseball"],
     politics: ["politics", "election", "legislature", "governor", "attorney general", "supreme court"],
     economy: ["economy", "business", "jobs", "housing market", "development", "industry"],
@@ -101,6 +103,7 @@ function topicToCountyKind(kind: Topic) {
 type CountyFallbackKind =
   | "localNews"
   | "localSports"
+  | "weather"
   | "obituaries"
   | "politics"
   | "economy"
@@ -140,6 +143,8 @@ function buildCountyFeedUrl(kind: CountyFallbackKind, countyName: string, state:
       return googleNewsRssUrl(scopedTopicQuery(scoped, ["local news", "community news"]));
     case "localSports":
       return googleNewsRssUrl(scopedTopicQuery(scoped, ["high school sports", "college sports", "football", "basketball", "baseball", "softball"]));
+    case "weather":
+      return googleNewsRssUrl(scopedTopicQuery(scoped, ["weather", "forecast", "National Weather Service", "storm", "flood", "tornado", "winter weather"]));
     case "obituaries":
       return googleNewsRssUrl(scopedTopicQuery(scoped, ["obituaries", "obituary", "funeral home", "death notice"]));
     case "politics":
@@ -181,6 +186,8 @@ function buildMarketFeedUrl(kind: CountyFallbackKind, placeName: string, state: 
       return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["local news"]));
     case "localSports":
       return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["sports", "high school sports", "college sports"]));
+    case "weather":
+      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["weather", "forecast", "National Weather Service", "storm", "flood", "tornado", "winter weather"]));
     case "obituaries":
       return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["obituaries", "funeral home"]));
     case "politics":
