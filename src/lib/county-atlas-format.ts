@@ -19,6 +19,9 @@ export function formatAtlasValue(value: number, valueKind: CountyAtlasValueKind,
       maximumFractionDigits: Math.abs(value) >= 1_000_000 ? 1 : 0,
     }).format(value);
   }
+  if (valueKind === "duration") {
+    return `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }).format(value)} minutes`;
+  }
   const formatted = new Intl.NumberFormat("en-US", {
     notation: Math.abs(value) >= 1_000_000 ? "compact" : "standard",
     maximumFractionDigits: valueKind === "index" ? 1 : 2,
