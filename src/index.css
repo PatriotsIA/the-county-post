@@ -28,12 +28,20 @@
   color: var(--ink);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
 }
 
 *,
 *::before,
 *::after {
   box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 body {
@@ -64,7 +72,8 @@ body::before {
 }
 
 #root {
-  max-width: min(99vw, 1920px);
+  width: 100%;
+  max-width: 1920px;
   margin: 0 auto;
   padding: clamp(12px, 1.5vw + 8px, 32px) clamp(8px, 1vw + 6px, 24px) 48px;
 }
@@ -1188,8 +1197,12 @@ body::before {
 
 .layout-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
+}
+
+.layout-grid > * {
+  min-width: 0;
 }
 
 .hero-card,
@@ -1234,8 +1247,8 @@ body::before {
 }
 
 .show-up-meter {
-  width: min(100%, 920px);
-  padding: clamp(18px, 2vw, 28px);
+  width: min(100%, 780px);
+  padding: clamp(15px, 1.6vw, 22px);
   border: 1px solid var(--news-blue);
   border-left-color: rgba(168, 25, 29, 0.65);
   border-radius: 20px;
@@ -1246,10 +1259,10 @@ body::before {
 }
 
 .show-up-meter h2 {
-  margin: 0 0 10px;
+  margin: 0 0 8px;
   color: var(--news-blue-dark);
   font-family: "Playfair Display", "Libre Baskerville", serif;
-  font-size: clamp(26px, 3vw, 38px);
+  font-size: clamp(22px, 2.4vw, 31px);
   line-height: 1.08;
   letter-spacing: -0.045em;
   text-transform: uppercase;
@@ -1266,8 +1279,8 @@ body::before {
 
 .show-up-meter-track {
   width: 100%;
-  height: 12px;
-  margin: 15px 0 8px;
+  height: 10px;
+  margin: 12px 0 7px;
   overflow: hidden;
   border-radius: 999px;
   background: #e0e6ee;
@@ -1289,7 +1302,7 @@ body::before {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin: 15px 0 0;
+  margin: 11px 0 0;
   padding: 0;
   list-style: none;
 }
@@ -1306,9 +1319,47 @@ body::before {
 }
 
 .show-up-meter-note {
-  margin-top: 14px !important;
+  margin-top: 10px !important;
   color: var(--muted);
   font-size: 13px;
+}
+
+.show-up-meter-cta {
+  display: grid;
+  justify-items: start;
+  gap: 9px;
+  margin-top: 13px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(18, 60, 115, 0.2);
+}
+
+.show-up-meter-cta p {
+  margin: 0;
+  color: var(--news-blue-dark);
+  font-weight: 700;
+}
+
+.show-up-meter-cta a {
+  border: 1px solid var(--news-red-dark);
+  padding: 7px 12px;
+  background: var(--news-red);
+  color: var(--white);
+  font-family: "Roboto Mono", monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.show-up-meter-cta a:hover,
+.show-up-meter-cta a:focus-visible {
+  background: var(--news-red-dark);
+}
+
+.show-up-meter-cta a:focus-visible {
+  outline: 3px solid var(--news-blue);
+  outline-offset: 2px;
 }
 
 .kicker {
@@ -2811,6 +2862,10 @@ button:disabled {
   border-top: 6px solid var(--news-blue);
 }
 
+.atlas-hero .atlas-domain-nav {
+  margin-top: 14px;
+}
+
 .atlas-freshness {
   display: flex;
   flex-wrap: wrap;
@@ -3337,5 +3392,289 @@ button:disabled {
 
   .atlas-data-table {
     min-width: 360px;
+  }
+}
+
+/* Responsive foundation: prevent an oversized child from shrinking the entire page. */
+main,
+.layout-grid,
+.weather-page,
+.atlas-page,
+.market-panel,
+.market-weather-stack,
+.section,
+.feed-scroll,
+.weather-hourly-scroll,
+.atlas-table-scroll {
+  min-width: 0;
+}
+
+@media (max-width: 960px) {
+  #root {
+    max-width: 100%;
+    padding: 10px 8px 32px;
+  }
+
+  .page {
+    padding: 14px 12px 26px;
+  }
+
+  .hero-card {
+    padding-right: 18px;
+  }
+
+  .hero-card h1 {
+    font-size: clamp(26px, 5.5vw, 38px);
+  }
+}
+
+@media (max-width: 720px) {
+  :root {
+    --tradingview-ticker-height: 72px;
+  }
+
+  .market-ticker-widget iframe {
+    width: 100% !important;
+    transform: none;
+  }
+
+  .weather-hourly-scroll,
+  .atlas-table-scroll {
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .masthead {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    margin: 0 -12px 12px;
+    padding: 10px 12px;
+  }
+
+  .masthead-kicker {
+    font-size: 10px;
+    letter-spacing: 0.11em;
+    line-height: 1.35;
+  }
+
+  .wordmark-logo {
+    width: clamp(150px, 48vw, 205px);
+  }
+
+  .menu-toggle {
+    min-height: 44px;
+    padding: 9px 11px;
+    font-size: 12px;
+  }
+
+  .nav-link {
+    min-height: 44px;
+    display: grid;
+    place-items: center;
+    font-size: 12px;
+    line-height: 1.3;
+  }
+
+  .context-nav {
+    flex-wrap: wrap;
+    max-height: none;
+    overflow: visible;
+    margin: 0 0 12px;
+    padding: 6px;
+  }
+
+  .context-link {
+    flex: 1 1 145px;
+    min-height: 40px;
+    display: grid;
+    place-items: center;
+    padding: 7px 8px;
+    font-size: 11px;
+    line-height: 1.2;
+    text-align: center;
+  }
+
+  .market-panel {
+    margin: 0 0 14px;
+  }
+
+  .market-panel-toggle {
+    min-height: 44px;
+    padding: 8px 10px;
+  }
+
+  .market-panel-toggle strong {
+    font-size: 12px;
+  }
+
+  .market-panel-toggle > span:first-child > span {
+    font-size: 10px;
+    white-space: normal;
+  }
+
+  .market-panel-toggle-state {
+    font-size: 11px;
+  }
+
+  .precious-metals-attribution {
+    justify-items: center;
+    text-align: center;
+  }
+
+  .precious-metals-attribution > a {
+    white-space: normal;
+    font-size: 10px;
+    overflow-wrap: anywhere;
+  }
+
+  .cattle-ticker-label,
+  .cattle-ticker-status,
+  .cattle-ticker-breakdown-title,
+  .cattle-ticker-breakdown-source {
+    font-size: 10px;
+  }
+
+  .hero-card {
+    padding-bottom: min(58vw, 220px);
+    background-position: center bottom 12px, center, center;
+    background-size: min(220px, 58vw) auto, auto, auto;
+  }
+
+  .atlas-hero {
+    padding-bottom: 18px;
+    background:
+      repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.018) 0, rgba(0, 0, 0, 0.018) 1px, transparent 1px, transparent 8px),
+      var(--panel);
+    background-position: center, center;
+    background-repeat: repeat, repeat;
+    background-size: auto, auto;
+  }
+
+  .hero-card .lead {
+    font-size: 16px;
+  }
+
+  .meta-grid,
+  .atlas-snapshot-grid,
+  .atlas-featured-grid,
+  .hard-assets-featured {
+    grid-template-columns: 1fr;
+  }
+
+  .section-heading {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    text-align: center;
+  }
+
+  .section-heading > div:nth-child(2) {
+    order: -1;
+  }
+
+  .section-heading-rule {
+    display: none;
+  }
+
+  .feed-presented-by {
+    font-size: 11px;
+    line-height: 1.25;
+  }
+
+  .feed-scroll {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .section {
+    overflow: visible;
+  }
+
+  .show-up-meter {
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .show-up-meter h2 {
+    font-size: clamp(22px, 7vw, 30px);
+  }
+
+  .show-up-meter-history {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .show-up-meter-history li {
+    text-align: center;
+  }
+
+  .show-up-meter-cta {
+    justify-items: stretch;
+    text-align: center;
+  }
+
+  .show-up-meter-cta a {
+    min-height: 44px;
+    display: grid;
+    place-items: center;
+    font-size: 12px;
+  }
+
+  .atlas-domain-nav {
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 8px;
+  }
+
+  .atlas-domain-nav a {
+    scroll-snap-align: start;
+    min-height: 40px;
+    display: grid;
+    place-items: center;
+    font-size: 11px;
+  }
+
+  .atlas-domain-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .atlas-section-heading > p {
+    text-align: left;
+  }
+
+  .atlas-metric-heading {
+    grid-template-columns: 1fr;
+  }
+
+  .atlas-data-table {
+    min-width: 360px;
+  }
+
+  .ad-banner-side-arrow {
+    display: none;
+  }
+
+  .ad-slot-banner {
+    margin-top: 18px;
+  }
+
+  .feed-ad-card {
+    min-height: 0;
+    aspect-ratio: 1;
+  }
+
+  .footer {
+    margin-top: 18px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .footer p {
+    overflow-wrap: anywhere;
+  }
+
+  .footer-links {
+    flex-wrap: wrap;
+    gap: 10px 16px;
   }
 }

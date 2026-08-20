@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { getCountiesForState, getCounty, getCountyMarketCities } from "../../src/data/counties";
 import { states } from "../../src/data/states";
 
@@ -307,6 +307,12 @@ test("county weather remains keyboard usable at 320px", async ({ page }) => {
   await weatherNavigation.focus();
   await expect(weatherNavigation).toBeFocused();
 
+  const marketToggle = page.getByRole("button", { name: /Market desk/i });
+  await marketToggle.focus();
+  await expect(marketToggle).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(marketToggle).toHaveAttribute("aria-expanded", "true");
+
   const alertLink = page.locator(".county-weather-alert").getByRole("link").first();
   await alertLink.focus();
   await expect(alertLink).toBeFocused();
@@ -343,6 +349,17 @@ test("county atlas snapshot links through the hub to domain details", async ({ p
   await expect(page).toHaveURL(/\/arkansas\/polk\/data$/);
   await expect(page.getByRole("heading", { name: "Polk County Data Atlas" })).toBeVisible();
   await expect(page.getByText("Partial coverage", { exact: true })).toHaveCount(0);
+  const atlasHero = page.locator(".atlas-hero");
+  const domainNavigation = page.getByRole("navigation", { name: "Polk County data domains" });
+  await expect(atlasHero.getByRole("navigation", { name: "Polk County data domains" })).toBeVisible();
+  await expect(domainNavigation).toHaveCount(1);
+  const meterBox = await page.locator(".show-up-meter").boundingBox();
+  expect(meterBox?.width).toBeLessThanOrEqual(782);
+  expect(await domainNavigation.evaluate((navigation) => {
+    const hero = navigation.closest(".atlas-hero");
+    const meter = hero?.nextElementSibling;
+    return Boolean(hero && meter?.classList.contains("county-show-up-section"));
+  })).toBe(true);
   const economyCard = page.locator(".atlas-domain-card", {
     has: page.getByRole("heading", { name: "Economy & Income" }),
   });
@@ -408,6 +425,44 @@ test("atlas domain navigation remains keyboard usable at 320px", async ({ page }
   await expect(page).toHaveURL(/\/arkansas\/polk\/data\/economy$/);
 });
 
+test("county and atlas pages reflow without horizontal page overflow on phones", async ({ page }) => {
+  await page.setViewportSize({ width: 430, height: 932 });
+  await page.goto("/texas/potter");
+
+  const marketToggle = page.getByRole("button", { name: /Market desk/i });
+  await expect(marketToggle).toHaveAttribute("aria-expanded", "false");
+  await marketToggle.click();
+  await expect(marketToggle).toHaveAttribute("aria-expanded", "true");
+  await expect(page.locator(".market-panel-content")).toBeVisible();
+  await expect(page.locator(".show-up-meter")).toBeVisible();
+  await expect(page.locator(".show-up-meter-cta a")).toHaveAttribute("href", "https://patriotsinaction.com");
+  await expectElementWithinViewport(page, ".show-up-meter");
+  await expectNoPageOverflow(page);
+
+  await page.goto("/texas/potter/data");
+  await expect(page.getByRole("heading", { name: "Potter County Data Atlas" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Potter County data domains" })).toBeVisible();
+  await expect(page.locator(".show-up-meter")).toBeVisible();
+  await expectElementWithinViewport(page, ".show-up-meter");
+  await expectNoPageOverflow(page);
+});
+
+test("market navigation and county layouts remain usable at 320px and desktop widths", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.goto("/arkansas/polk");
+
+  const mobileMarketToggle = page.getByRole("button", { name: /Market desk/i });
+  await mobileMarketToggle.focus();
+  await expect(mobileMarketToggle).toBeFocused();
+  await expectNoPageOverflow(page);
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.reload();
+  await expect(page.getByRole("button", { name: /Market desk/i })).toHaveAttribute("aria-expanded", "true");
+  await expect(page.locator(".market-panel-content")).toBeVisible();
+  await expectNoPageOverflow(page);
+});
+
 test("county feeds merge nearby-market stories, sort newest first, and keep batched sections stable", async ({ page }) => {
   await page.goto("/texas/randall");
 
@@ -469,6 +524,19 @@ test("one sampled county in every state receives an in-state fallback market", (
   expect(briscoe).toBeTruthy();
   expect(getCountyMarketCities(briscoe!, 2)).toEqual(["Amarillo", "Lubbock"]);
 });
+
+async function expectNoPageOverflow(page: Page) {
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1)).toBe(true);
+}
+
+async function expectElementWithinViewport(page: Page, selector: string) {
+  await expect.poll(() => page.evaluate((target) => {
+    const element = document.querySelector(target);
+    if (!element) return false;
+    const { left, right } = element.getBoundingClientRect();
+    return left >= -1 && right <= window.innerWidth + 1;
+  }, selector)).toBe(true);
+}
 
 const atlasDomainLabels: Record<string, [string, string]> = {
   demographics: ["Demographics", "People"],

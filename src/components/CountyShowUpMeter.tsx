@@ -41,6 +41,10 @@ export function CountyShowUpMeter({ county }: { county: CountySite }) {
         ) : (
           <p className="muted">Turnout data is not available for this county yet.</p>
         )}
+        <div className="show-up-meter-cta">
+          <p>Want to see higher voter turn out in your county? Click the button below to find out how.</p>
+          <a href="https://patriotsinaction.com" target="_blank" rel="noreferrer">Learn More</a>
+        </div>
       </div>
     </section>
   );

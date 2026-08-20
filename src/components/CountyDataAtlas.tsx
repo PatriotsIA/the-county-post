@@ -57,7 +57,6 @@ export function CountyDataAtlasHub({ county }: { county: CountySite }) {
         meta={data?.meta}
       />
       <CountyShowUpMeter county={county} />
-      <AtlasDomainNav county={county} />
 
       {state.status === "loading" ? (
         <AtlasStatus title="Loading the county atlas…" detail="Retrieving the latest cached county overview." />
@@ -146,7 +145,6 @@ export function CountyAtlasDomainPage({
         meta={data?.meta}
       />
       {domain === "civic-elections" ? <CountyShowUpMeter county={county} /> : null}
-      <AtlasDomainNav county={county} />
 
       {state.status === "loading" ? (
         <AtlasStatus title={`Loading ${atlasDomainLabels[domain]}…`} detail="Retrieving county measures and provenance." />
@@ -218,6 +216,7 @@ function AtlasHero({
         <span>Retrieved: {meta ? formatAtlasTimestamp(meta.retrievedAt) : "Loading"}</span>
         {meta?.partial ? <strong>Partial coverage</strong> : null}
       </div>
+      <AtlasDomainNav county={county} />
     </section>
   );
 }

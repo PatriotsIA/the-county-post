@@ -291,6 +291,15 @@ function App() {
   }, [pathname]);
 
   useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
     const updateScrollTopVisibility = () => setShowScrollTop(window.scrollY > 420);
     updateScrollTopVisibility();
     window.addEventListener("scroll", updateScrollTopVisibility, { passive: true });
