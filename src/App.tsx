@@ -299,7 +299,6 @@ function App() {
 
   return (
     <div className="page">
-      <TopTicker county={activeCounty} />
       <header className="masthead">
         <div>
           <p className="masthead-kicker masthead-kicker-row">
@@ -346,6 +345,7 @@ function App() {
         </nav>
       </header>
       <ContextNav county={activeCounty} state={activeState} />
+      <TopTicker county={activeCounty} />
       <button
         type="button"
         className={`scroll-top${showScrollTop ? " scroll-top-visible" : ""}`}

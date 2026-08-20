@@ -257,6 +257,91 @@ body::before {
   text-decoration: underline;
 }
 
+.market-panel {
+  margin: -6px 0 18px;
+}
+
+.market-panel-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid var(--border);
+  padding: 7px 10px;
+  background:
+    linear-gradient(90deg, var(--news-blue-dark), var(--news-blue)),
+    var(--news-blue);
+  color: var(--white);
+  cursor: pointer;
+  font-family: "Roboto Mono", monospace;
+  text-align: left;
+}
+
+.market-panel-toggle > span:first-child {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.market-panel-toggle strong,
+.market-panel-toggle > span:first-child > span {
+  text-transform: uppercase;
+}
+
+.market-panel-toggle strong {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+
+.market-panel-toggle > span:first-child > span {
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.market-panel-toggle-state {
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.market-panel-toggle-state span {
+  display: inline-grid;
+  width: 16px;
+  height: 16px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  margin-left: 4px;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.market-panel-toggle:hover,
+.market-panel-toggle:focus-visible {
+  background: var(--news-red-dark);
+}
+
+.market-panel-toggle:focus-visible {
+  outline: 3px solid var(--news-red);
+  outline-offset: 2px;
+}
+
+.market-panel-content[hidden] {
+  display: none;
+}
+
+.market-panel .market-weather-stack {
+  margin: 0;
+  border-top: 0;
+}
+
 .market-weather-stack {
   border: 1px solid var(--border);
   margin: 0 0 14px;

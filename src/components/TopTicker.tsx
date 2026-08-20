@@ -20,14 +20,34 @@ const metalSymbols = {
 } as const;
 
 export function TopTicker({ county }: { county?: CountySite }) {
+  const [isOpen, setIsOpen] = useState(() => typeof window === "undefined" || window.innerWidth > 720);
+  const panelId = "market-data-panel";
+
   return (
-    <section className="market-weather-stack" aria-label="Market ticker and local weather">
-      <div className="market-weather-bar">
-        <TradingViewTicker />
+    <section className="market-panel" aria-label="Market data and local weather">
+      <button
+        type="button"
+        className="market-panel-toggle"
+        aria-controls={panelId}
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((open) => !open)}
+      >
+        <span>
+          <strong>Market desk</strong>
+          <span>Stocks, metals, cattle &amp; local weather</span>
+        </span>
+        <span className="market-panel-toggle-state">{isOpen ? "Hide" : "Show"} <span aria-hidden="true">{isOpen ? "−" : "+"}</span></span>
+      </button>
+      <div id={panelId} className="market-panel-content" hidden={!isOpen}>
+        <div className="market-weather-stack">
+          <div className="market-weather-bar">
+            <TradingViewTicker />
+          </div>
+          <PreciousMetalsTicker />
+          <CattleTicker />
+          {county ? <CountyWeather county={county} /> : null}
+        </div>
       </div>
-      <PreciousMetalsTicker />
-      <CattleTicker />
-      {county ? <CountyWeather county={county} /> : null}
     </section>
   );
 }
