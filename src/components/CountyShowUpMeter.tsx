@@ -21,6 +21,7 @@ export function CountyShowUpMeter({ county }: { county: CountySite }) {
               <strong>{numberFormatter.format(latest.ballotsCast)}</strong> out of{" "}
               <strong>{numberFormatter.format(latest.registeredVoters)}</strong> registered voters cast a ballot.
             </p>
+            <p className="show-up-meter-attribution">According to The Machines</p>
             <div className="show-up-meter-track" role="img" aria-label={`${latest.turnoutPct.toFixed(1)}% turnout`}>
               <div className="show-up-meter-fill" style={{ width: `${latest.turnoutPct.toFixed(2)}%` }} />
             </div>

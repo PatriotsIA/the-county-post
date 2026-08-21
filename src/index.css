@@ -1277,6 +1277,14 @@ body::before {
   margin: 0;
 }
 
+.show-up-meter-attribution {
+  margin-top: 4px !important;
+  color: var(--muted);
+  font-family: "Roboto Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
 .show-up-meter-track {
   width: 100%;
   height: 10px;
