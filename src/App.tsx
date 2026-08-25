@@ -354,6 +354,11 @@ function App() {
         </nav>
       </header>
       <ContextNav county={activeCounty} state={activeState} />
+      {pathname === "/" ? (
+        <div className="top-county-finder">
+          <CountyDirectorySearch id="find-a-county" />
+        </div>
+      ) : null}
       <TopTicker county={activeCounty} />
       <button
         type="button"
@@ -567,9 +572,6 @@ function HomePage() {
           reporting, op-eds, and public notices.
         </p>
       </section>
-
-      <CountyDirectorySearch id="find-a-county" />
-
       <NewsFeedSection
         title="National briefing"
         kicker="Top of the hour"

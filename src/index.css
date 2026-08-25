@@ -1523,6 +1523,10 @@ h2 {
   scroll-margin-top: 18px;
 }
 
+.top-county-finder {
+  margin: 0 0 12px;
+}
+
 .county-finder .kicker,
 .county-finder .muted {
   color: rgba(255, 255, 255, 0.86);
