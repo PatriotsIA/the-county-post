@@ -1,6 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 import { getCountiesForState, getCounty, getCountyMarketCities } from "../../src/data/counties";
 import { states } from "../../src/data/states";
+import { buildCountyFallbackFeedUrls } from "../../src/lib/fallback-feed-urls";
+import { isTrustedCountyNativeNewsItem } from "../../src/lib/local-news-sources";
 
 test.beforeEach(async ({ page }) => {
   await page.route("http://localhost:8787/v1/pages/**", async (route) => {
@@ -204,6 +206,38 @@ function makeRouteItems({
         stateLabel: isArkansas ? "Arkansas" : "Texas",
       });
 }
+
+test("county RSS fallback targets reviewed Polk outlets and local sources nationwide", () => {
+  const polk = getCounty("arkansas", "polk");
+  const harris = getCounty("texas", "harris");
+  expect(polk).toBeDefined();
+  expect(harris).toBeDefined();
+
+  const polkUrls = buildCountyFallbackFeedUrls(polk!, "general");
+  const decodedPolkUrls = polkUrls.map((url) => decodeURIComponent(url).replace(/\+/g, " "));
+  const decodedHarrisUrls = buildCountyFallbackFeedUrls(harris!, "general").map((url) =>
+    decodeURIComponent(url).replace(/\+/g, " "),
+  );
+
+  expect(polkUrls).toContain("https://mypulsenews.com/feed/");
+  expect(decodedPolkUrls.some((url) => url.includes("site:menastar.com"))).toBe(true);
+  expect(decodedPolkUrls.some((url) => url.includes("site:mypulsenews.com"))).toBe(true);
+  expect(decodedHarrisUrls.some((url) => url.includes('"local newspaper"'))).toBe(true);
+  expect(decodedHarrisUrls.some((url) => url.includes("menastar.com"))).toBe(false);
+
+  expect(
+    isTrustedCountyNativeNewsItem(
+      {
+        id: "mena-star",
+        title: "School board approves its new calendar",
+        link: "https://news.google.com/rss/articles/mena-star",
+        source: "The Mena Star",
+      },
+      "Arkansas",
+      "Polk County",
+    ),
+  ).toBe(true);
+});
 
 test("county ticker links current conditions and only shows active alerts", async ({ page }) => {
   await page.goto("/arkansas/polk");

@@ -2,6 +2,7 @@ import { getOtherStatesWithCountyName, isAmbiguousCountyName } from "../data/cou
 import { getCountyMarketCities, type CountySite } from "../data/counties";
 import { stateNewsHubs } from "../data/state-news-hubs";
 import type { StateSite } from "../data/states";
+import { getCountyNativeNewsSources, type CountyNativeNewsSource } from "./local-news-sources";
 import type { Topic } from "./news-api";
 
 const GOOGLE_NEWS_RSS_SEARCH = "https://news.google.com/rss/search";
@@ -86,9 +87,13 @@ export function buildStateFallbackFeedUrls(state: StateSite, kind: Topic) {
 export function buildCountyFallbackFeedUrls(county: CountySite, kind: Topic) {
   const marketCities = getCountyMarketCities(county, 3);
   const countyKind = topicToCountyKind(kind);
+  const nativeSources = getCountyNativeNewsSources(county, kind);
   return Array.from(
     new Set([
       buildCountyFeedUrl(countyKind, county.name, county.state),
+      ...(nativeSources.length ? [buildReviewedNativeSourceFeedUrl(countyKind, county, nativeSources)] : []),
+      buildNativeSourceDiscoveryFeedUrl(countyKind, county),
+      ...nativeSources.flatMap((source) => (source.feedUrl ? [source.feedUrl] : [])),
       ...marketCities.map((city) => buildMarketFeedUrl(countyKind, city, county.state)),
     ]),
   );
@@ -133,6 +138,77 @@ function countyScopedTerms(countyName: string, state: StateSite) {
 
 function scopedTopicQuery(scopedPlace: string, topics: string[]) {
   return `(${scopedPlace}) (${topics.join(" OR ")})`;
+}
+
+function buildReviewedNativeSourceFeedUrl(
+  kind: CountyFallbackKind,
+  county: CountySite,
+  sources: CountyNativeNewsSource[],
+) {
+  const siteTerms = sources
+    .map((source) => hostname(source.websiteUrl))
+    .filter(Boolean)
+    .map((domain) => `site:${domain}`)
+    .join(" OR ");
+  const places = [county.displayName, ...getCountyMarketCities(county, 3)].map((place) => `"${place}"`).join(" OR ");
+  return googleNewsRssUrl(
+    `(${siteTerms}) "${county.state.name}" (${places}) (${localSourceTopicTerms(kind).join(" OR ")})`,
+  );
+}
+
+function buildNativeSourceDiscoveryFeedUrl(kind: CountyFallbackKind, county: CountySite) {
+  const scoped = countyScopedTerms(county.name, county.state);
+  const outletTerms = '"local newspaper" OR "local radio" OR "local television" OR "local newsroom"';
+  return googleNewsRssUrl(`${scopedTopicQuery(scoped, localSourceTopicTerms(kind))} (${outletTerms})`);
+}
+
+function localSourceTopicTerms(kind: CountyFallbackKind) {
+  switch (kind) {
+    case "localNews":
+      return ["local news", "community news"];
+    case "localSports":
+      return ["high school sports", "college sports", "football", "basketball", "baseball", "softball"];
+    case "weather":
+      return ["weather", "forecast", "National Weather Service", "storm", "flood", "tornado", "winter weather"];
+    case "obituaries":
+      return ["obituaries", "obituary", "funeral home", "death notice"];
+    case "politics":
+      return ["politics", "council", "commission", "elections", "ballot"];
+    case "economy":
+      return ["economy", "jobs", "unemployment", "housing market", "business"];
+    case "crime":
+      return ["crime", "courts", "sheriff", "police", "arrests"];
+    case "opinion":
+      return ["opinion", "editorial", "column"];
+    case "monetary-policy":
+      return ["inflation", "interest rates", "Federal Reserve", "central bank", "currency policy"];
+    case "markets-investing":
+      return ["markets", "commodities", "stocks", "bonds", "investing"];
+    case "jobs-business":
+      return ["jobs", "employment", "small business", "industry", "economic development"];
+    case "property-taxes":
+      return ["property taxes", "property tax", "assessment", "appraisal", "tax levy", "homestead exemption"];
+    case "municipal-bonds":
+      return ["municipal bond", "school bond", "public debt", "bond election"];
+    case "budgets-levies":
+      return ["public budget", "county budget", "city budget", "school budget", "tax rate"];
+    case "voting-systems":
+      return ["voting systems", "ballot processing", "voting equipment", "ballot certification"];
+    case "election-administration":
+      return ["election administration", "election office", "polling place", "voter registration"];
+    case "audits-recounts":
+      return ["election audit", "recount", "canvass", "post-election review"];
+    case "open-records":
+      return ["public records", "open records", "FOIA", "government transparency"];
+  }
+}
+
+function hostname(value: string) {
+  try {
+    return new URL(value).hostname.toLowerCase().replace(/^www\./, "");
+  } catch {
+    return "";
+  }
 }
 
 function buildCountyFeedUrl(kind: CountyFallbackKind, countyName: string, state: StateSite) {

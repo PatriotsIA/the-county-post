@@ -59,6 +59,7 @@ This allows the frontend to deploy now without the localhost API. Once the API i
 - County and state data come from `@nickgraffis/us-counties`.
 - County and state market selection uses county centroids and nearest in-state news hubs.
 - Feeds prefer `VITE_NEWS_API_URL` when available, then fall back to RSS.
+- County RSS fallback includes a state-qualified local-newspaper/radio/television search for every county and mirrors reviewed county-native outlet profiles from the API. Polk County, Arkansas explicitly targets The Mena Star and directly fetches My Pulse News / KENA.
 - The top strip includes a TradingView stock ticker, LiveCoinWatch crypto ticker, and county weather on county pages.
 - County weather comes from the County Post News API, which fetches National Weather Service observations, forecasts, and active alerts plus weekly U.S. Drought Monitor county conditions. The ticker, notice strips, and weather page share one metadata-driven browser cache.
 - Styling is intentionally monochrome with bold, newspaper-inspired typography.

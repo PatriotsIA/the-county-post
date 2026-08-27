@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ads } from "../data/ads";
+import { isTrustedCountyNativeNewsItem } from "../lib/local-news-sources";
 import { fetchNewsApiFeed, isNewsApiConfigured, type NewsFeedItem, type Topic } from "../lib/news-api";
 import { fetchNewsFeeds } from "../lib/rss";
 
@@ -557,11 +558,16 @@ function filterFeedItems(items: NewsFeedItem[], kind: FeedKind, locality?: Local
     const haystack = `${contentHaystack} ${item.source || ""}`.toLowerCase();
     if (rules.exclude?.some((term) => haystack.includes(term))) return false;
     if (rules.include?.length && !rules.include.some((term) => haystack.includes(term))) return false;
-    return matchesLocality(contentHaystack, haystack, locality);
+    return matchesLocality(item, contentHaystack, haystack, locality);
   });
 }
 
-function matchesLocality(contentHaystack: string, fullHaystack: string, locality?: LocalityScope) {
+function matchesLocality(
+  item: NewsFeedItem,
+  contentHaystack: string,
+  fullHaystack: string,
+  locality?: LocalityScope,
+) {
   if (!locality?.strict) return true;
 
   const allowedStateName = locality.stateName?.toLowerCase();
@@ -569,6 +575,8 @@ function matchesLocality(contentHaystack: string, fullHaystack: string, locality
   if (mentionsOtherState) return false;
 
   if (locality.countyName) {
+    if (isTrustedCountyNativeNewsItem(item, locality.stateName, locality.countyName)) return true;
+
     const explicitlyInState = Boolean(allowedStateName && includesTerm(fullHaystack, allowedStateName));
     if (!explicitlyInState) return false;
 

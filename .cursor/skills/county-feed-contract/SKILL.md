@@ -10,6 +10,7 @@ description: Maintains The County Post frontend integration with the county-news
 - API request and response types: `src/lib/news-api.ts`
 - Browser RSS parsing and duplicate suppression: `src/lib/rss.ts`
 - Fallback query construction: `src/lib/fallback-feed-urls.ts`
+- Reviewed county-native source profiles: `src/lib/local-news-sources.ts`
 - Feed rendering and locality fallback labels: `src/components/NewsFeedSection.tsx`
 - Route scope and editorial taxonomy: `src/App.tsx`
 
@@ -20,6 +21,7 @@ description: Maintains The County Post frontend integration with the county-news
 3. Keep the fallback's county/state locality and near-duplicate behavior aligned with the API. A fallback must not weaken same-name county protections.
 4. Do not strip or reinterpret `meta.sourcesUsed`; it identifies county primary, market, and nearby coverage tiers during rollout.
 5. Keep no-image labels user-facing (`X County News`), never expose fallback query text.
+6. Mirror reviewed county-native source profile changes from the API so direct feeds, targeted source searches, and strict locality behavior remain aligned during browser fallback.
 
 ## API changes
 
