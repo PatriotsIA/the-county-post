@@ -358,6 +358,17 @@ test("county weather page shows alerts, forecasts, hourly data, sources, and sto
   await expect(currentConditions.getByText("72°F", { exact: true })).toBeVisible();
   await expect(currentConditions.getByText("Clear", { exact: true })).toBeVisible();
 
+  const rainfall = page.locator(".weather-rainfall-section");
+  await expect(rainfall.getByRole("heading", { name: "Fourteen-day precipitation" })).toBeVisible();
+  await expect(rainfall).toContainText("2.67 in");
+  await expect(rainfall).toContainText("7 above 0.01 in");
+  await expect(rainfall).toContainText("Aug 25, 2026");
+  await expect(rainfall.locator(".weather-rainfall-chart li")).toHaveCount(14);
+  await expect(rainfall.getByRole("link", { name: "Open NASA POWER precipitation data" })).toHaveAttribute(
+    "href",
+    /power\.larc\.nasa\.gov/,
+  );
+
   const alerts = page.locator(".weather-alerts-section");
   await expect(alerts.getByRole("heading", { name: "Severe Thunderstorm Warning for Polk County" })).toBeVisible();
   const officialAlert = alerts
@@ -419,6 +430,11 @@ test("county weather remains keyboard usable at 320px", async ({ page }) => {
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1)).toBe(true);
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/\/arkansas\/polk\/weather$/);
+
+  const rainfallStrip = page.getByLabel("Scrollable daily precipitation chart for Polk County");
+  await rainfallStrip.focus();
+  await expect(rainfallStrip).toBeFocused();
+  await page.keyboard.press("ArrowRight");
 
   const hourlyStrip = page.getByLabel("Scrollable hourly forecast");
   await hourlyStrip.focus();
@@ -915,6 +931,11 @@ function makeWeatherResponse(stateSlug: string, countySlug: string) {
     shortForecast: index < 7 ? "Sunny" : "Mostly Clear",
     detailedForecast: "Hourly test forecast.",
   }));
+  const rainfallValues = [0, 0.12, 0, 0.35, 0.01, 0, 0.48, 0.72, 0, 0.04, 0, 0.2, 0, 0.75];
+  const rainfallDaily = rainfallValues.map((precipitationInches, index) => ({
+    date: `2026-08-${String(12 + index).padStart(2, "0")}`,
+    precipitationInches,
+  }));
 
   return {
     county: {
@@ -999,6 +1020,27 @@ function makeWeatherResponse(stateSlug: string, countySlug: string) {
           },
         }
       : undefined,
+    rainfallHistory: {
+      periodStart: "2026-08-12",
+      periodEnd: "2026-08-25",
+      dataThrough: "2026-08-25",
+      requestedDays: 14,
+      availableDays: 14,
+      totalInches: 2.67,
+      wetDays: 7,
+      estimated: true,
+      locationBasis: "county-centroid",
+      daily: rainfallDaily,
+      source: {
+        name: "NASA POWER",
+        agency: "NASA Langley Research Center",
+        url: "https://power.larc.nasa.gov/api/temporal/daily/point?parameters=PRECTOTCORR",
+        documentation: "https://power.larc.nasa.gov/docs/services/api/temporal/daily/",
+        parameter: "PRECTOTCORR",
+        nativeUnit: "mm/day",
+        latencyNote: "NASA POWER meteorological data typically trails the current date by two to three days.",
+      },
+    },
     warnings: [],
     meta: {
       fetchedAt: "2026-08-19T18:05:00.000Z",
@@ -1006,7 +1048,12 @@ function makeWeatherResponse(stateSlug: string, countySlug: string) {
       cacheTtlSeconds: 600,
       alertsCacheTtlSeconds: 180,
       pointsCacheTtlSeconds: 86400,
-      units: { temperature: "F", windSpeed: "mph", precipitationProbability: "percent" },
+      units: {
+        temperature: "F",
+        windSpeed: "mph",
+        precipitationProbability: "percent",
+        precipitationHistory: "inches",
+      },
       source: {
         name: "National Weather Service",
         documentation: "https://www.weather.gov/documentation/services-web-api",

@@ -8,6 +8,7 @@ import { buildCountyFallbackFeedUrls } from "../lib/fallback-feed-urls";
 import {
   weatherSeverityClass,
   type CountyDroughtCondition,
+  type CountyRainfallHistory,
   type CountyWeatherResponse,
   type WeatherAlert,
   type WeatherForecastPeriod,
@@ -162,6 +163,21 @@ function WeatherReport({ weather, atlasPath }: { weather: CountyWeatherResponse;
         )}
       </section>
 
+      {weather.rainfallHistory ? (
+        <section className="card weather-rainfall-section" aria-labelledby="rainfall-history-heading">
+          <header className="weather-section-heading">
+            <div>
+              <p className="kicker">Recent conditions</p>
+              <h2 id="rainfall-history-heading">Fourteen-day precipitation</h2>
+            </div>
+            <span className="weather-count-badge">
+              {formatRainfallTotal(weather.rainfallHistory.totalInches)}
+            </span>
+          </header>
+          <RainfallHistoryCard history={weather.rainfallHistory} countyName={weather.county.displayName} />
+        </section>
+      ) : null}
+
       <section className="card weather-forecast-section" aria-labelledby="weather-forecast-heading">
         <header className="weather-section-heading">
           <div>
@@ -221,15 +237,19 @@ function WeatherReport({ weather, atlasPath }: { weather: CountyWeatherResponse;
       <section className="card weather-source-section" aria-labelledby="weather-source-heading">
         <div>
           <p className="kicker">Source &amp; freshness</p>
-          <h2 id="weather-source-heading">National Weather Service</h2>
+          <h2 id="weather-source-heading">Weather data sources</h2>
           <p>
-            Weather observations, forecasts, and alerts are provided by the National Weather Service. The County Post
-            does not require or expose a browser weather API key.
+            Current observations, forecasts, and alerts are provided by the National Weather Service. Recent
+            precipitation is estimated by NASA POWER, and weekly drought classifications come from the U.S. Drought
+            Monitor. The County Post does not require or expose a browser weather API key.
           </p>
         </div>
         <dl className="weather-source-details">
           <WeatherDatum label="API fetched" value={formatDateTime(weather.meta.fetchedAt)} />
           <WeatherDatum label="Time zone" value={timeZone} />
+          {weather.rainfallHistory ? (
+            <WeatherDatum label="Precipitation data through" value={formatDate(weather.rainfallHistory.dataThrough)} />
+          ) : null}
           <WeatherDatum
             label="Forecast grid"
             value={weather.location.gridOffice && weather.location.gridX !== undefined && weather.location.gridY !== undefined
@@ -243,6 +263,8 @@ function WeatherReport({ weather, atlasPath }: { weather: CountyWeatherResponse;
           <OfficialLink href={weather.meta.source.alertsDocumentation} label="NWS alerts documentation" />
           <OfficialLink href={weather.meta.source.links.points} label="NWS location point" />
           <OfficialLink href={weather.meta.source.links.latestObservation} label="Latest official observation" />
+          <OfficialLink href={weather.rainfallHistory?.source.url} label="NASA POWER precipitation data" />
+          <OfficialLink href={weather.rainfallHistory?.source.documentation} label="NASA POWER methodology" />
           {weather.zones.forecast ? <OfficialLink href={weather.zones.forecast.link} label={`Forecast zone ${weather.zones.forecast.id}`} /> : null}
           {weather.zones.county ? <OfficialLink href={weather.zones.county.link} label={`County zone ${weather.zones.county.id}`} /> : null}
           <Link to={atlasPath}>Environment &amp; disasters atlas</Link>
@@ -279,6 +301,66 @@ function DroughtConditionCard({
       <div className="weather-official-links">
         <OfficialLink href={condition.source.countyUrl} label="View official county drought conditions" />
         <OfficialLink href={condition.source.url} label="Open U.S. Drought Monitor data" />
+      </div>
+    </article>
+  );
+}
+
+function RainfallHistoryCard({
+  history,
+  countyName,
+}: {
+  history: CountyRainfallHistory;
+  countyName: string;
+}) {
+  const maximum = Math.max(...history.daily.map((day) => day.precipitationInches), 0.01);
+
+  return (
+    <article className="weather-rainfall-card">
+      <div className="weather-rainfall-summary">
+        <div>
+          <p className="weather-rainfall-total">{formatRainfallTotal(history.totalInches)}</p>
+          <p>
+            Estimated precipitation over the latest {history.availableDays} available days at the geographic center
+            of {countyName}.
+          </p>
+        </div>
+        <dl className="weather-rainfall-details">
+          <WeatherDatum label="Period" value={`${formatDate(history.periodStart)}–${formatDate(history.periodEnd)}`} />
+          <WeatherDatum label="Wet days" value={`${history.wetDays} above 0.01 in`} />
+          <WeatherDatum label="Data through" value={formatDate(history.dataThrough)} />
+          <WeatherDatum label="Location basis" value="County-center estimate" />
+        </dl>
+      </div>
+
+      <div
+        className="weather-rainfall-chart-scroll"
+        tabIndex={0}
+        aria-label={`Scrollable daily precipitation chart for ${countyName}`}
+      >
+        <ol className="weather-rainfall-chart">
+          {history.daily.map((day) => (
+            <li key={day.date} title={`${formatDate(day.date)}: ${formatRainfallDaily(day.precipitationInches)}`}>
+              <span className="weather-rainfall-bar-track" aria-hidden="true">
+                <span
+                  className="weather-rainfall-bar-fill"
+                  style={{ height: `${Math.max(day.precipitationInches > 0 ? 3 : 0, (day.precipitationInches / maximum) * 100)}%` }}
+                />
+              </span>
+              <strong>{formatRainfallDaily(day.precipitationInches)}</strong>
+              <span>{formatChartDate(day.date)}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      <p className="weather-rainfall-note">
+        NASA POWER PRECTOTCORR is a corrected gridded precipitation estimate, not a county-wide rain-gauge total.
+        Values may include the liquid equivalent of frozen precipitation. {history.source.latencyNote}
+      </p>
+      <div className="weather-official-links">
+        <OfficialLink href={history.source.url} label="Open NASA POWER precipitation data" />
+        <OfficialLink href={history.source.documentation} label="NASA POWER daily API documentation" />
       </div>
     </article>
   );
@@ -371,6 +453,31 @@ function formatPressure(measurement?: WeatherMeasurement) {
   return typeof measurement?.value === "number"
     ? `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(measurement.value)} Pa`
     : "Unavailable";
+}
+
+function formatRainfallTotal(value: number) {
+  return `${new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value)} in`;
+}
+
+function formatRainfallDaily(value: number) {
+  if (value > 0 && value < 0.01) return "Trace";
+  return `${new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: value >= 1 ? 1 : 2,
+    maximumFractionDigits: 2,
+  }).format(value)} in`;
+}
+
+function formatChartDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  }).format(date);
 }
 
 function formatDroughtPercent(value: number) {
