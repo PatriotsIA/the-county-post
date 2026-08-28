@@ -109,7 +109,11 @@ export function NewsFeedSection({
           return;
         }
         if (hasInitialPageData && initialStatus === "error" && requestedCount <= pageSize) {
-          const fallbackItems = await loadFallbackItems(requestedCount, stableFallbackFeedUrls);
+          const fallbackItems = await loadFallbackItems(
+            requestedCount,
+            stableFallbackFeedUrls,
+            Boolean(locality?.countyName && kind === "general"),
+          );
           if (!cancelled) {
             setItems(fallbackItems);
             setSource("fallback");
@@ -143,7 +147,11 @@ export function NewsFeedSection({
           }
         }
 
-        const fallbackItems = await loadFallbackItems(requestedCount, stableFallbackFeedUrls);
+        const fallbackItems = await loadFallbackItems(
+          requestedCount,
+          stableFallbackFeedUrls,
+          Boolean(locality?.countyName && kind === "general"),
+        );
         if (!cancelled) {
           setItems(fallbackItems);
           setSource("fallback");
@@ -162,7 +170,20 @@ export function NewsFeedSection({
     return () => {
       cancelled = true;
     };
-  }, [apiPath, fallbackFeedUrlsKey, hasInitialPageData, initialItems, initialSource, initialStatus, loadEnabled, pageSize, requestedCount, stableFallbackFeedUrls]);
+  }, [
+    apiPath,
+    fallbackFeedUrlsKey,
+    hasInitialPageData,
+    initialItems,
+    initialSource,
+    initialStatus,
+    kind,
+    loadEnabled,
+    locality?.countyName,
+    pageSize,
+    requestedCount,
+    stableFallbackFeedUrls,
+  ]);
 
   useEffect(() => {
     setItems(initialItems || []);
@@ -392,9 +413,13 @@ function fallbackThumbnailLabel(locality?: LocalityScope) {
   return "County Post News";
 }
 
-async function loadFallbackItems(requestedCount: number, fallbackFeedUrls: string[]) {
+async function loadFallbackItems(
+  requestedCount: number,
+  fallbackFeedUrls: string[],
+  balancePublishers: boolean,
+) {
   if (!fallbackFeedUrls.length) throw new Error("No fallback RSS feeds are configured for this section.");
-  const items = await fetchNewsFeeds(fallbackFeedUrls, requestedCount);
+  const items = await fetchNewsFeeds(fallbackFeedUrls, requestedCount, { balancePublishers });
   if (!items.length) throw new Error("Unable to load this feed from the News API or fallback RSS.");
   return items;
 }
@@ -554,7 +579,7 @@ const stateNames = [
 function filterFeedItems(items: NewsFeedItem[], kind: FeedKind, locality?: LocalityScope) {
   const rules = categoryRules[kind];
   return items.filter((item) => {
-    const contentHaystack = `${item.title} ${item.description || ""}`.toLowerCase();
+    const contentHaystack = `${item.title} ${item.description || ""} ${(item.categories || []).join(" ")}`.toLowerCase();
     const haystack = `${contentHaystack} ${item.source || ""}`.toLowerCase();
     if (rules.exclude?.some((term) => haystack.includes(term))) return false;
     if (rules.include?.length && !rules.include.some((term) => haystack.includes(term))) return false;
@@ -609,6 +634,7 @@ function normalizeDuplicateTitle(value: string, source?: string) {
 }
 
 function isNearDuplicate(item: NewsFeedItem, title: string, existingItem: NewsFeedItem, existingTitle: string) {
+  if (isDistinctRecurringEdition(item, title, existingItem, existingTitle)) return false;
   if (title === existingTitle || title.includes(existingTitle) || existingTitle.includes(title)) return true;
   if (tokenSimilarity(title, existingTitle) >= 0.82) return true;
   if (samePublisher(item, existingItem) && sharesEventContext(title, existingTitle)) return true;
@@ -641,6 +667,29 @@ function stemToken(token: string) {
 }
 
 const genericStoryTokens = new Set(["county", "local", "news", "official", "officials", "report", "update", "today"]);
+const recurringSeriesTokens = new Set(["report", "reports", "log", "logs", "blotter", "briefing", "roundup"]);
+
+function isDistinctRecurringEdition(
+  item: NewsFeedItem,
+  title: string,
+  existingItem: NewsFeedItem,
+  existingTitle: string,
+) {
+  if (!samePublisher(item, existingItem)) return false;
+  const publishedAt = publicationTimestamp(item.publishedAt);
+  const existingPublishedAt = publicationTimestamp(existingItem.publishedAt);
+  if (publishedAt === undefined || existingPublishedAt === undefined) return false;
+  if (Math.abs(publishedAt - existingPublishedAt) < 48 * 60 * 60 * 1000) return false;
+
+  const titleTokens = title.split(" ");
+  const existingTitleTokens = existingTitle.split(" ");
+  return (
+    title === existingTitle ||
+    [...recurringSeriesTokens].some(
+      (token) => titleTokens.includes(token) && existingTitleTokens.includes(token),
+    )
+  );
+}
 
 function samePublisher(left: NewsFeedItem, right: NewsFeedItem) {
   const leftPublisher = publisherKey(left.source);
@@ -649,11 +698,19 @@ function samePublisher(left: NewsFeedItem, right: NewsFeedItem) {
 }
 
 function publisherKey(value?: string) {
-  return (value || "")
+  const normalized = (value || "")
     .toLowerCase()
     .replace(/\b(the|north|south|east|west|northeast|northwest|southeast|southwest)\b/g, "")
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
+  if (normalized.includes("my pulse news")) return "mypulsenews.com";
+  return normalized;
+}
+
+function publicationTimestamp(value?: string) {
+  if (!value) return undefined;
+  const parsed = new Date(value).getTime();
+  return Number.isNaN(parsed) ? undefined : parsed;
 }
 
 function isDvidsItem(item: NewsFeedItem) {
@@ -664,6 +721,9 @@ function normalizeImageKey(value?: string) {
   if (!value) return "";
   try {
     const url = new URL(value);
+    if (/(logo|masthead|favicon|placeholder|default[-_]?image|site[-_]?icon)/.test(url.pathname.toLowerCase())) {
+      return "";
+    }
     url.search = "";
     url.hash = "";
     return url.toString();

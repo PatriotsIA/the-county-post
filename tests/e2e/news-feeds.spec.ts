@@ -3,6 +3,7 @@ import { getCountiesForState, getCounty, getCountyMarketCities } from "../../src
 import { states } from "../../src/data/states";
 import { buildCountyFallbackFeedUrls } from "../../src/lib/fallback-feed-urls";
 import { isTrustedCountyNativeNewsItem } from "../../src/lib/local-news-sources";
+import { balancePublisherItems } from "../../src/lib/rss";
 
 test.beforeEach(async ({ page }) => {
   await page.route("http://localhost:8787/v1/pages/**", async (route) => {
@@ -214,12 +215,17 @@ test("county RSS fallback targets reviewed Polk outlets and local sources nation
   expect(harris).toBeDefined();
 
   const polkUrls = buildCountyFallbackFeedUrls(polk!, "general");
+  const polkSportsUrls = buildCountyFallbackFeedUrls(polk!, "sports");
   const decodedPolkUrls = polkUrls.map((url) => decodeURIComponent(url).replace(/\+/g, " "));
   const decodedHarrisUrls = buildCountyFallbackFeedUrls(harris!, "general").map((url) =>
     decodeURIComponent(url).replace(/\+/g, " "),
   );
 
   expect(polkUrls).toContain("https://mypulsenews.com/feed/");
+  expect(polkUrls).toContain("https://mypulsenews.com/feed/?paged=4");
+  expect(polkUrls).toContain("https://mypulsenews.com/category/news/feed/");
+  expect(polkSportsUrls).toContain("https://mypulsenews.com/category/sports/feed/");
+  expect(polkSportsUrls).not.toContain("https://mypulsenews.com/feed/?paged=2");
   expect(decodedPolkUrls.some((url) => url.includes("site:menastar.com"))).toBe(true);
   expect(decodedPolkUrls.some((url) => url.includes("site:mypulsenews.com"))).toBe(true);
   expect(decodedHarrisUrls.some((url) => url.includes('"local newspaper"'))).toBe(true);
@@ -237,6 +243,65 @@ test("county RSS fallback targets reviewed Polk outlets and local sources nation
       "Polk County",
     ),
   ).toBe(true);
+});
+
+test("county RSS fallback reserves half of a 50-story feed for other publishers", () => {
+  const dominant = Array.from({ length: 40 }, (_, index) => ({
+    id: `pulse-${index}`,
+    title: `My Pulse story ${index}`,
+    link: `https://mypulsenews.com/story-${index}`,
+    source: "My Pulse News / KENA",
+    publishedAt: new Date(Date.now() - index * 60_000).toISOString(),
+  }));
+  const alternatives = Array.from({ length: 30 }, (_, index) => ({
+    id: `alternative-${index}`,
+    title: `Alternative story ${index}`,
+    link: `https://publisher-${index % 3}.example/story-${index}`,
+    source: `Alternative Publisher ${index % 3}`,
+    publishedAt: new Date(Date.now() - (index + 40) * 60_000).toISOString(),
+  }));
+
+  const balanced = balancePublisherItems([...dominant, ...alternatives], 50);
+
+  expect(balanced).toHaveLength(50);
+  expect(balanced.filter((item) => item.link.includes("mypulsenews.com"))).toHaveLength(25);
+  expect(balanced.filter((item) => !item.link.includes("mypulsenews.com"))).toHaveLength(25);
+});
+
+test("county feeds retain separately dated recurring local reports", async ({ page }) => {
+  const items = ["2026-08-24T15:15:01Z", "2026-08-14T18:16:08Z", "2026-08-06T15:27:08Z"].map(
+    (publishedAt, index) => ({
+      id: `mena-police-${index}`,
+      title: "Mena Police Reports",
+      link: `https://mypulsenews.com/mena-police-reports-${index}`,
+      source: "My Pulse News / KENA",
+      publishedAt,
+      description: "Mena Arkansas weekly police activity.",
+      categories: ["Police Reports", "Polk County Arkansas"],
+    }),
+  );
+  await page.route("http://localhost:8787/v1/pages/counties/arkansas/polk**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        scope: {},
+        sections: {
+          localNews: {
+            scope: {},
+            topic: "general",
+            items,
+            meta: { count: items.length, sourcesUsed: ["direct:My Pulse News / KENA"] },
+          },
+        },
+        meta: { count: items.length },
+      }),
+    });
+  });
+
+  await page.goto("/arkansas/polk");
+
+  await expect(page.locator("a.feed-title", { hasText: "Mena Police Reports" })).toHaveCount(3);
 });
 
 test("county ticker links current conditions and only shows active alerts", async ({ page }) => {

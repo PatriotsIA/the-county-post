@@ -2,7 +2,11 @@ import { getOtherStatesWithCountyName, isAmbiguousCountyName } from "../data/cou
 import { getCountyMarketCities, type CountySite } from "../data/counties";
 import { stateNewsHubs } from "../data/state-news-hubs";
 import type { StateSite } from "../data/states";
-import { getCountyNativeNewsSources, type CountyNativeNewsSource } from "./local-news-sources";
+import {
+  getCountyNativeNewsFeedUrls,
+  getCountyNativeNewsSources,
+  type CountyNativeNewsSource,
+} from "./local-news-sources";
 import type { Topic } from "./news-api";
 
 const GOOGLE_NEWS_RSS_SEARCH = "https://news.google.com/rss/search";
@@ -93,7 +97,7 @@ export function buildCountyFallbackFeedUrls(county: CountySite, kind: Topic) {
       buildCountyFeedUrl(countyKind, county.name, county.state),
       ...(nativeSources.length ? [buildReviewedNativeSourceFeedUrl(countyKind, county, nativeSources)] : []),
       buildNativeSourceDiscoveryFeedUrl(countyKind, county),
-      ...nativeSources.flatMap((source) => (source.feedUrl ? [source.feedUrl] : [])),
+      ...getCountyNativeNewsFeedUrls(county, kind),
       ...marketCities.map((city) => buildMarketFeedUrl(countyKind, city, county.state)),
     ]),
   );

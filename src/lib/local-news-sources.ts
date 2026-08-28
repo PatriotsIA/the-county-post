@@ -4,7 +4,10 @@ import type { NewsFeedItem, Topic } from "./news-api";
 export type CountyNativeNewsSource = {
   name: string;
   websiteUrl: string;
-  feedUrl?: string;
+  feeds?: Array<{
+    url: string;
+    topics?: Topic[];
+  }>;
   outletTypes: Array<"newspaper" | "radio" | "television" | "digital">;
   aliases?: string[];
   topics?: Topic[];
@@ -26,7 +29,17 @@ const countyNativeNewsSources: CountyNativeNewsSource[] = [
   {
     name: "My Pulse News / KENA",
     websiteUrl: "https://mypulsenews.com/",
-    feedUrl: "https://mypulsenews.com/feed/",
+    feeds: [
+      { url: "https://mypulsenews.com/feed/", topics: ["general", "crime"] },
+      { url: "https://mypulsenews.com/feed/?paged=2", topics: ["general", "crime"] },
+      { url: "https://mypulsenews.com/feed/?paged=3", topics: ["general", "crime"] },
+      { url: "https://mypulsenews.com/feed/?paged=4", topics: ["general", "crime"] },
+      {
+        url: "https://mypulsenews.com/category/news/feed/",
+        topics: ["general", "politics", "economy", "crime"],
+      },
+      { url: "https://mypulsenews.com/category/sports/feed/", topics: ["sports"] },
+    ],
     outletTypes: ["digital", "radio"],
     aliases: ["My Pulse News", "MyPulseNews.com", "KENA", "KENA Radio", "KENA 104.1 FM"],
     counties: ["arkansas/polk"],
@@ -37,6 +50,14 @@ export function getCountyNativeNewsSources(county: CountySite, topic?: Topic) {
   const countyKey = `${county.state.slug}/${county.slug}`;
   return countyNativeNewsSources.filter(
     (source) => source.counties.includes(countyKey) && (!topic || !source.topics?.length || source.topics.includes(topic)),
+  );
+}
+
+export function getCountyNativeNewsFeedUrls(county: CountySite, topic: Topic) {
+  return getCountyNativeNewsSources(county, topic).flatMap((source) =>
+    (source.feeds || [])
+      .filter((feed) => !feed.topics?.length || feed.topics.includes(topic))
+      .map((feed) => feed.url),
   );
 }
 

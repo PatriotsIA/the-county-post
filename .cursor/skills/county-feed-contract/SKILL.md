@@ -22,6 +22,7 @@ description: Maintains The County Post frontend integration with the county-news
 4. Do not strip or reinterpret `meta.sourcesUsed`; it identifies county primary, market, and nearby coverage tiers during rollout.
 5. Keep no-image labels user-facing (`X County News`), never expose fallback query text.
 6. Mirror reviewed county-native source profile changes from the API so direct feeds, targeted source searches, and strict locality behavior remain aligned during browser fallback.
+7. Preserve the county general-news publisher mix: up to 25 stories from the dominant publisher and up to 25 from other publishers, with a 50-item lead request.
 
 ## API changes
 

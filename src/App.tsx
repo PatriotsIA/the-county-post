@@ -158,6 +158,7 @@ const pageBackgroundSections = ["sports", "politics", "economy", "crime", "obitu
 const countyLeadSections = ["localNews"] as const;
 const countyBackgroundSections = ["localSports", "politics", "economy", "crime", "obituaries", "opinion"] as const;
 const LEAD_PREFETCH_LIMIT = 32;
+const COUNTY_LEAD_PREFETCH_LIMIT = 50;
 const PAGE_PREFETCH_LIMIT = 96;
 
 type NewsPageState = {
@@ -988,7 +989,11 @@ function AtlasRouteLoading() {
 function CountyPage() {
   const { stateSlug, countySlug } = useParams<{ stateSlug: string; countySlug: string }>();
   const county = getCounty(stateSlug, countySlug);
-  const countyLeadPage = useNewsPage(county ? countyPageApiPath(county.state.slug, county.slug) : undefined, countyLeadSections, LEAD_PREFETCH_LIMIT);
+  const countyLeadPage = useNewsPage(
+    county ? countyPageApiPath(county.state.slug, county.slug) : undefined,
+    countyLeadSections,
+    COUNTY_LEAD_PREFETCH_LIMIT,
+  );
   const loadCountyBackground = canLoadBackgroundPage(countyLeadPage);
   const countyBackgroundLoader = useSequentialFeedLoader(loadCountyBackground, countyBackgroundSections.length + 2, county?.fips || "");
 
