@@ -3411,13 +3411,13 @@ button:disabled {
 
 .atlas-rainfall-glance {
   margin-top: 12px;
-  padding-top: 10px;
+  padding-top: 12px;
   border-top: 1px solid var(--border);
 }
 
 .atlas-rainfall-glance-heading {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
 }
@@ -3427,23 +3427,75 @@ button:disabled {
   font-size: 16px;
 }
 
-.atlas-rainfall-glance-heading strong {
+.atlas-rainfall-glance-aside {
+  display: grid;
+  justify-items: end;
+  gap: 7px;
+  text-align: right;
+}
+
+.atlas-rainfall-more {
+  display: inline-block;
+  border: 1px solid var(--news-red-dark);
+  padding: 5px 9px;
+  background: var(--news-red);
+  color: var(--white);
   font-family: "Roboto Mono", monospace;
-  font-size: 14px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.atlas-rainfall-more:hover {
+  background: var(--news-red-dark);
+}
+
+.atlas-rainfall-glance-aside strong {
+  color: var(--news-blue-dark);
+  font-family: "Roboto Mono", monospace;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .atlas-rainfall-glance .weather-rainfall-delay {
-  margin: 6px 0 8px;
+  margin: 6px 0 10px;
+}
+
+.atlas-rainfall-glance-plot {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 8px;
+  border: 1px solid var(--rule);
+  padding: 10px 10px 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7), transparent 28%),
+    repeating-linear-gradient(180deg, transparent 0 21px, rgba(23, 79, 147, 0.08) 21px 22px),
+    linear-gradient(180deg, #f3f7fb, #e6eef5);
+}
+
+.atlas-rainfall-glance-scale {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 88px;
+  margin-top: 16px;
+  color: var(--muted);
+  font-family: "Roboto Mono", monospace;
+  font-size: 8px;
+  letter-spacing: 0.02em;
+  text-align: right;
 }
 
 .atlas-rainfall-glance-chart {
   display: flex;
-  gap: 4px;
+  gap: 3px;
   align-items: end;
-  height: 72px;
+  min-width: 0;
   margin: 0;
   padding: 0;
-  overflow: hidden;
   list-style: none;
 }
 
@@ -3451,19 +3503,40 @@ button:disabled {
   display: grid;
   flex: 1;
   min-width: 0;
+  grid-template-rows: 16px 88px auto;
   align-items: end;
   justify-items: center;
-  gap: 3px;
+  gap: 4px;
+}
+
+.atlas-rainfall-glance-value {
+  overflow: hidden;
+  color: var(--news-blue-dark);
+  font-family: "Roboto Mono", monospace;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .atlas-rainfall-glance-chart .weather-rainfall-bar-track {
   width: 100%;
-  max-width: 12px;
-  height: 48px;
-  border-bottom-width: 1px;
+  max-width: 18px;
+  height: 88px;
+  border-bottom: 2px solid var(--news-blue);
+  background:
+    repeating-linear-gradient(180deg, transparent 0 21px, rgba(23, 79, 147, 0.12) 21px 22px),
+    rgba(255, 255, 255, 0.55);
 }
 
-.atlas-rainfall-glance-chart li > span:last-child {
+.atlas-rainfall-glance-chart .weather-rainfall-bar-fill {
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(180deg, #6aa4d4, var(--news-blue) 68%, #163f73);
+}
+
+.atlas-rainfall-glance-date {
   overflow: hidden;
   color: var(--muted);
   font-family: "Roboto Mono", monospace;
@@ -3907,6 +3980,19 @@ button:disabled {
 }
 
 @media (max-width: 720px) {
+  .atlas-rainfall-glance-heading {
+    gap: 10px;
+  }
+
+  .atlas-rainfall-glance-aside strong {
+    font-size: 18px;
+  }
+
+  .atlas-rainfall-glance-plot {
+    grid-template-columns: 36px minmax(0, 1fr);
+    padding: 8px 6px 6px;
+  }
+
   .atlas-snapshot-heading,
   .atlas-section-heading,
   .atlas-domain-heading,
