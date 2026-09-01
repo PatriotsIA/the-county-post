@@ -1244,7 +1244,8 @@ function MastheadHeroCopy({
     }
 
     if (rest === "data" || rest.startsWith("data/")) {
-      const domain = isCountyAtlasDomain(rest.slice("data/".length)) ? rest.slice("data/".length) : undefined;
+      const domainSlug = rest.slice("data/".length);
+      const domain = isCountyAtlasDomain(domainSlug) ? domainSlug : undefined;
       return (
         <MastheadHeroText
           kicker="County Data Atlas"
