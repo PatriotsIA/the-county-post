@@ -19,9 +19,19 @@ const metalSymbols = {
   palladium: "Pd",
 } as const;
 
-export function TopTicker({ county }: { county?: CountySite }) {
-  const [isOpen, setIsOpen] = useState(() => typeof window === "undefined" || window.innerWidth > 720);
+export function TopTicker({
+  county,
+  defaultOpen = false,
+}: {
+  county?: CountySite;
+  defaultOpen?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(() => defaultOpen && (typeof window === "undefined" || window.innerWidth > 720));
   const panelId = "market-data-panel";
+
+  useEffect(() => {
+    setIsOpen(defaultOpen && window.innerWidth > 720);
+  }, [defaultOpen]);
 
   return (
     <section className="market-panel" aria-label="Market data and local weather">

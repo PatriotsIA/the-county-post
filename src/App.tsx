@@ -1,4 +1,4 @@
-import { Fragment, lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, lazy, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, Navigate, NavLink, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
 import { SubmissionForm } from "./components/SubmissionForm";
 import { ClassifiedSubmissionForm } from "./components/ClassifiedSubmissionForm";
@@ -9,16 +9,18 @@ import { CountyEconomicData, CountyEconomicSnapshot } from "./components/CountyE
 import { CountyWeatherPage } from "./components/CountyWeather";
 import { CountyDataSnapshot } from "./components/CountyDataSnapshot";
 import { CountyShowUpMeter } from "./components/CountyShowUpMeter";
+import { AtlasDomainNav } from "./components/AtlasDomainNav";
+import { atlasDomainLabels } from "./lib/atlas-domain-labels";
+import { EditionMap } from "./components/EditionMap";
 import { TopTicker } from "./components/TopTicker";
-import { ads } from "./data/ads";
+import { ads, isCarouselOnlyAd } from "./data/ads";
 import { getCounty, getCountiesForState, getCountyMarketCities, getCountyMarketCity, searchCounties } from "./data/counties";
 import { site } from "./data/site";
 import { getStateBySlug, searchStates, states } from "./data/states";
 import { buildCountyFallbackFeedUrls, buildNationalFallbackFeedUrls, buildStateFallbackFeedUrls } from "./lib/fallback-feed-urls";
 import { countyAtlasDomains, type CountyAtlasDomain } from "./lib/county-atlas-api";
 import { fetchNewsApiPage, isNewsApiConfigured, type NewsFeedItem, type Topic } from "./lib/news-api";
-import countyPostFinalLogo from "../county-post-final-logo.png";
-import countyPostLogo from "../county-post-square-logo.png";
+import countyPostLogo from "../county-post-logo.png";
 import "./index.css";
 
 const LazyCountyDataAtlasHub = lazy(() =>
@@ -35,10 +37,10 @@ type SubjectPage = SubjectPageBase & { categorySlug: string; categoryTitle: stri
 
 const topicSections: { kind: TopicFeedKind; title: string; kicker: string }[] = [
   { kind: "sports", title: "Sports", kicker: "Scores & highlights" },
+  { kind: "obituaries", title: "Obituaries & public notices", kicker: "Community records" },
   { kind: "politics", title: "Politics", kicker: "Civic desk" },
   { kind: "economy", title: "Economy & business", kicker: "Markets" },
   { kind: "crime", title: "Crime & courts", kicker: "Public safety" },
-  { kind: "obituaries", title: "Obituaries & public notices", kicker: "Community records" },
   { kind: "opinion", title: "Opinion & op-eds", kicker: "Columns & analysis" },
 ];
 
@@ -154,9 +156,9 @@ const legacySubjectGroups: Record<string, SubjectGroup["slug"]> = {
 };
 
 const pageLeadSections = ["general"] as const;
-const pageBackgroundSections = ["sports", "politics", "economy", "crime", "obituaries", "opinion"] as const;
+const pageBackgroundSections = ["sports", "obituaries", "politics", "economy", "crime", "opinion"] as const;
 const countyLeadSections = ["localNews"] as const;
-const countyBackgroundSections = ["localSports", "politics", "economy", "crime", "obituaries", "opinion"] as const;
+const countyBackgroundSections = ["localSports", "obituaries", "politics", "economy", "crime", "opinion"] as const;
 const LEAD_PREFETCH_LIMIT = 32;
 const COUNTY_LEAD_PREFETCH_LIMIT = 50;
 const PAGE_PREFETCH_LIMIT = 96;
@@ -307,18 +309,25 @@ function App() {
     return () => window.removeEventListener("scroll", updateScrollTopVisibility);
   }, []);
 
+  const showEditionChrome = isEditionChromePath(pathname, activeCounty, activeState);
+  const isHomeEdition = isEditionHomePath(pathname, activeCounty, activeState);
+
   return (
     <div className="page">
-      <header className="masthead">
-        <div>
-          <p className="masthead-kicker masthead-kicker-row">
-            <span>Established 2026</span>
-            <span>Today Is: {todayLabel}</span>
-          </p>
-          <Link to="/" className="wordmark">
-            <img className="wordmark-logo" src={countyPostLogo} alt={`${site.name} — Every county. Every community. One nation.`} />
-          </Link>
-        </div>
+      <header className={`masthead${showEditionChrome ? " masthead-has-hero" : ""}${isHomeEdition ? " masthead-home" : ""}`}>
+        <p className="masthead-kicker masthead-kicker-row">
+          <span>Established 2026</span>
+          <span>Today Is: {todayLabel}</span>
+        </p>
+        {showEditionChrome ? (
+          <div className="masthead-stage">
+            <MastheadWordmark />
+            <MastheadHeroCopy pathname={pathname} county={activeCounty} state={activeState} />
+            <EditionMap county={activeCounty} state={activeState} />
+          </div>
+        ) : (
+          <MastheadWordmark />
+        )}
         <button
           type="button"
           className="menu-toggle"
@@ -329,38 +338,39 @@ function App() {
           <span aria-hidden="true">☰</span> Menu
         </button>
         <nav id="primary-navigation" className={`nav${mobileMenuOpen ? " nav-open" : ""}`} aria-label="Primary navigation">
-          <NavLink to="/" end className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")} onClick={() => setMobileMenuOpen(false)}>
-            Front Page
-          </NavLink>
-          <NavLink
-            to="/states"
-            className={({ isActive }) => (isActive ? "nav-link nav-link-directory active" : "nav-link nav-link-directory")}
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            Find Your State & County News
-          </NavLink>
-          <NavLink to="/op-eds" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")} onClick={() => setMobileMenuOpen(false)}>
-            Op-Eds
-          </NavLink>
-          <NavLink to="/about" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")} onClick={() => setMobileMenuOpen(false)}>
-            About
-          </NavLink>
-          <NavLink
-            to={submitStoryPath(activeCounty, activeState)}
-            className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            Submit A Story
-          </NavLink>
+        <NavLink to="/" end className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")} onClick={() => setMobileMenuOpen(false)}>
+          Front Page
+        </NavLink>
+        <NavLink
+          to="/states"
+          className={({ isActive }) => (isActive ? "nav-link nav-link-directory active" : "nav-link nav-link-directory")}
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          Find Your State & County News
+        </NavLink>
+        <NavLink to="/op-eds" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")} onClick={() => setMobileMenuOpen(false)}>
+          Op-Eds
+        </NavLink>
+        <NavLink to="/about" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")} onClick={() => setMobileMenuOpen(false)}>
+          About
+        </NavLink>
+        <NavLink
+          to={submitStoryPath(activeCounty, activeState)}
+          className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          Submit A Story
+        </NavLink>
         </nav>
       </header>
       <ContextNav county={activeCounty} state={activeState} />
+      {activeCounty && isCountyDataPath(pathname, activeCounty) ? <AtlasDomainNav county={activeCounty} /> : null}
       {pathname === "/" ? (
         <div className="top-county-finder">
           <CountyDirectorySearch id="find-a-county" />
         </div>
       ) : null}
-      <TopTicker county={activeCounty} />
+      <TopTicker county={activeCounty} defaultOpen={isEditionHomePath(pathname, activeCounty, activeState)} />
       <button
         type="button"
         className={`scroll-top${showScrollTop ? " scroll-top-visible" : ""}`}
@@ -377,15 +387,12 @@ function App() {
           <Route path="/topics/:subjectSlug" element={<NationalSubjectPage />} />
           <Route path="/submit" element={<SubmitPage />} />
           <Route path="/states" element={<StateDirectory />} />
+          <Route path="/states/:stateSlug/*" element={<LegacyStateRedirect />} />
           <Route path="/partners" element={<PartnerDirectory />} />
-          <Route path="/states/:stateSlug" element={<StatePage />} />
-          <Route path="/states/:stateSlug/:subjectSlug" element={<StateSubjectPage />} />
-          <Route path="/states/:stateSlug/submit" element={<SubmitPage />} />
           <Route path="/op-eds" element={<OpEdPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
-          <Route path="/:stateSlug/:countySlug" element={<CountyPage />} />
           <Route path="/:stateSlug/:countySlug/weather" element={<CountyWeatherRoute />} />
           <Route path="/:stateSlug/:countySlug/data" element={<CountyDataAtlasPage />} />
           <Route path="/:stateSlug/:countySlug/data/:domain" element={<CountyDataAtlasDomainRoute />} />
@@ -394,13 +401,16 @@ function App() {
           <Route path="/:stateSlug/:countySlug/submit" element={<CountySubmitPage />} />
           <Route path="/:stateSlug/:countySlug/classifieds" element={<CountyClassifiedsPage />} />
           <Route path="/:stateSlug/:countySlug/:subjectSlug" element={<CountySubjectPage />} />
+          <Route path="/:stateSlug/submit" element={<SubmitPage />} />
+          <Route path="/:stateSlug/:countySlug" element={<CountyOrStateDesk />} />
+          <Route path="/:stateSlug" element={<StatePage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
 
       <AdSlot slot="banner" limit={4} />
       <footer className="footer">
-        <img className="footer-logo" src={countyPostFinalLogo} alt={site.name} />
+        <img className="footer-logo" src={countyPostLogo} alt={site.name} />
         <p>
           {site.name} • County-by-county newswire • Contact the desk:{" "}
           <a href={`mailto:${site.contact.email}`}>{site.contact.email}</a>
@@ -415,6 +425,23 @@ function App() {
   );
 }
 
+function stateHomePath(state: { slug: string }) {
+  return `/${state.slug}`;
+}
+
+function LegacyStateRedirect() {
+  const { stateSlug, "*": rest } = useParams<{ stateSlug: string; "*": string }>();
+  if (!stateSlug) return <Navigate to="/states" replace />;
+  return <Navigate to={rest ? `/${stateSlug}/${rest}` : `/${stateSlug}`} replace />;
+}
+
+function CountyOrStateDesk() {
+  const { stateSlug, countySlug } = useParams<{ stateSlug: string; countySlug: string }>();
+  if (getCounty(stateSlug, countySlug)) return <CountyPage />;
+  if (getStateBySlug(stateSlug)) return <StateSubjectPage />;
+  return <NotFound />;
+}
+
 function useActiveCounty() {
   const { pathname } = useLocation();
   const [stateSlug, countySlug] = pathname.split("/").filter(Boolean);
@@ -426,7 +453,9 @@ function useActiveState(county?: ReturnType<typeof getCounty>) {
   const { pathname } = useLocation();
   if (county) return county.state;
   const [first, second] = pathname.split("/").filter(Boolean);
-  if (first === "states" && second) return getStateBySlug(second);
+  const state = getStateBySlug(first);
+  if (!state) return undefined;
+  if (!second || !getCounty(first, second)) return state;
   return undefined;
 }
 
@@ -465,7 +494,7 @@ function contextLinks(county?: NonNullable<ReturnType<typeof getCounty>>, state?
   }
 
   if (state) {
-    const base = `/states/${state.slug}`;
+    const base = stateHomePath(state);
     return [
       { to: base, label: "State Home", end: true },
       ...subjectGroups.map((group) => ({ to: `${base}/${group.slug}`, label: group.title })),
@@ -482,9 +511,44 @@ function contextLinks(county?: NonNullable<ReturnType<typeof getCounty>>, state?
   ];
 }
 
+function isCountyHomePath(pathname: string, county?: ReturnType<typeof getCounty>) {
+  return Boolean(county && pathname === `/${county.state.slug}/${county.slug}`);
+}
+
+function isCountyDataPath(pathname: string, county?: ReturnType<typeof getCounty>) {
+  if (!county) return false;
+  const base = `/${county.state.slug}/${county.slug}/data`;
+  return pathname === base || pathname.startsWith(`${base}/`);
+}
+
+function isEditionChromePath(
+  pathname: string,
+  county?: ReturnType<typeof getCounty>,
+  state?: ReturnType<typeof getStateBySlug>,
+) {
+  if (county || state) return true;
+  return pathname === "/" || pathname === "/states" || pathname === "/op-eds" || pathname === "/submit" || pathname.startsWith("/topics/");
+}
+
+function pathAfter(pathname: string, prefix: string) {
+  if (pathname === prefix) return "";
+  if (!pathname.startsWith(`${prefix}/`)) return "";
+  return pathname.slice(prefix.length + 1);
+}
+
+function isEditionHomePath(
+  pathname: string,
+  county?: ReturnType<typeof getCounty>,
+  state?: ReturnType<typeof getStateBySlug>,
+) {
+  if (pathname === "/") return true;
+  if (isCountyHomePath(pathname, county)) return true;
+  return Boolean(state && pathname === stateHomePath(state));
+}
+
 function submitStoryPath(county?: NonNullable<ReturnType<typeof getCounty>>, state?: ReturnType<typeof getStateBySlug>) {
   if (county) return `/${county.state.slug}/${county.slug}/submit`;
-  if (state) return `/states/${state.slug}/submit`;
+  if (state) return `${stateHomePath(state)}/submit`;
   return "/submit";
 }
 
@@ -518,7 +582,7 @@ function CountyDirectorySearch({ id }: { id?: string }) {
           if (bestCounty) {
             navigate(`/${bestCounty.state.slug}/${bestCounty.slug}`);
           } else if (bestState) {
-            navigate(`/states/${bestState.slug}`);
+            navigate(stateHomePath(bestState));
           }
         }}
       >
@@ -536,7 +600,7 @@ function CountyDirectorySearch({ id }: { id?: string }) {
         <div className="results-list single">
           {results.map((item) =>
             item.type === "state" ? (
-              <Link key={item.state.slug} to={`/states/${item.state.slug}`} className="result-link">
+              <Link key={item.state.slug} to={stateHomePath(item.state)} className="result-link">
                 <span className="result-name">{item.state.name}</span>
                 <span className="result-meta">State • {item.state.abbr}</span>
               </Link>
@@ -561,18 +625,6 @@ function HomePage() {
 
   return (
     <div className="layout-grid">
-      <section className="hero-card">
-        <p className="kicker">Front Page</p>
-        <h1>The County Post</h1>
-        <p className="lead">
-          National desk with top stories across the United States. Browse every U.S. county to see local headlines,
-          sports scores, obituaries, and state-level context pulled straight from live news wires.
-        </p>
-        <p className="muted">
-          Find your county below, or explore all states. Every county page includes a newsroom submission form for reader
-          reporting, op-eds, and public notices.
-        </p>
-      </section>
       <NewsFeedSection
         title="National briefing"
         kicker="Top of the hour"
@@ -591,7 +643,7 @@ function HomePage() {
             loadEnabled={nationalBackgroundLoader.isEnabled(index)}
             onLoadSettled={() => nationalBackgroundLoader.markSettled(index)}
           />
-          {section.kind === "sports" ? <AdSlot slot="inline" /> : null}
+          {section.kind === "obituaries" ? <AdSlot slot="inline" /> : null}
         </Fragment>
       ))}
 
@@ -606,7 +658,7 @@ function HomePage() {
         </header>
         <div className="state-grid">
           {states.map((state) => (
-            <Link key={state.slug} to={`/states/${state.slug}`} className="state-tile">
+            <Link key={state.slug} to={stateHomePath(state)} className="state-tile">
               <span>{state.name}</span>
               <span className="state-meta">{state.abbr}</span>
             </Link>
@@ -620,16 +672,11 @@ function HomePage() {
 function StateDirectory() {
   return (
     <div className="layout-grid">
-      <section className="hero-card">
-        <p className="kicker">Directory</p>
-        <h1>Find Your State & County News</h1>
-        <p className="lead">Search every U.S. county and state, or browse the complete state directory below.</p>
-      </section>
       <CountyDirectorySearch />
       <section className="card">
         <div className="state-grid">
           {states.map((state) => (
-            <Link key={state.slug} to={`/states/${state.slug}`} className="state-tile">
+            <Link key={state.slug} to={stateHomePath(state)} className="state-tile">
               <span>{state.name}</span>
               <span className="state-meta">{state.abbr}</span>
             </Link>
@@ -696,21 +743,23 @@ function PartnerList({ partners }: { partners: typeof ads }) {
 function StatePage() {
   const { stateSlug } = useParams<{ stateSlug: string }>();
   const state = getStateBySlug(stateSlug);
+  const navigate = useNavigate();
   const [countyQuery, setCountyQuery] = useState("");
   const stateLeadPage = useNewsPage(state ? statePageApiPath(state.slug) : undefined, pageLeadSections, LEAD_PREFETCH_LIMIT);
   const loadStateBackground = canLoadBackgroundPage(stateLeadPage);
   const stateBackgroundLoader = useSequentialFeedLoader(loadStateBackground, pageBackgroundSections.length + 1, state?.slug || "");
   const counties = useMemo(() => (state ? getCountiesForState(state.slug) : []), [state]);
-  const filteredCounties = useMemo(() => {
-    const normalized = countyQuery.trim().toLowerCase();
-    if (!normalized) return counties;
+  const trimmedQuery = countyQuery.trim();
+  const countyMatches = useMemo(() => {
+    const normalized = trimmedQuery.toLowerCase();
+    if (!normalized) return [];
     return counties.filter(
       (county) =>
         county.displayName.toLowerCase().includes(normalized) ||
         county.slug.includes(normalized) ||
         (county.primaryCity || "").toLowerCase().includes(normalized),
-    );
-  }, [counties, countyQuery]);
+    ).slice(0, 12);
+  }, [counties, trimmedQuery]);
 
   if (!state) {
     return <NotFound />;
@@ -718,32 +767,11 @@ function StatePage() {
 
   return (
     <div className="layout-grid">
-      <section className="hero-card">
-        <p className="kicker">State Edition</p>
-        <h1>
-          {state.name} <span className="muted">({state.abbr})</span>
-        </h1>
-        <p className="lead">
-          State-level desk with top headlines, politics, and regional context. Jump straight to any county edition below.
-        </p>
-        <div className="meta-grid">
-          <div>
-            <p className="meta-label">National lens</p>
-            <p className="meta-value">Balanced, non-partisan aggregation</p>
-          </div>
-          <div>
-            <p className="meta-label">Counties covered</p>
-            <p className="meta-value">{counties.length}</p>
-          </div>
-        </div>
-      </section>
-
-      <section className="card">
+      <section className="card county-finder">
         <header className="section-heading">
           <div className="section-heading-rule" aria-hidden />
           <div>
-            <p className="kicker">Counties</p>
-            <h2>Local editions</h2>
+            <h2>Find A County</h2>
           </div>
           <div className="section-heading-rule" aria-hidden />
         </header>
@@ -751,24 +779,31 @@ function StatePage() {
           className="search-form"
           onSubmit={(event) => {
             event.preventDefault();
+            const match = countyMatches[0];
+            if (match) navigate(`/${match.state.slug}/${match.slug}`);
           }}
         >
           <input
             value={countyQuery}
             onChange={(event) => setCountyQuery(event.target.value)}
-            placeholder="Filter counties in this state (name or city)"
-            aria-label="Filter counties in this state"
+            placeholder={`Search ${state.name} counties`}
+            aria-label={`Search ${state.name} counties`}
           />
-          <button type="submit">Filter</button>
+          <button type="submit" disabled={!trimmedQuery}>
+            Search
+          </button>
         </form>
-        <div className="state-counties">
-          {filteredCounties.map((county) => (
-            <Link key={county.fips} to={`/${state.slug}/${county.slug}`} className="county-chip">
-              {county.displayName}
-            </Link>
-          ))}
-          {!filteredCounties.length ? <p className="muted">No counties match that filter.</p> : null}
-        </div>
+        {trimmedQuery ? (
+          <div className="results-list single">
+            {countyMatches.map((county) => (
+              <Link key={county.fips} to={`/${county.state.slug}/${county.slug}`} className="result-link">
+                <span className="result-name">{county.displayName}</span>
+                <span className="result-meta">County • {state.name}</span>
+              </Link>
+            ))}
+            {!countyMatches.length ? <p className="muted">No {state.name} counties match that search.</p> : null}
+          </div>
+        ) : null}
       </section>
 
       <NewsFeedSection
@@ -791,7 +826,7 @@ function StatePage() {
             loadEnabled={stateBackgroundLoader.isEnabled(index)}
             onLoadSettled={() => stateBackgroundLoader.markSettled(index)}
           />
-          {section.kind === "sports" ? <AdSlot slot="inline" /> : null}
+          {section.kind === "obituaries" ? <AdSlot slot="inline" /> : null}
         </Fragment>
       ))}
       <NewsFeedSection
@@ -820,11 +855,6 @@ function NationalSubjectPage() {
 
   return (
     <div className="layout-grid">
-      <section className="hero-card">
-        <p className="kicker">{subject.kicker}</p>
-        <h1>{subject.title}</h1>
-        <p className="lead">{subject.description}</p>
-      </section>
       <NewsFeedSection
         title={`${subject.title} headlines`}
         kicker="National desk"
@@ -842,11 +872,6 @@ function NationalSubjectGroupPage({ group }: { group: SubjectGroup }) {
 
   return (
     <div className="layout-grid">
-      <section className="hero-card">
-        <p className="kicker">{group.kicker}</p>
-        <h1>{group.title}</h1>
-        <p className="lead">{group.description}</p>
-      </section>
       {group.slug === "economy-markets" ? <HardAssetsFeed /> : null}
       {group.subjects.map((subject, index) => (
         <NewsFeedSection
@@ -867,31 +892,25 @@ function NationalSubjectGroupPage({ group }: { group: SubjectGroup }) {
 }
 
 function StateSubjectPage() {
-  const { stateSlug, subjectSlug } = useParams<{ stateSlug: string; subjectSlug: string }>();
+  const { stateSlug, subjectSlug, countySlug } = useParams<{ stateSlug: string; subjectSlug?: string; countySlug?: string }>();
+  const deskSlug = subjectSlug || countySlug;
   const state = getStateBySlug(stateSlug);
   if (!state) return <NotFound />;
 
-  const legacySubjectGroup = legacySubjectGroups[subjectSlug || ""];
-  if (legacySubjectGroup) return <Navigate to={`/states/${state.slug}/${legacySubjectGroup}`} replace />;
+  const legacySubjectGroup = legacySubjectGroups[deskSlug || ""];
+  if (legacySubjectGroup) return <Navigate to={`${stateHomePath(state)}/${legacySubjectGroup}`} replace />;
 
-  const group = getSubjectGroup(subjectSlug);
+  const group = getSubjectGroup(deskSlug);
   if (group) return <StateSubjectGroupPage state={state} group={group} />;
 
   const subject =
-    subjectSlug === "op-eds"
+    deskSlug === "op-eds"
       ? { kind: "opinion" as TopicFeedKind, title: "State Op-Eds", kicker: "Opinion", description: `Columns, editorials, and opinion coverage for ${state.name}.` }
-      : getSubjectPage(subjectSlug);
+      : getSubjectPage(deskSlug);
   if (!subject) return <NotFound />;
 
   return (
     <div className="layout-grid">
-      <section className="hero-card">
-        <p className="kicker">{subject.kicker}</p>
-        <h1>
-          {state.name} {subject.title} <span className="muted">({state.abbr})</span>
-        </h1>
-        <p className="lead">{subject.description}</p>
-      </section>
       <NewsFeedSection
         title={`${state.name} ${subject.title}`}
         kicker="State desk"
@@ -910,13 +929,6 @@ function StateSubjectGroupPage({ state, group }: { state: NonNullable<ReturnType
 
   return (
     <div className="layout-grid">
-      <section className="hero-card">
-        <p className="kicker">{group.kicker}</p>
-        <h1>
-          {state.name} {group.title} <span className="muted">({state.abbr})</span>
-        </h1>
-        <p className="lead">{group.description}</p>
-      </section>
       {group.slug === "economy-markets" ? <HardAssetsFeed /> : null}
       {group.subjects.map((subject, index) => (
         <NewsFeedSection
@@ -928,7 +940,7 @@ function StateSubjectGroupPage({ state, group }: { state: NonNullable<ReturnType
           pageSize={14}
           kind={subject.kind}
           locality={{ stateName: state.name, stateAbbr: state.abbr, strict: true }}
-          actionLink={{ to: `/states/${state.slug}/${subject.slug}`, label: "Open subcategory" }}
+          actionLink={{ to: `${stateHomePath(state)}/${subject.slug}`, label: "Open subcategory" }}
           loadEnabled={loader.isEnabled(index)}
           onLoadSettled={() => loader.markSettled(index)}
         />
@@ -1014,34 +1026,8 @@ function CountyPage() {
   };
 
   return (
-    <div className="layout-grid">
-      <section className="hero-card">
-        <p className="kicker">Local Edition</p>
-        <h1>
-          {county.displayName} <span className="muted">({county.state.abbr})</span>
-        </h1>
-        <p className="lead">{county.description}</p>
-        <p className="muted">
-          Live feeds refresh on page load. The submission desk below routes reader story leads and op-eds directly to editors.
-        </p>
-        <div className="meta-grid">
-          <div>
-            <p className="meta-label">Primary market</p>
-            <p className="meta-value">{fallbackCity}, {county.state.abbr}</p>
-          </div>
-          <div>
-            <p className="meta-label">National lens</p>
-            <p className="meta-value">Balanced, non-partisan aggregation</p>
-          </div>
-          <div>
-            <p className="meta-label">County Sponsored By:</p>
-            <CountySponsor county={county} />
-          </div>
-        </div>
-      </section>
-
+    <div className="layout-grid compact-county-stack">
       <CountyDataSnapshot county={county} />
-      <CountyShowUpMeter county={county} />
 
       <NewsFeedSection
         title="Local headlines"
@@ -1066,7 +1052,19 @@ function CountyPage() {
         loadEnabled={countyBackgroundLoader.isEnabled(0)}
         onLoadSettled={() => countyBackgroundLoader.markSettled(0)}
       />
-      <AdSlot slot="inline" />
+      <NewsFeedSection
+        title="Obituaries & public notices"
+        kicker="Community records"
+        apiPath={countyApiPath(county.state.slug, county.slug, "obituaries")}
+        fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "obituaries")}
+        expandedLabel={expandedLabel}
+        pageSize={12}
+        kind="obituaries"
+        locality={locality}
+        loadEnabled={countyBackgroundLoader.isEnabled(1)}
+        onLoadSettled={() => countyBackgroundLoader.markSettled(1)}
+      />
+      <CountyShowUpMeter county={county} />
       <NewsFeedSection
         title="Politics"
         kicker="Civic desk"
@@ -1077,8 +1075,8 @@ function CountyPage() {
         kind="politics"
         locality={locality}
         actionLink={{ to: `/${county.state.slug}/${county.slug}/data/civic-elections`, label: "View county civic data" }}
-        loadEnabled={countyBackgroundLoader.isEnabled(1)}
-        onLoadSettled={() => countyBackgroundLoader.markSettled(1)}
+        loadEnabled={countyBackgroundLoader.isEnabled(2)}
+        onLoadSettled={() => countyBackgroundLoader.markSettled(2)}
       />
       <NewsFeedSection
         title="Economy & business"
@@ -1090,8 +1088,8 @@ function CountyPage() {
         kind="economy"
         locality={locality}
         actionLink={{ to: `/${county.state.slug}/${county.slug}/data/economy`, label: "View county economic data" }}
-        loadEnabled={countyBackgroundLoader.isEnabled(2)}
-        onLoadSettled={() => countyBackgroundLoader.markSettled(2)}
+        loadEnabled={countyBackgroundLoader.isEnabled(3)}
+        onLoadSettled={() => countyBackgroundLoader.markSettled(3)}
       />
       <NewsFeedSection
         title="Crime & courts"
@@ -1103,21 +1101,10 @@ function CountyPage() {
         kind="crime"
         locality={locality}
         actionLink={{ to: `/${county.state.slug}/${county.slug}/data/public-safety`, label: "View county safety data" }}
-        loadEnabled={countyBackgroundLoader.isEnabled(3)}
-        onLoadSettled={() => countyBackgroundLoader.markSettled(3)}
-      />
-      <NewsFeedSection
-        title="Obituaries & public notices"
-        kicker="Community records"
-        apiPath={countyApiPath(county.state.slug, county.slug, "obituaries")}
-        fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "obituaries")}
-        expandedLabel={expandedLabel}
-        pageSize={12}
-        kind="obituaries"
-        locality={locality}
         loadEnabled={countyBackgroundLoader.isEnabled(4)}
         onLoadSettled={() => countyBackgroundLoader.markSettled(4)}
       />
+      <AdSlot slot="inline" />
       <NewsFeedSection
         title="Opinion & op-eds"
         kicker="Local voices"
@@ -1137,7 +1124,7 @@ function CountyPage() {
         pageSize={12}
         sponsorId="arw-inline"
         locality={{ stateName: county.state.name, stateAbbr: county.state.abbr, cities: [], strict: true }}
-        actionLink={{ to: `/states/${county.state.slug}`, label: `View ${county.state.name} page` }}
+        actionLink={{ to: stateHomePath(county.state), label: `View ${county.state.name} page` }}
         loadEnabled={countyBackgroundLoader.isEnabled(6)}
         onLoadSettled={() => countyBackgroundLoader.markSettled(6)}
       />
@@ -1162,8 +1149,326 @@ function CountyPage() {
   );
 }
 
+function MastheadWordmark() {
+  return (
+    <Link to="/" className="wordmark">
+      <img className="wordmark-logo" src={countyPostLogo} alt={`${site.name} — Every county. Every community. One nation.`} />
+      <span className="wordmark-tagline">Every County - Every Community. One Nation</span>
+    </Link>
+  );
+}
+
+function MastheadHeroText({
+  kicker,
+  title,
+  lead,
+  muted,
+  className,
+  children,
+}: {
+  kicker: string;
+  title: ReactNode;
+  lead: string;
+  muted?: string;
+  className?: string;
+  children?: ReactNode;
+}) {
+  return (
+    <section className={className ? `masthead-hero ${className}` : "masthead-hero"}>
+      <p className="kicker">{kicker}</p>
+      <h1>{title}</h1>
+      <p className="lead">{lead}</p>
+      {muted ? <p className="muted">{muted}</p> : null}
+      {children}
+    </section>
+  );
+}
+
+function MastheadHeroCopy({
+  pathname,
+  county,
+  state,
+}: {
+  pathname: string;
+  county?: ReturnType<typeof getCounty>;
+  state?: ReturnType<typeof getStateBySlug>;
+}) {
+  if (county) {
+    const rest = pathAfter(pathname, `/${county.state.slug}/${county.slug}`);
+    if (!rest) {
+      const marketCities = getCountyMarketCities(county, 3);
+      const fallbackCity = marketCities[0] || getCountyMarketCity(county);
+      return (
+        <MastheadHeroText
+          className="county-edition-hero"
+          kicker="Local Edition"
+          title={
+            <>
+              {county.displayName} <span className="muted">({county.state.abbr})</span>
+            </>
+          }
+          lead={county.description}
+        >
+          <div className="county-edition-hero-copy">
+            <div className="meta-grid">
+              <div>
+                <p className="meta-label">Primary market</p>
+                <p className="meta-value">{fallbackCity}, {county.state.abbr}</p>
+              </div>
+              <div>
+                <p className="meta-label">National lens</p>
+                <p className="meta-value">Balanced, non-partisan aggregation</p>
+              </div>
+              <div>
+                <p className="meta-label">County Sponsored By:</p>
+                <CountySponsor county={county} />
+              </div>
+            </div>
+          </div>
+        </MastheadHeroText>
+      );
+    }
+
+    if (rest === "weather") {
+      return (
+        <MastheadHeroText
+          kicker="National Weather Service desk"
+          title={
+            <>
+              {county.displayName} Weather <span className="muted">({county.state.abbr})</span>
+            </>
+          }
+          lead={`Current conditions, active alerts, and the local National Weather Service forecast for ${county.state.name}.`}
+        />
+      );
+    }
+
+    if (rest === "data" || rest.startsWith("data/")) {
+      const domain = isCountyAtlasDomain(rest.slice("data/".length)) ? rest.slice("data/".length) : undefined;
+      return (
+        <MastheadHeroText
+          kicker="County Data Atlas"
+          title={
+            <>
+              {county.displayName} {domain ? atlasDomainLabels[domain] : "Data Atlas"}{" "}
+              <span className="muted">({county.state.abbr})</span>
+            </>
+          }
+          lead={
+            domain
+              ? "County measures with provenance, vintages, coverage notes, and comparisons."
+              : "A concise, sourced view of county people, economy, housing, public life, health, safety, land, government, and infrastructure."
+          }
+        />
+      );
+    }
+
+    if (rest === "economic-data") {
+      return (
+        <MastheadHeroText
+          kicker="County economy · Federal Reserve data"
+          title={
+            <>
+              {county.displayName} Economic Data <span className="muted">({county.state.abbr})</span>
+            </>
+          }
+          lead="A nonpartisan county economic profile using official series distributed by FRED, including employment, household income, personal income, and county production."
+        />
+      );
+    }
+
+    if (rest === "op-eds") {
+      return (
+        <MastheadHeroText
+          kicker="Opinion"
+          title={
+            <>
+              Op-eds for {county.displayName} <span className="muted">({county.state.abbr})</span>
+            </>
+          }
+          lead="Local columns, editorials, and letters to the editor."
+        />
+      );
+    }
+
+    if (rest === "submit") {
+      return (
+        <MastheadHeroText
+          kicker="Submit"
+          title={
+            <>
+              Submit A Story to {county.displayName} <span className="muted">({county.state.abbr})</span>
+            </>
+          }
+          lead="Send op-eds, story leads, documents, public notices, and local reporting to the county desk."
+        />
+      );
+    }
+
+    if (rest === "classifieds") {
+      return (
+        <MastheadHeroText
+          kicker="County classifieds"
+          title={
+            <>
+              {county.displayName} Classifieds <span className="muted">({county.state.abbr})</span>
+            </>
+          }
+          lead="Buy, sell, hire, announce, and connect with your local community."
+        />
+      );
+    }
+
+    const countyDesk = getSubjectGroup(rest) || getSubjectPage(rest);
+    if (countyDesk) {
+      return (
+        <MastheadHeroText
+          kicker={countyDesk.kicker}
+          title={
+            <>
+              {county.displayName} {countyDesk.title} <span className="muted">({county.state.abbr})</span>
+            </>
+          }
+          lead={countyDesk.description}
+        />
+      );
+    }
+
+    return (
+      <MastheadHeroText
+        kicker="Local Edition"
+        title={
+          <>
+            {county.displayName} <span className="muted">({county.state.abbr})</span>
+          </>
+        }
+        lead={county.description}
+      />
+    );
+  }
+
+  if (state) {
+    const rest = pathAfter(pathname, stateHomePath(state));
+    if (!rest) {
+      return (
+        <MastheadHeroText
+          kicker="State Edition"
+          title={
+            <>
+              {state.name} <span className="muted">({state.abbr})</span>
+            </>
+          }
+          lead="State-level desk with top headlines, politics, and regional context. Jump straight to any county edition below."
+        >
+          <div className="meta-grid">
+            <div>
+              <p className="meta-label">National lens</p>
+              <p className="meta-value">Balanced, non-partisan aggregation</p>
+            </div>
+            <div>
+              <p className="meta-label">Counties covered</p>
+              <p className="meta-value">{getCountiesForState(state.slug).length}</p>
+            </div>
+          </div>
+        </MastheadHeroText>
+      );
+    }
+
+    if (rest === "submit") {
+      return (
+        <MastheadHeroText
+          kicker="Submit"
+          title={
+            <>
+              Submit A Story <span className="muted">({state.abbr})</span>
+            </>
+          }
+          lead={`Send op-eds, story leads, documents, public notices, and reporting to the ${state.name} desk.`}
+        />
+      );
+    }
+
+    const stateDesk =
+      rest === "op-eds"
+        ? { kicker: "Opinion", title: "State Op-Eds", description: `Columns, editorials, and opinion coverage for ${state.name}.` }
+        : getSubjectGroup(rest) || getSubjectPage(rest);
+    if (stateDesk) {
+      return (
+        <MastheadHeroText
+          kicker={stateDesk.kicker}
+          title={
+            <>
+              {state.name} {stateDesk.title} <span className="muted">({state.abbr})</span>
+            </>
+          }
+          lead={stateDesk.description}
+        />
+      );
+    }
+
+    return (
+      <MastheadHeroText
+        kicker="State Edition"
+        title={
+          <>
+            {state.name} <span className="muted">({state.abbr})</span>
+          </>
+        }
+        lead="State-level desk with top headlines, politics, and regional context."
+      />
+    );
+  }
+
+  if (pathname === "/states") {
+    return (
+      <MastheadHeroText
+        kicker="Directory"
+        title="Find Your State & County News"
+        lead="Search every U.S. county and state, or browse the complete state directory below."
+      />
+    );
+  }
+
+  if (pathname === "/op-eds") {
+    return (
+      <MastheadHeroText
+        kicker="Opinion"
+        title="National Op-Ed Desk"
+        lead="Columns and analysis across the United States."
+      />
+    );
+  }
+
+  if (pathname === "/submit") {
+    return (
+      <MastheadHeroText
+        kicker="Submit"
+        title="Submit A Story"
+        lead="Send op-eds, story leads, documents, public notices, and reporting to the national desk."
+      />
+    );
+  }
+
+  if (pathname.startsWith("/topics/")) {
+    const slug = pathAfter(pathname, "/topics");
+    const desk = getSubjectGroup(slug) || getSubjectPage(slug);
+    if (desk) {
+      return <MastheadHeroText kicker={desk.kicker} title={desk.title} lead={desk.description} />;
+    }
+  }
+
+  return (
+    <MastheadHeroText
+      kicker="Front Page"
+      title="The County Post"
+      lead="National desk with top stories across the United States. Browse every U.S. county to see local headlines, sports scores, obituaries, and state-level context pulled straight from live news wires."
+      muted="Find your county below, or explore all states. Every county page includes a newsroom submission form for reader reporting, op-eds, and public notices."
+    />
+  );
+}
+
 function CountySponsor({ county }: { county: NonNullable<ReturnType<typeof getCounty>> }) {
-  const sponsorAds = ads.filter((ad) => ad.slot === "inline" && ad.id !== "guerrilla-gear-inline");
+  const sponsorAds = ads.filter((ad) => ad.slot === "inline" && ad.id !== "guerrilla-gear-inline" && !isCarouselOnlyAd(ad.id));
   const seed = county.fips || `${county.state.slug}/${county.slug}`;
   const hash = Array.from(seed).reduce((total, character) => total + character.charCodeAt(0), 0);
   const sponsor = sponsorAds[hash % sponsorAds.length];
@@ -1196,13 +1501,6 @@ function CountySubjectPage() {
 
   return (
     <div className="layout-grid">
-      <section className="hero-card">
-        <p className="kicker">{subject.kicker}</p>
-        <h1>
-          {county.displayName} {subject.title} <span className="muted">({county.state.abbr})</span>
-        </h1>
-        <p className="lead">{subject.description}</p>
-      </section>
       <NewsFeedSection
         title={`${county.displayName} ${subject.title}`}
         kicker="County desk"
@@ -1240,13 +1538,6 @@ function CountySubjectGroupPage({ county, group }: { county: NonNullable<ReturnT
 
   return (
     <div className="layout-grid">
-      <section className="hero-card">
-        <p className="kicker">{group.kicker}</p>
-        <h1>
-          {county.displayName} {group.title} <span className="muted">({county.state.abbr})</span>
-        </h1>
-        <p className="lead">{group.description}</p>
-      </section>
       {group.slug === "elections-transparency" ? <CountyShowUpMeter county={county} /> : null}
       {atlasDomainForGroup(group.slug) ? (
         <aside className="atlas-desk-link">
@@ -1298,13 +1589,6 @@ function CountyOpEdPage() {
 
   return (
     <div className="layout-grid">
-      <section className="hero-card">
-        <p className="kicker">Opinion</p>
-        <h1>
-          Op-eds for {county.displayName} <span className="muted">({county.state.abbr})</span>
-        </h1>
-        <p className="lead">Local columns, editorials, and letters to the editor.</p>
-      </section>
       <NewsFeedSection
         title="Local opinion"
         kicker="County op-eds"
@@ -1332,13 +1616,6 @@ function CountySubmitPage() {
 
   return (
     <div className="layout-grid">
-      <section className="hero-card">
-        <p className="kicker">Submit</p>
-        <h1>
-          Submit A Story to {county.displayName} <span className="muted">({county.state.abbr})</span>
-        </h1>
-        <p className="lead">Send op-eds, story leads, documents, public notices, and local reporting to the county desk.</p>
-      </section>
       <SubmissionForm county={county} />
     </div>
   );
@@ -1351,13 +1628,6 @@ function CountyClassifiedsPage() {
 
   return (
     <div className="layout-grid">
-      <section className="hero-card">
-        <p className="kicker">County classifieds</p>
-        <h1>
-          {county.displayName} Classifieds <span className="muted">({county.state.abbr})</span>
-        </h1>
-        <p className="lead">Buy, sell, hire, announce, and connect with your local community.</p>
-      </section>
       <ClassifiedSubmissionForm county={county} />
     </div>
   );
@@ -1366,11 +1636,6 @@ function CountyClassifiedsPage() {
 function OpEdPage() {
   return (
     <div className="layout-grid">
-      <section className="hero-card">
-        <p className="kicker">Opinion</p>
-        <h1>National Op-Ed Desk</h1>
-        <p className="lead">Columns and analysis across the United States.</p>
-      </section>
       <NewsFeedSection
         title="National opinion"
         kicker="Columns & analysis"
@@ -1387,17 +1652,9 @@ function SubmitPage() {
   const { stateSlug } = useParams<{ stateSlug?: string }>();
   const state = getStateBySlug(stateSlug);
   if (stateSlug && !state) return <NotFound />;
-  const scopeLabel = state ? `${state.name} desk` : "national desk";
 
   return (
     <div className="layout-grid">
-      <section className="hero-card">
-        <p className="kicker">Submit</p>
-        <h1>Submit A Story</h1>
-        <p className="lead">
-          Send op-eds, story leads, documents, public notices, and reporting to the {scopeLabel}.
-        </p>
-      </section>
       <SubmissionForm state={state} />
     </div>
   );

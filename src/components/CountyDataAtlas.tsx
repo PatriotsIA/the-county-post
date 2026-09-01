@@ -1,9 +1,9 @@
 import { lazy, Suspense, useEffect, useState } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { Link } from "react-router-dom";
 import type { CountySite } from "../data/counties";
+import { atlasDomainLabels } from "../lib/atlas-domain-labels";
 import { CountyShowUpMeter } from "./CountyShowUpMeter";
 import {
-  countyAtlasDomains,
   fetchCountyAtlasDomain,
   fetchCountyAtlasOverview,
   type CountyAtlasDomain,
@@ -24,21 +24,6 @@ const LazyAtlasMetricChart = lazy(() =>
   import("./AtlasCharts").then((module) => ({ default: module.AtlasMetricChart })),
 );
 
-const atlasDomainLabels: Record<CountyAtlasDomain, string> = {
-  demographics: "Demographics",
-  economy: "Economy & Income",
-  housing: "Housing",
-  "jobs-business": "Jobs & Business",
-  education: "Education",
-  health: "Health",
-  "civic-elections": "Civic Life & Elections",
-  "public-safety": "Public Safety",
-  agriculture: "Agriculture",
-  "environment-disasters": "Environment & Disasters",
-  "government-finance": "Government & Public Finance",
-  infrastructure: "Infrastructure & Connectivity",
-};
-
 type LoadState<T> =
   | { status: "loading" }
   | { status: "loaded"; data: T }
@@ -50,13 +35,7 @@ export function CountyDataAtlasHub({ county }: { county: CountySite }) {
 
   return (
     <div className="layout-grid atlas-page">
-      <AtlasHero
-        county={county}
-        title={`${county.displayName} Data Atlas`}
-        description="A concise, sourced view of county people, economy, housing, public life, health, safety, land, government, and infrastructure."
-        meta={data?.meta}
-      />
-      <CountyShowUpMeter county={county} />
+      <AtlasHero county={county} meta={data?.meta} />
 
       {state.status === "loading" ? (
         <AtlasStatus title="Loading the county atlas…" detail="Retrieving the latest cached county overview." />
@@ -122,6 +101,7 @@ export function CountyDataAtlasHub({ county }: { county: CountySite }) {
           <AtlasSourceCatalog sources={data.meta.sources} />
         </>
       ) : null}
+      <CountyShowUpMeter county={county} />
     </div>
   );
 }
@@ -138,13 +118,7 @@ export function CountyAtlasDomainPage({
 
   return (
     <div className="layout-grid atlas-page">
-      <AtlasHero
-        county={county}
-        title={`${county.displayName} ${data?.domain.label || atlasDomainLabels[domain]}`}
-        description={data?.domain.description || "County measures with provenance, vintages, coverage notes, and comparisons."}
-        meta={data?.meta}
-      />
-      {domain === "civic-elections" ? <CountyShowUpMeter county={county} /> : null}
+      <AtlasHero county={county} meta={data?.meta} />
 
       {state.status === "loading" ? (
         <AtlasStatus title={`Loading ${atlasDomainLabels[domain]}…`} detail="Retrieving county measures and provenance." />
@@ -189,26 +163,20 @@ export function CountyAtlasDomainPage({
           <AtlasSourceCatalog sources={mergeSources(data.meta.sources, data.metrics.map((metric) => metric.source))} />
         </>
       ) : null}
+      {domain === "civic-elections" ? <CountyShowUpMeter county={county} /> : null}
     </div>
   );
 }
 
 function AtlasHero({
   county,
-  title,
-  description,
   meta,
 }: {
   county: CountySite;
-  title: string;
-  description: string;
   meta?: CountyAtlasOverview["meta"] | CountyAtlasDomainDocument["meta"];
 }) {
   return (
     <section className="hero-card atlas-hero">
-      <p className="kicker">County Data Atlas</p>
-      <h1>{title} <span className="muted">({county.state.abbr})</span></h1>
-      <p className="lead">{description}</p>
       <div className="atlas-freshness" aria-label="Atlas freshness and geography">
         <span>County FIPS: {county.fips}</span>
         <span>Snapshot: {meta?.version || "Loading"}</span>
@@ -216,24 +184,7 @@ function AtlasHero({
         <span>Retrieved: {meta ? formatAtlasTimestamp(meta.retrievedAt) : "Loading"}</span>
         {meta?.partial ? <strong>Partial coverage</strong> : null}
       </div>
-      <AtlasDomainNav county={county} />
     </section>
-  );
-}
-
-function AtlasDomainNav({ county }: { county: CountySite }) {
-  const base = `/${county.state.slug}/${county.slug}/data`;
-  return (
-    <nav className="atlas-domain-nav" aria-label={`${county.displayName} data domains`}>
-      <NavLink to={base} end className={({ isActive }) => (isActive ? "active" : "")}>
-        Overview
-      </NavLink>
-      {countyAtlasDomains.map((domain) => (
-        <NavLink key={domain} to={`${base}/${domain}`} className={({ isActive }) => (isActive ? "active" : "")}>
-          {atlasDomainLabels[domain]}
-        </NavLink>
-      ))}
-    </nav>
   );
 }
 

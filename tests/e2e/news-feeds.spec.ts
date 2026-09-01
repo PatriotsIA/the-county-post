@@ -360,6 +360,15 @@ test("county weather page shows alerts, forecasts, hourly data, sources, and sto
 
   const rainfall = page.locator(".weather-rainfall-section");
   await expect(rainfall.getByRole("heading", { name: "Fourteen-day precipitation" })).toBeVisible();
+  await expect(rainfall).toContainText("NASA's Precipitation data is on a 3 day delay.");
+  await expect.poll(() =>
+    page.evaluate(() => {
+      const rainfallSection = document.querySelector(".weather-rainfall-section");
+      const current = document.querySelector(".weather-current-section");
+      if (!rainfallSection || !current) return false;
+      return Boolean(rainfallSection.compareDocumentPosition(current) & Node.DOCUMENT_POSITION_FOLLOWING);
+    }),
+  ).toBe(true);
   await expect(rainfall).toContainText("2.67 in");
   await expect(rainfall).toContainText("7 above 0.01 in");
   await expect(rainfall).toContainText("Aug 25, 2026");
@@ -464,16 +473,23 @@ test("county atlas snapshot links through the hub to domain details", async ({ p
   await expect(page).toHaveURL(/\/arkansas\/polk\/data$/);
   await expect(page.getByRole("heading", { name: "Polk County Data Atlas" })).toBeVisible();
   await expect(page.getByText("Partial coverage", { exact: true })).toHaveCount(0);
-  const atlasHero = page.locator(".atlas-hero");
   const domainNavigation = page.getByRole("navigation", { name: "Polk County data domains" });
-  await expect(atlasHero.getByRole("navigation", { name: "Polk County data domains" })).toBeVisible();
+  await expect(domainNavigation).toBeVisible();
   await expect(domainNavigation).toHaveCount(1);
+  await expect.poll(() =>
+    page.evaluate(() => {
+      const contextNav = document.querySelector(".context-nav");
+      const domainNav = document.querySelector(".atlas-domain-nav");
+      if (!contextNav || !domainNav) return false;
+      return Boolean(contextNav.compareDocumentPosition(domainNav) & Node.DOCUMENT_POSITION_FOLLOWING);
+    }),
+  ).toBe(true);
   const meterBox = await page.locator(".show-up-meter").boundingBox();
   expect(meterBox?.width).toBeLessThanOrEqual(782);
-  expect(await domainNavigation.evaluate((navigation) => {
-    const hero = navigation.closest(".atlas-hero");
-    const meter = hero?.nextElementSibling;
-    return Boolean(hero && meter?.classList.contains("county-show-up-section"));
+  expect(await page.evaluate(() => {
+    const page = document.querySelector(".atlas-page");
+    const meter = document.querySelector(".county-show-up-section");
+    return Boolean(page && meter && page.lastElementChild === meter);
   })).toBe(true);
   const economyCard = page.locator(".atlas-domain-card", {
     has: page.getByRole("heading", { name: "Economy & Income" }),
@@ -551,6 +567,7 @@ test("county and atlas pages reflow without horizontal page overflow on phones",
   await expect(page.locator(".market-panel-content")).toBeVisible();
   await expect(page.locator(".show-up-meter")).toBeVisible();
   await expect(page.locator(".show-up-meter-cta a")).toHaveAttribute("href", "https://patriotsinaction.com");
+  await expect(page.locator(".ad-slot-meter")).toHaveCount(1);
   await expectElementWithinViewport(page, ".show-up-meter");
   await expectNoPageOverflow(page);
 
@@ -575,7 +592,36 @@ test("market navigation and county layouts remain usable at 320px and desktop wi
   await page.reload();
   await expect(page.getByRole("button", { name: /Market desk/i })).toHaveAttribute("aria-expanded", "true");
   await expect(page.locator(".market-panel-content")).toBeVisible();
+  await expect(page.locator(".county-edition-hero")).toBeVisible();
+  await expect(page.getByLabel("Polk County pages")).toBeVisible();
+  await expect.poll(() =>
+    page.evaluate(() => {
+      const masthead = document.querySelector(".masthead");
+      const hero = document.querySelector(".county-edition-hero");
+      const nav = document.querySelector(".context-nav");
+      if (!masthead || !hero || !nav) return false;
+      const heroInMasthead = masthead.contains(hero);
+      const dateBeforeHero = Boolean(
+        document.querySelector(".masthead-kicker")?.compareDocumentPosition(hero) & Node.DOCUMENT_POSITION_FOLLOWING,
+      );
+      const heroBeforePrimaryNav = Boolean(
+        hero.compareDocumentPosition(document.querySelector(".masthead .nav") || document.createElement("div")) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      );
+      const heroBeforeContextNav = Boolean(hero.compareDocumentPosition(nav) & Node.DOCUMENT_POSITION_FOLLOWING);
+      return heroInMasthead && dateBeforeHero && heroBeforePrimaryNav && heroBeforeContextNav;
+    }),
+  ).toBe(true);
+  await expect(page.getByRole("img", { name: /Polk County highlighted on the Arkansas county map/i })).toBeVisible();
   await expectNoPageOverflow(page);
+
+  const localHeadlines = page.getByRole("button", { name: /Hide stories/i }).first();
+  await localHeadlines.click();
+  await expect(page.getByRole("button", { name: /Show stories/i }).first()).toBeVisible();
+
+  await page.goto("/arkansas/polk/weather");
+  await expect(page.getByRole("button", { name: /Market desk/i })).toHaveAttribute("aria-expanded", "false");
+  await expect(page.locator(".county-edition-hero")).toHaveCount(0);
 });
 
 test("county feeds merge nearby-market stories, sort newest first, and keep batched sections stable", async ({ page }) => {
@@ -602,9 +648,22 @@ test("county feeds merge nearby-market stories, sort newest first, and keep batc
 });
 
 test("state pages populate state headlines from broad in-state feeds", async ({ page }) => {
-  await page.goto("/states/arkansas");
+  await page.goto("/arkansas");
 
-  await expect(page.getByRole("heading", { name: /Arkansas/i })).toBeVisible();
+  await expect(page.locator(".masthead .masthead-hero")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: /Arkansas/i })).toBeVisible();
+  await expect.poll(() =>
+    page.evaluate(() => {
+      const kicker = document.querySelector(".masthead-kicker");
+      const hero = document.querySelector(".masthead .masthead-hero");
+      const nav = document.querySelector(".masthead .nav");
+      if (!kicker || !hero || !nav) return false;
+      return Boolean(
+        (kicker.compareDocumentPosition(hero) & Node.DOCUMENT_POSITION_FOLLOWING) &&
+          (hero.compareDocumentPosition(nav) & Node.DOCUMENT_POSITION_FOLLOWING),
+      );
+    }),
+  ).toBe(true);
   const stateSection = page.locator("section", { has: page.getByRole("heading", { name: "State headlines" }) });
   await expect.poll(async () => stateSection.locator(".feed-card").count()).toBeGreaterThanOrEqual(12);
   await expect(stateSection.locator(".feed-card").first()).toContainText("Arkansas");

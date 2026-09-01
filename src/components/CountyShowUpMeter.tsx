@@ -1,4 +1,5 @@
 import type { CountySite } from "../data/counties";
+import { AdSlot } from "./AdSlot";
 import { useCountyTurnout } from "../lib/useCountyTurnout";
 
 const numberFormatter = new Intl.NumberFormat("en-US");
@@ -47,6 +48,7 @@ export function CountyShowUpMeter({ county }: { county: CountySite }) {
           <a href="https://patriotsinaction.com" target="_blank" rel="noreferrer">Learn More</a>
         </div>
       </div>
+      <AdSlot slot="inline" className="ad-slot-meter" />
     </section>
   );
 }

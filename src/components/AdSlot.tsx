@@ -1,24 +1,58 @@
 import { useEffect, useRef, useState } from "react";
-import { ads, type AdSlotId } from "../data/ads";
+import { ads, featuredAdRank, type AdSlotId } from "../data/ads";
 
 type Props = {
   slot: AdSlotId;
   limit?: number;
+  className?: string;
 };
 
-export function AdSlot({ slot, limit }: Props) {
+export function RotatingAdSpot({
+  seed = 0,
+  intervalMs = 8_000,
+  label = "Advertisement",
+}: {
+  seed?: number;
+  intervalMs?: number;
+  label?: string;
+}) {
+  const creatives = ads.filter((ad) => ad.slot === "inline").sort((a, b) => featuredAdRank(a.id) - featuredAdRank(b.id));
+  const [activeIndex, setActiveIndex] = useState(() => (creatives.length ? seed % creatives.length : 0));
+
+  useEffect(() => {
+    if (creatives.length < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const interval = window.setInterval(() => {
+      setActiveIndex((index) => (index + 1) % creatives.length);
+    }, intervalMs);
+    return () => window.clearInterval(interval);
+  }, [creatives.length, intervalMs]);
+
+  const ad = creatives[activeIndex];
+  if (!ad) return null;
+
+  return (
+    <aside className="show-up-ad-spot" aria-label={label}>
+      <p className="ad-slot-label">{label}</p>
+      <a className="ad-link" href={ad.href} target="_blank" rel="noreferrer sponsored">
+        <img src={ad.image} alt={ad.alt} />
+      </a>
+    </aside>
+  );
+}
+
+export function AdSlot({ slot, limit, className }: Props) {
   const creatives = ads
     .filter((ad) => ad.slot === slot)
-    .sort((a, b) => Number(b.id === "guerrilla-gear-inline") - Number(a.id === "guerrilla-gear-inline"))
+    .sort((a, b) => featuredAdRank(a.id) - featuredAdRank(b.id))
     .slice(0, limit);
   if (!creatives.length) return null;
 
   if (slot === "banner") return <BannerAdCarousel creatives={creatives} />;
 
-  return <SquareAdCarousel creatives={creatives} />;
+  return <SquareAdCarousel creatives={creatives} className={className} />;
 }
 
-function SquareAdCarousel({ creatives }: { creatives: typeof ads }) {
+function SquareAdCarousel({ creatives, className }: { creatives: typeof ads; className?: string }) {
   const trackRef = useRef<HTMLDivElement | null>(null);
 
   const move = (direction: -1 | 1) => {
@@ -46,7 +80,7 @@ function SquareAdCarousel({ creatives }: { creatives: typeof ads }) {
   }, [creatives.length]);
 
   return (
-    <aside className="ad-slot ad-slot-inline" aria-label="Sponsored advertisements">
+    <aside className={`ad-slot ad-slot-inline${className ? ` ${className}` : ""}`} aria-label="Sponsored advertisements">
       <p className="ad-slot-label">Presented by our advertisers</p>
       <div className="ad-carousel-shell">
         <button type="button" className="ad-carousel-arrow" onClick={() => move(-1)} aria-label="Previous sponsor">

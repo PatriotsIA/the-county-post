@@ -27,16 +27,15 @@ export function CountyWeatherPage({ county }: { county: CountySite }) {
 
   return (
     <div className="layout-grid weather-page">
-      <section className="hero-card weather-hero">
-        <p className="kicker">National Weather Service desk</p>
-        <h1>{county.displayName} Weather</h1>
-        <p className="lead">
-          Current conditions, active alerts, and the local National Weather Service forecast for {county.state.name}.
-        </p>
+      {weather.data?.rainfallHistory ? (
+        <WeatherRainfallSection history={weather.data.rainfallHistory} countyName={weather.data.county.displayName} />
+      ) : null}
+
+      <p className="weather-atlas-link-row">
         <Link className="weather-atlas-link" to={atlasPath}>
           Explore environment &amp; disasters data
         </Link>
-      </section>
+      </p>
 
       {weather.status === "loading" && !weather.data ? (
         <section className="card weather-status" role="status" aria-live="polite">
@@ -163,21 +162,6 @@ function WeatherReport({ weather, atlasPath }: { weather: CountyWeatherResponse;
         )}
       </section>
 
-      {weather.rainfallHistory ? (
-        <section className="card weather-rainfall-section" aria-labelledby="rainfall-history-heading">
-          <header className="weather-section-heading">
-            <div>
-              <p className="kicker">Recent conditions</p>
-              <h2 id="rainfall-history-heading">Fourteen-day precipitation</h2>
-            </div>
-            <span className="weather-count-badge">
-              {formatRainfallTotal(weather.rainfallHistory.totalInches)}
-            </span>
-          </header>
-          <RainfallHistoryCard history={weather.rainfallHistory} countyName={weather.county.displayName} />
-        </section>
-      ) : null}
-
       <section className="card weather-forecast-section" aria-labelledby="weather-forecast-heading">
         <header className="weather-section-heading">
           <div>
@@ -303,6 +287,30 @@ function DroughtConditionCard({
         <OfficialLink href={condition.source.url} label="Open U.S. Drought Monitor data" />
       </div>
     </article>
+  );
+}
+
+function WeatherRainfallSection({
+  history,
+  countyName,
+}: {
+  history: CountyRainfallHistory;
+  countyName: string;
+}) {
+  return (
+    <section className="card weather-rainfall-section" aria-labelledby="rainfall-history-heading">
+      <header className="weather-section-heading">
+        <div>
+          <p className="kicker">Recent conditions</p>
+          <h2 id="rainfall-history-heading">Fourteen-day precipitation</h2>
+        </div>
+        <span className="weather-count-badge">
+          {formatRainfallTotal(history.totalInches)}
+        </span>
+      </header>
+      <p className="weather-rainfall-delay">NASA's Precipitation data is on a 3 day delay.</p>
+      <RainfallHistoryCard history={history} countyName={countyName} />
+    </section>
   );
 }
 

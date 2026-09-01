@@ -90,18 +90,24 @@ body::before {
 }
 
 .masthead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 8px 14px;
   border-bottom: 5px solid var(--news-blue);
-  padding: 12px 14px;
-  margin-bottom: 18px;
+  padding: 8px 14px 16px;
+  margin-bottom: 12px;
   background:
     linear-gradient(90deg, var(--news-blue-dark), var(--news-blue) 68%, #174f93),
     var(--news-blue);
 }
 
+.masthead-has-hero {
+  grid-template-columns: 1fr;
+}
+
 .masthead-kicker {
+  grid-column: 1 / -1;
   font-family: "Roboto Mono", monospace;
   text-transform: uppercase;
   letter-spacing: 0.18em;
@@ -113,23 +119,175 @@ body::before {
 .masthead-kicker-row {
   display: flex;
   align-items: center;
+  justify-content: center;
   flex-wrap: wrap;
   gap: 8px 18px;
+  text-align: center;
+}
+
+.masthead-stage {
+  display: grid;
+  grid-template-columns: minmax(180px, 26%) minmax(0, 1fr) minmax(180px, 26%);
+  align-items: center;
+  gap: 8px 18px;
+  min-width: 0;
+}
+
+.masthead-hero {
+  min-width: 0;
+  margin: 0;
+  padding: 8px 12px 4px;
+  text-align: center;
+  color: var(--white);
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
+.masthead-hero .kicker,
+.masthead-hero h1,
+.masthead-hero .lead,
+.masthead-hero .muted,
+.masthead-hero .meta-label,
+.masthead-hero .meta-value {
+  text-align: center;
+}
+
+.masthead-hero .kicker {
+  color: rgba(255, 255, 255, 0.72);
+  letter-spacing: 0.22em;
+}
+
+.masthead-hero h1 {
+  font-family: "Playfair Display", "Libre Baskerville", serif;
+  font-size: clamp(28px, 4vw, 42px);
+  color: var(--white);
+  letter-spacing: 0.16em;
+  line-height: 1.15;
+  margin: 10px 0 12px;
+  text-transform: uppercase;
+}
+
+.masthead-hero h1 .muted {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.masthead-hero .lead,
+.masthead-hero > .muted {
+  max-width: 34em;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+
+.masthead-hero .lead {
+  color: rgba(255, 255, 255, 0.94);
+  font-size: 18px;
+  line-height: 1.7;
+  margin: 0 auto 12px;
+}
+
+.masthead-hero > .muted {
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.65;
+  margin: 0 auto 10px;
+}
+
+.masthead-hero .meta-grid {
+  justify-content: center;
+  justify-items: center;
+  gap: 12px 20px;
+  margin-top: 14px;
+}
+
+.masthead-hero .meta-label {
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.masthead-hero .meta-value {
+  color: var(--white);
+}
+
+.masthead-has-hero .wordmark {
+  justify-self: center;
+  align-self: start;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.masthead-has-hero .wordmark-logo {
+  width: clamp(220px, 24vw, 420px);
+  max-height: 240px;
+  object-position: center;
+}
+
+.masthead-has-hero .nav {
+  justify-content: center;
 }
 
 .wordmark {
   display: inline-flex;
   flex-direction: column;
+  margin-top: 10px;
   text-decoration: none;
   color: var(--white);
 }
 
 .wordmark-logo {
   display: block;
-  width: clamp(150px, 16vw, 250px);
-  max-height: 150px;
+  width: clamp(300px, 40vw, 540px);
+  max-height: 186px;
   object-fit: contain;
   object-position: left center;
+}
+
+.wordmark-tagline {
+  display: block;
+  margin-top: 6px;
+  color: rgba(255, 255, 255, 0.72);
+  font-family: "Roboto Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.masthead-has-hero .masthead-hero h1 {
+  width: fit-content;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 0;
+}
+
+.masthead-has-hero .masthead-hero h1::after,
+.masthead-has-hero .masthead-hero .lead:not(:last-child)::after {
+  display: block;
+  height: 1px;
+  margin: 0.7em auto 0;
+  background: color-mix(in srgb, var(--news-red) 72%, var(--white));
+  content: "";
+}
+
+.masthead-has-hero .masthead-hero h1::after {
+  width: 100%;
+}
+
+.masthead-has-hero .masthead-hero .lead:not(:last-child)::after {
+  width: min(7.5rem, 38%);
+}
+
+.masthead-has-hero .masthead-hero .lead {
+  margin-top: 0.75em;
+  margin-inline: auto;
+}
+
+.masthead-has-hero .masthead-hero .lead:not(:last-child) {
+  margin-bottom: 0;
+}
+
+.masthead-has-hero .masthead-hero .lead:not(:last-child)::after {
+  margin-bottom: 0.75em;
 }
 
 .nav {
@@ -237,9 +395,9 @@ body::before {
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
-  margin: -4px 0 18px;
+  margin: -4px 0 10px;
   border: 1px solid var(--border);
-  padding: 8px;
+  padding: 6px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(229, 229, 225, 0.86)),
     repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.018) 0, rgba(0, 0, 0, 0.018) 1px, transparent 1px, transparent 7px);
@@ -267,7 +425,7 @@ body::before {
 }
 
 .market-panel {
-  margin: -6px 0 18px;
+  margin: -6px 0 10px;
 }
 
 .market-panel-toggle {
@@ -781,9 +939,13 @@ body::before {
   min-width: 0;
 }
 
+.weather-atlas-link-row {
+  margin: 0;
+}
+
 .weather-atlas-link {
   display: inline-block;
-  margin-top: 12px;
+  margin-top: 0;
   border: 1px solid var(--news-blue-dark);
   padding: 7px 10px;
   background: #e8edf4;
@@ -1130,6 +1292,14 @@ body::before {
   color: var(--muted);
 }
 
+.weather-rainfall-delay {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-family: "Roboto Mono", monospace;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
 .weather-rainfall-note {
   margin: 0;
   color: var(--muted);
@@ -1314,6 +1484,15 @@ body::before {
   gap: 18px;
 }
 
+.compact-county-stack {
+  gap: 10px;
+}
+
+.compact-county-stack .card,
+.compact-county-stack .section {
+  padding: 12px 14px 14px;
+}
+
 .layout-grid > * {
   min-width: 0;
 }
@@ -1331,14 +1510,88 @@ body::before {
 }
 
 .hero-card {
-  padding-right: calc(min(340px, 36vw) + 54px);
   background:
-    url("../county-post-final-logo.png"),
     repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.018) 0, rgba(0, 0, 0, 0.018) 1px, transparent 1px, transparent 8px),
     var(--panel);
-  background-position: right 22px center, center, center;
-  background-repeat: no-repeat, repeat, repeat;
-  background-size: min(340px, 36vw) auto, auto, auto;
+}
+
+.county-edition-hero {
+  display: block;
+  margin: 0;
+  padding: 0;
+}
+
+.county-edition-hero-copy > .muted {
+  display: none;
+}
+
+.county-edition-hero h1 {
+  font-size: clamp(24px, 3vw, 30px);
+  margin: 4px auto 0;
+}
+
+.county-edition-hero .lead {
+  font-size: 15px;
+  margin: 4px auto 6px;
+}
+
+.county-edition-hero .meta-grid {
+  margin-top: 8px;
+}
+
+.county-edition-hero-copy,
+.edition-map-shell {
+  min-width: 0;
+}
+
+.edition-map-shell {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  justify-self: center;
+  align-self: start;
+  gap: 8px;
+  width: min(100%, 280px);
+  margin-top: 4px;
+}
+
+.edition-map {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.edition-map-nation {
+  width: min(100%, 280px);
+}
+
+.edition-map-unit {
+  fill: rgba(232, 237, 244, 0.88);
+  stroke: rgba(12, 42, 82, 0.72);
+  stroke-width: 0.6;
+}
+
+.edition-map-selected {
+  fill: var(--news-red);
+  stroke: #8d1418;
+  stroke-width: 1.2;
+}
+
+.edition-map-outline {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.92);
+  stroke-width: 1.5;
+}
+
+.edition-map-shell figcaption,
+.edition-map-shell .muted {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-family: "Roboto Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
 }
 
 .hero-card h1 {
@@ -1355,13 +1608,59 @@ body::before {
 }
 
 .county-show-up-section {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(240px, 0.9fr) minmax(260px, 1.1fr);
   justify-content: center;
+  align-items: stretch;
+  gap: 12px 16px;
+}
+
+.show-up-ad-spot {
+  min-width: 0;
+  padding: 6px;
+  border: 1px dashed var(--border);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.show-up-ad-spot .ad-slot-label {
+  margin-bottom: 4px;
+  font-size: 8px;
+}
+
+.show-up-ad-spot .ad-link {
+  flex-basis: auto;
+  width: 100%;
+  max-width: 132px;
+  margin-inline: auto;
+}
+
+.show-up-ad-spot .ad-link img {
+  aspect-ratio: 1 / 1;
+}
+
+.ad-slot-meter {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.ad-slot-meter .ad-link {
+  flex-basis: min(100%, 280px);
+}
+
+.ad-slot-meter .ad-link img {
+  width: 100%;
+  max-height: 220px;
+  object-fit: contain;
 }
 
 .show-up-meter {
-  width: min(100%, 780px);
-  padding: clamp(15px, 1.6vw, 22px);
+  width: 100%;
+  justify-self: stretch;
+  padding: 8px 10px;
   border: 1px solid var(--news-blue);
   border-left-color: rgba(168, 25, 29, 0.65);
   border-radius: 20px;
@@ -1372,10 +1671,10 @@ body::before {
 }
 
 .show-up-meter h2 {
-  margin: 0 0 8px;
+  margin: 0 0 4px;
   color: var(--news-blue-dark);
   font-family: "Playfair Display", "Libre Baskerville", serif;
-  font-size: clamp(22px, 2.4vw, 31px);
+  font-size: clamp(16px, 1.8vw, 20px);
   line-height: 1.08;
   letter-spacing: -0.045em;
   text-transform: uppercase;
@@ -1400,8 +1699,8 @@ body::before {
 
 .show-up-meter-track {
   width: 100%;
-  height: 10px;
-  margin: 12px 0 7px;
+  height: 8px;
+  margin: 7px 0 5px;
   overflow: hidden;
   border-radius: 999px;
   background: #e0e6ee;
@@ -1422,8 +1721,8 @@ body::before {
 .show-up-meter-history {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin: 11px 0 0;
+  gap: 6px;
+  margin: 6px 0 0;
   padding: 0;
   list-style: none;
 }
@@ -1440,24 +1739,24 @@ body::before {
 }
 
 .show-up-meter-note {
-  margin-top: 10px !important;
-  color: var(--muted);
-  font-size: 13px;
+  display: none;
 }
 
 .show-up-meter-cta {
   display: grid;
   justify-items: start;
-  gap: 9px;
-  margin-top: 13px;
-  padding-top: 12px;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
   border-top: 1px solid rgba(18, 60, 115, 0.2);
 }
 
 .show-up-meter-cta p {
   margin: 0;
   color: var(--news-blue-dark);
+  font-size: 12px;
   font-weight: 700;
+  line-height: 1.3;
 }
 
 .show-up-meter-cta a {
@@ -1611,6 +1910,34 @@ h2 {
   letter-spacing: 0.1em;
   line-height: 1;
   text-transform: uppercase;
+}
+
+.feed-collapse-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 8px 0 2px;
+  border: 1px solid var(--border);
+  padding: 5px 9px;
+  background: var(--ink);
+  color: var(--white);
+  cursor: pointer;
+  font-family: "Roboto Mono", monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.feed-collapse-toggle:hover,
+.feed-collapse-toggle:focus-visible {
+  background: var(--news-red-dark);
+}
+
+.feed-collapse-toggle:focus-visible {
+  outline: 3px solid var(--news-red);
+  outline-offset: 2px;
 }
 
 .section-heading {
@@ -2646,11 +2973,73 @@ button:disabled {
     z-index: 30;
     display: grid;
     grid-template-columns: 1fr auto;
-    align-items: center;
-    gap: 8px;
+    align-items: end;
+    gap: 6px 8px;
     margin: 0 -18px 14px;
     padding: 8px 14px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.32);
+  }
+
+  .masthead-has-hero {
+    position: static;
+    box-shadow: none;
+  }
+
+  .masthead-stage {
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr);
+    grid-template-areas:
+      "logo map"
+      "copy copy";
+    align-items: center;
+    gap: 6px 10px;
+  }
+
+  .masthead-stage .wordmark {
+    grid-area: logo;
+    justify-self: center;
+    margin-top: 0;
+  }
+
+  .masthead-hero,
+  .masthead .county-edition-hero {
+    grid-area: copy;
+    width: 100%;
+    margin: 0;
+    padding: 4px 2px 2px;
+  }
+
+  .masthead-stage .edition-map-shell {
+    grid-area: map;
+    justify-self: center;
+    width: min(100%, 180px);
+  }
+
+  .masthead-hero > .muted {
+    display: none;
+  }
+
+  .masthead-hero .meta-grid {
+    margin-top: 8px;
+    gap: 8px 12px;
+  }
+
+  .masthead-kicker {
+    grid-column: 1 / -1;
+  }
+
+  .wordmark {
+    grid-column: 1;
+    margin-top: 4px;
+  }
+
+  .masthead-has-hero .nav,
+  .masthead-has-hero .menu-toggle {
+    grid-column: 1 / -1;
+  }
+
+  .masthead-has-hero .menu-toggle {
+    justify-self: end;
   }
 
   .nav {
@@ -2676,7 +3065,10 @@ button:disabled {
 
   .menu-toggle {
     display: inline-flex;
+    grid-column: 2;
     align-items: center;
+    align-self: end;
+    justify-self: end;
     gap: 7px;
     min-height: 40px;
   }
@@ -2717,9 +3109,41 @@ button:disabled {
   .hero-card {
     min-height: 0;
     padding-right: 18px;
-    padding-bottom: min(78vw, 290px);
-    background-position: center bottom 16px, center, center;
-    background-size: min(280px, 72vw) auto, auto, auto;
+  }
+
+  .county-edition-hero-copy {
+    width: 100%;
+  }
+
+  .masthead-has-hero .wordmark-logo {
+    width: clamp(96px, 30vw, 150px);
+    max-height: 150px;
+  }
+
+  .masthead-hero h1 {
+    font-size: clamp(22px, 6.4vw, 30px);
+    letter-spacing: 0.12em;
+    margin: 6px auto 0;
+  }
+
+  .masthead-hero .lead {
+    font-size: 15px;
+    line-height: 1.55;
+    margin-bottom: 8px;
+  }
+
+  .edition-map-nation,
+  .edition-map-county {
+    width: min(100%, 168px);
+  }
+
+  .county-show-up-section {
+    grid-template-columns: 1fr;
+  }
+
+  .show-up-meter {
+    width: min(100%, 420px);
+    justify-self: center;
   }
 
   .precious-metals-ticker {
@@ -2937,13 +3361,13 @@ button:disabled {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
-  margin-top: 16px;
+  margin-top: 10px;
 }
 
 .atlas-snapshot-grid article {
   min-width: 0;
   border: 1px solid var(--border);
-  padding: 14px;
+  padding: 8px 10px;
   background: var(--panel-soft);
 }
 
@@ -2957,7 +3381,7 @@ button:disabled {
 
 .atlas-snapshot-value {
   overflow-wrap: anywhere;
-  font-size: clamp(20px, 3vw, 30px);
+  font-size: clamp(16px, 2.2vw, 22px);
 }
 
 .atlas-snapshot-date,
@@ -2982,7 +3406,71 @@ button:disabled {
 }
 
 .atlas-snapshot-note {
-  margin: 12px 0 0;
+  display: none;
+}
+
+.atlas-rainfall-glance {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.atlas-rainfall-glance-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.atlas-rainfall-glance-heading h3 {
+  margin: 2px 0 0;
+  font-size: 16px;
+}
+
+.atlas-rainfall-glance-heading strong {
+  font-family: "Roboto Mono", monospace;
+  font-size: 14px;
+}
+
+.atlas-rainfall-glance .weather-rainfall-delay {
+  margin: 6px 0 8px;
+}
+
+.atlas-rainfall-glance-chart {
+  display: flex;
+  gap: 4px;
+  align-items: end;
+  height: 72px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+}
+
+.atlas-rainfall-glance-chart li {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  align-items: end;
+  justify-items: center;
+  gap: 3px;
+}
+
+.atlas-rainfall-glance-chart .weather-rainfall-bar-track {
+  width: 100%;
+  max-width: 12px;
+  height: 48px;
+  border-bottom-width: 1px;
+}
+
+.atlas-rainfall-glance-chart li > span:last-child {
+  overflow: hidden;
+  color: var(--muted);
+  font-family: "Roboto Mono", monospace;
+  font-size: 8px;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .atlas-hero {
@@ -2997,7 +3485,7 @@ button:disabled {
   display: flex;
   flex-wrap: wrap;
   gap: 7px 18px;
-  margin-top: 14px;
+  margin-top: 0;
   color: var(--muted);
   font-family: "Roboto Mono", monospace;
   font-size: 11px;
@@ -3019,6 +3507,10 @@ button:disabled {
   overflow-x: auto;
   background: linear-gradient(#f8f8f6, #e4e4e0);
   scrollbar-width: thin;
+}
+
+.context-nav + .atlas-domain-nav {
+  margin: -4px 0 12px;
 }
 
 .atlas-domain-nav a {
@@ -3553,6 +4045,21 @@ main,
   .hero-card h1 {
     font-size: clamp(26px, 5.5vw, 38px);
   }
+
+  .masthead-hero h1 {
+    font-size: clamp(24px, 4.4vw, 36px);
+  }
+
+  .masthead-hero .lead {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 960px) and (min-width: 721px) {
+  .masthead-stage {
+    grid-template-columns: minmax(140px, 24%) minmax(0, 1fr) minmax(140px, 24%);
+    gap: 6px 12px;
+  }
 }
 
 @media (max-width: 720px) {
@@ -3579,6 +4086,11 @@ main,
     padding: 10px 12px;
   }
 
+  .masthead.masthead-has-hero {
+    position: static;
+    box-shadow: none;
+  }
+
   .masthead-kicker {
     font-size: 10px;
     letter-spacing: 0.11em;
@@ -3586,7 +4098,13 @@ main,
   }
 
   .wordmark-logo {
-    width: clamp(150px, 48vw, 205px);
+    width: clamp(220px, 64vw, 320px);
+    max-height: 112px;
+  }
+
+  .masthead-has-hero .wordmark-logo {
+    width: clamp(96px, 30vw, 150px);
+    max-height: 150px;
   }
 
   .menu-toggle {
@@ -3609,6 +4127,10 @@ main,
     overflow: visible;
     margin: 0 0 12px;
     padding: 6px;
+  }
+
+  .context-nav + .atlas-domain-nav {
+    margin: 0 0 12px;
   }
 
   .context-link {
@@ -3663,9 +4185,7 @@ main,
   }
 
   .hero-card {
-    padding-bottom: min(58vw, 220px);
-    background-position: center bottom 12px, center, center;
-    background-size: min(220px, 58vw) auto, auto, auto;
+    padding-bottom: 18px;
   }
 
   .atlas-hero {
@@ -3724,7 +4244,7 @@ main,
   }
 
   .show-up-meter h2 {
-    font-size: clamp(22px, 7vw, 30px);
+    font-size: clamp(18px, 6vw, 22px);
   }
 
   .show-up-meter-history {

@@ -59,15 +59,7 @@ export function CountyEconomicData({ county }: { county: CountySite }) {
 
   return (
     <div className="layout-grid">
-      <section className="hero-card economic-data-hero">
-        <p className="kicker">County economy · Federal Reserve data</p>
-        <h1>
-          {county.displayName} Economic Data <span className="muted">({county.state.abbr})</span>
-        </h1>
-        <p className="lead">
-          A nonpartisan county economic profile using official series distributed by FRED, including employment,
-          household income, personal income, and county production.
-        </p>
+      <section className="card economic-data-hero">
         <div className="economic-data-meta">
           <span>County FIPS: {county.fips}</span>
           <span>

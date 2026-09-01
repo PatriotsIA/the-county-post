@@ -11,6 +11,7 @@ import {
   formatAtlasMetricValue,
   formatAtlasTimestamp,
 } from "../lib/county-atlas-format";
+import { CountyRainfallGlance } from "./CountyRainfallGlance";
 
 type SnapshotState =
   | { status: "loading" }
@@ -49,6 +50,7 @@ export function CountyDataSnapshot({ county }: { county: CountySite }) {
           {metrics.map((metric) => <SnapshotMetric key={`${metric.domain}-${metric.key}`} metric={metric} county={county} />)}
         </div>
       ) : null}
+      <CountyRainfallGlance county={county} />
       {state.status === "loaded" ? (
         <p className="atlas-snapshot-note">
           Snapshot generated {formatAtlasTimestamp(state.data.meta.generatedAt)}.

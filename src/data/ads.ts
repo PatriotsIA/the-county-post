@@ -20,10 +20,23 @@ import patriotMessaging from "../../ad-assets/PatriotMessaging.jpg";
 import patriotTrailer from "../../ad-assets/PatriotTrailerStore.jpg";
 import pestCon from "../../ad-assets/PestCon250.jpg";
 import piaBanner from "../../ad-assets/PIA980.jpg";
-import piaStore from "../../ad-assets/PIAStore.jpg";
+import piaMerchStore from "../../ad-assets/pia-merch-store-ad.jpg";
 import plainsBank from "../../ad-assets/PlainsBank250.jpg";
 
 export type AdSlotId = "inline" | "banner";
+
+export const FEATURED_AD_ID = "merch-inline";
+export const CAROUSEL_ONLY_AD_IDS = new Set([FEATURED_AD_ID]);
+
+export function featuredAdRank(id: string) {
+  if (id === FEATURED_AD_ID) return 0;
+  if (id === "guerrilla-gear-inline") return 1;
+  return 2;
+}
+
+export function isCarouselOnlyAd(id: string) {
+  return CAROUSEL_ONLY_AD_IDS.has(id);
+}
 
 export type AdCreative = {
   id: string;
@@ -37,6 +50,14 @@ export type AdCreative = {
 const partnerDirectory = "/partners";
 
 export const ads: AdCreative[] = [
+  {
+    id: "merch-inline",
+    slot: "inline",
+    image: piaMerchStore,
+    name: "PATRIOT Merch",
+    alt: "PATRIOT Merch — custom patriotic designs at Shop.PatriotsInAction.com",
+    href: "https://shop.patriotsinaction.com/",
+  },
   {
     id: "lemc-inline",
     slot: "inline",
@@ -188,14 +209,6 @@ export const ads: AdCreative[] = [
     name: "Lawyers Title",
     alt: "Lawyers Title",
     href: partnerDirectory,
-  },
-  {
-    id: "merch-inline",
-    slot: "inline",
-    image: piaStore,
-    name: "The Patriot Merch Store",
-    alt: "The Patriot Merch Store",
-    href: "https://shop.patriotsinaction.com/",
   },
   {
     id: "pestcon-inline",

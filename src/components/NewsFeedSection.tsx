@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ads } from "../data/ads";
+import { ads, isCarouselOnlyAd } from "../data/ads";
 import { isTrustedCountyNativeNewsItem } from "../lib/local-news-sources";
 import { fetchNewsApiFeed, isNewsApiConfigured, type NewsFeedItem, type Topic } from "../lib/news-api";
 import { fetchNewsFeeds } from "../lib/rss";
@@ -40,7 +40,7 @@ type Props = {
 
 const MAX_REQUESTED_ITEMS = 200;
 type FeedSource = "api" | "fallback";
-const inFeedAds = ads.filter((ad) => ad.slot === "inline");
+const inFeedAds = ads.filter((ad) => ad.slot === "inline" && !isCarouselOnlyAd(ad.id));
 
 export function NewsFeedSection({
   title,
@@ -71,6 +71,8 @@ export function NewsFeedSection({
   const gridRef = useRef<HTMLDivElement | null>(null);
   const onLoadSettledRef = useRef(onLoadSettled);
   const [gridColumns, setGridColumns] = useState(1);
+  const [isOpen, setIsOpen] = useState(true);
+  const panelId = useId();
   const fallbackFeedUrlsKey = fallbackFeedUrls.join("\n");
   const stableFallbackFeedUrls = useMemo(() => fallbackFeedUrlsKey.split("\n").filter(Boolean), [fallbackFeedUrlsKey]);
   const hasInitialPageData = initialItems !== undefined || initialStatus === "loading" || initialStatus === "error";
@@ -251,6 +253,15 @@ export function NewsFeedSection({
         <div>
           {kicker ? <p className="kicker">{kicker}</p> : null}
           <h2>{title}</h2>
+          <button
+            type="button"
+            className="feed-collapse-toggle"
+            aria-controls={panelId}
+            aria-expanded={isOpen}
+            onClick={() => setIsOpen((open) => !open)}
+          >
+            {isOpen ? "Hide stories" : "Show stories"} <span aria-hidden="true">{isOpen ? "−" : "+"}</span>
+          </button>
           <p className="feed-presented-by">Presented by</p>
           <FeedSponsor kind={kind} sponsorId={sponsorId} />
           {actionLink ? (
@@ -261,55 +272,57 @@ export function NewsFeedSection({
         </div>
         <div className="section-heading-rule" aria-hidden />
       </header>
-      {status === "error" ? <p className="muted">{error}</p> : null}
-      {status === "loading" && !items.length ? (
-        <div className="feed-loading" role="status">
-          <p>Please Wait 20 Seconds As We Fetch The News</p>
-          <div className="press-loading-graphic" aria-hidden>
-            <span />
-            <span />
-            <span />
+      <div id={panelId} hidden={!isOpen}>
+        {status === "error" ? <p className="muted">{error}</p> : null}
+        {status === "loading" && !items.length ? (
+          <div className="feed-loading" role="status">
+            <p>Please Wait 20 Seconds As We Fetch The News</p>
+            <div className="press-loading-graphic" aria-hidden>
+              <span />
+              <span />
+              <span />
+            </div>
           </div>
+        ) : null}
+        {status === "loaded" && source ? <p className="feed-source">Fetching articles via {source === "api" ? "County News API" : "Fallback RSS"}</p> : null}
+        {expandedLabel ? (
+          <p className="muted">County-specific stories appear first. When coverage is sparse, this feed expands to {expandedLabel}.</p>
+        ) : null}
+        <div className="feed-scroll" ref={containerRef}>
+          <div className="feed-grid" ref={gridRef}>
+            {feedEntries.map((entry) =>
+              entry.type === "ad" ? (
+                <a
+                  key={`ad-${entry.ad.id}-${entry.position}`}
+                  className="feed-card feed-ad-card"
+                  href={entry.ad.href}
+                  target="_blank"
+                  rel="noreferrer sponsored"
+                  aria-label={`Advertisement: ${entry.ad.name}`}
+                >
+                  <img className="feed-ad-image" src={entry.ad.image} alt={entry.ad.alt} />
+                  <span className="feed-ad-label">Advertisement</span>
+                </a>
+              ) : (
+                <article key={entry.item.id} className="feed-card">
+                  <ArticleMedia item={entry.item} locality={locality} />
+                  <div className="feed-card-body">
+                    <a href={entry.item.link} target="_blank" rel="noreferrer" className="feed-title">
+                      {entry.item.title}
+                    </a>
+                    <p className="feed-meta">
+                      {[entry.item.imageUrl ? entry.item.source : undefined, formatDate(entry.item.publishedAt)].filter(Boolean).join(" • ")}
+                    </p>
+                  </div>
+                </article>
+              ),
+            )}
+          </div>
+          <div ref={sentinelRef} aria-hidden style={{ height: "48px" }} />
+          {status === "loading" && items.length ? <p className="muted">Loading more stories…</p> : null}
         </div>
-      ) : null}
-      {status === "loaded" && source ? <p className="feed-source">Fetching articles via {source === "api" ? "County News API" : "Fallback RSS"}</p> : null}
-      {expandedLabel ? (
-        <p className="muted">County-specific stories appear first. When coverage is sparse, this feed expands to {expandedLabel}.</p>
-      ) : null}
-      <div className="feed-scroll" ref={containerRef}>
-        <div className="feed-grid" ref={gridRef}>
-          {feedEntries.map((entry) =>
-            entry.type === "ad" ? (
-              <a
-                key={`ad-${entry.ad.id}-${entry.position}`}
-                className="feed-card feed-ad-card"
-                href={entry.ad.href}
-                target="_blank"
-                rel="noreferrer sponsored"
-                aria-label={`Advertisement: ${entry.ad.name}`}
-              >
-                <img className="feed-ad-image" src={entry.ad.image} alt={entry.ad.alt} />
-                <span className="feed-ad-label">Advertisement</span>
-              </a>
-            ) : (
-              <article key={entry.item.id} className="feed-card">
-                <ArticleMedia item={entry.item} locality={locality} />
-                <div className="feed-card-body">
-                  <a href={entry.item.link} target="_blank" rel="noreferrer" className="feed-title">
-                    {entry.item.title}
-                  </a>
-                  <p className="feed-meta">
-                    {[entry.item.imageUrl ? entry.item.source : undefined, formatDate(entry.item.publishedAt)].filter(Boolean).join(" • ")}
-                  </p>
-                </div>
-              </article>
-            ),
-          )}
-        </div>
-        <div ref={sentinelRef} aria-hidden style={{ height: "48px" }} />
-        {status === "loading" && items.length ? <p className="muted">Loading more stories…</p> : null}
+        {!filteredItems.length && status === "loaded" ? <p className="muted">No matching stories available yet.</p> : null}
       </div>
-      {!filteredItems.length && status === "loaded" ? <p className="muted">No matching stories available yet.</p> : null}
     </section>
   );
 }
@@ -368,7 +381,8 @@ const feedSponsorIds: Record<FeedKind, string> = {
 };
 
 function FeedSponsor({ kind, sponsorId }: { kind: FeedKind; sponsorId?: string }) {
-  const sponsor = ads.find((ad) => ad.id === (sponsorId || feedSponsorIds[kind]));
+  const requestedId = sponsorId || feedSponsorIds[kind];
+  const sponsor = ads.find((ad) => ad.id === requestedId && !isCarouselOnlyAd(ad.id));
   if (!sponsor) return null;
 
   return (
