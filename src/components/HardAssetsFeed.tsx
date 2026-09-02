@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import type { NewsFeedItem } from "../lib/news-api";
 import { fetchNewsFeed } from "../lib/rss";
 import itmTradingAd from "../../ad-assets/ad-itmtrading.JPG";
@@ -14,6 +14,8 @@ type Props = {
 export function HardAssetsFeed({ featuredVideoIds = evergreenVideoIds }: Props) {
   const [videos, setVideos] = useState<NewsFeedItem[]>([]);
   const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
+  const [isOpen, setIsOpen] = useState(true);
+  const panelId = useId();
 
   useEffect(() => {
     let active = true;
@@ -38,6 +40,15 @@ export function HardAssetsFeed({ featuredVideoIds = evergreenVideoIds }: Props) 
         <div>
           <p className="kicker">ITM Trading video desk</p>
           <h2>Hard Assets</h2>
+          <button
+            type="button"
+            className="feed-collapse-toggle"
+            aria-controls={panelId}
+            aria-expanded={isOpen}
+            onClick={() => setIsOpen((open) => !open)}
+          >
+            {isOpen ? "Hide stories" : "Show stories"} <span aria-hidden="true">{isOpen ? "−" : "+"}</span>
+          </button>
           <a className="hard-assets-sponsor" href="https://www.itmtrading.com/" target="_blank" rel="noreferrer sponsored">
             <span>Presented by</span>
             <img src={itmTradingAd} alt="ITM Trading" />
@@ -46,6 +57,7 @@ export function HardAssetsFeed({ featuredVideoIds = evergreenVideoIds }: Props) 
         <div className="section-heading-rule" aria-hidden />
       </header>
 
+      <div id={panelId} hidden={!isOpen}>
       {featuredVideoIds.length ? (
         <div className="hard-assets-featured">
           {featuredVideoIds.map((videoId) => (
@@ -77,6 +89,7 @@ export function HardAssetsFeed({ featuredVideoIds = evergreenVideoIds }: Props) 
           ))}
         </div>
       ) : null}
+      </div>
     </section>
   );
 }

@@ -1,6 +1,6 @@
 # The County Post
 
-An old-timey, black-and-white county news desk. Every U.S. county gets a page with live headlines, market and crypto tickers, local county weather, and a reader submission form powered by EmailJS.
+An old-timey, black-and-white county news desk. Every U.S. county gets live headlines, market and weather context, a sourced County Data Atlas, and a reader submission form powered by EmailJS.
 
 ## Getting Started
 
@@ -22,7 +22,7 @@ VITE_EMAILJS_PUBLIC_KEY=
 VITE_NEWS_API_URL=
 ```
 
-EmailJS powers the submission form. The news API variable is optional: leave `VITE_NEWS_API_URL` blank for the current deployment if the API is not available yet.
+EmailJS powers the submission form. `VITE_NEWS_API_URL` is the single base URL for news, county weather, atlas, and FRED-backed data. NWS, U.S. Drought Monitor, and NASA POWER requests stay on the API; the browser has no weather secret.
 
 ## Documentation
 
@@ -59,7 +59,10 @@ This allows the frontend to deploy now without the localhost API. Once the API i
 - County and state data come from `@nickgraffis/us-counties`.
 - County and state market selection uses county centroids and nearest in-state news hubs.
 - Feeds prefer `VITE_NEWS_API_URL` when available, then fall back to RSS.
+- County RSS fallback includes a state-qualified local-newspaper/radio/television search for every county and mirrors reviewed county-native outlet profiles from the API. Polk County, Arkansas explicitly targets The Mena Star and loads paginated My Pulse News / KENA main feeds plus its local-news and sports category feeds.
+- County lead feeds request up to 50 stories and balance a dominant publisher at 25 against up to 25 stories from other publishers; RSS fallback applies the same policy.
 - The top strip includes a TradingView stock ticker, LiveCoinWatch crypto ticker, and county weather on county pages.
+- County weather comes from the County Post News API, which fetches National Weather Service observations, forecasts, and active alerts, weekly U.S. Drought Monitor county conditions, and the latest 14 available NASA POWER precipitation estimates at the county centroid. The ticker, notice strips, and weather page share one metadata-driven browser cache.
 - Styling is intentionally monochrome with bold, newspaper-inspired typography.
 - `.env` must stay local. If secrets were ever committed, rotate them and rewrite/purge GitHub history separately.
 
@@ -74,18 +77,38 @@ The `SubmissionForm` component posts to EmailJS using the three `VITE_EMAILJS_*`
 ## Routes
 
 - `/` front page with county search, national feeds, and state directory
-- `/topics/:subjectSlug` national category and subcategory pages. Parent categories are `economy-markets`, `taxes-public-finance`, and `elections-transparency`; subcategories include `monetary-policy`, `markets-investing`, `jobs-business`, `property-taxes`, `municipal-bonds`, `budgets-levies`, `voting-systems`, `election-administration`, `audits-recounts`, and `open-records`
+- `/topics/:subjectSlug` national editorial desk and subcategory pages:
+  - Economy & Markets: `economy-markets`, `monetary-policy`, `markets-investing`, `jobs-business`
+  - Taxes & Public Finance: `taxes-public-finance`, `property-taxes`, `municipal-bonds`, `budgets-levies`
+  - Elections & Transparency: `elections-transparency`, `voting-systems`, `election-administration`, `audits-recounts`, `open-records`
+- `/advertise` advertiser placement preview and rate overview
+- `/payments` secure Stripe checkout for county ad campaigns
+- `/partners` global partner directory
 - `/submit` national submit op-eds/stories page
 - `/states` state and county directory
 - `/states/:stateSlug` state news page
 - `/states/:stateSlug/:subjectSlug` state subject pages, including `op-eds`
 - `/states/:stateSlug/submit` state submit op-eds/stories page
 - `/:stateSlug/:countySlug` county news page with feeds and submission form
+- `/:stateSlug/:countySlug/weather` county current conditions, active NWS alerts, weekly drought conditions, 14-day precipitation history, seven-day/period and hourly forecasts, and weather stories
+- `/:stateSlug/:countySlug/data` County Data Atlas hub with compact cross-domain measures and coverage status
+- `/:stateSlug/:countySlug/data/:domain` atlas domain detail with trends, comparisons, compositions, citations, vintages, and downloads
+- `/:stateSlug/:countySlug/economic-data` county FRED economic profile with unemployment, income, and GDP history
 - `/:stateSlug/:countySlug/op-eds` county opinion page
-- `/:stateSlug/:countySlug/:subjectSlug` county category and subcategory pages using the same category and subcategory slugs
+- `/:stateSlug/:countySlug/partners` county partner directory
+- `/:stateSlug/:countySlug/:subjectSlug` county editorial desk and subcategory pages using the same slugs
 - `/:stateSlug/:countySlug/submit` county submit op-eds/stories page
 
 The contextual navigation bar appears below the masthead and links to the active national, state, or county section pages.
+
+County home pages load a compact, cross-domain atlas snapshot from the News API. The data hub calls `GET /v1/counties/:stateSlug/:countySlug/atlas`; domain routes call the matching `/atlas/:domain` endpoint and lazy-load chart code. The UI preserves source links, metric vintages, modeled/preliminary flags, margins of error, coverage notices, suppression reasons, and partial-release warnings. Missing values are never rendered as zero.
+
+County routes call `GET /v1/counties/:stateSlug/:countySlug/weather` through `VITE_NEWS_API_URL`; the weather stories section calls `GET /v1/feeds/counties/:stateSlug/:countySlug/weather` and retains RSS fallback. Responses are cached using the API weather and alert TTL metadata, and in-flight requests are shared without letting one unmounted view cancel another subscriber. Active NWS CAP alerts, weekly U.S. Drought Monitor conditions, and NASA POWER precipitation history are displayed separately. The precipitation chart shows the latest 14 available corrected daily estimates at the county center, notes NASA's normal two-to-three-day delay, and does not present the estimate as a county-wide gauge total. Official attribution links to the [National Weather Service API](https://www.weather.gov/documentation/services-web-api), [NWS alerts documentation](https://www.weather.gov/documentation/services-web-alerts), [U.S. Drought Monitor](https://www.droughtmonitor.unl.edu/DmData/DataDownload/WebServiceInfo.aspx), and [NASA POWER Daily API](https://power.larc.nasa.gov/docs/services/api/temporal/daily/).
+
+Atlas domains are `demographics`, `economy`, `housing`, `jobs-business`, `education`, `health`, `civic-elections`, `public-safety`, `agriculture`, `environment-disasters`, `government-finance`, and `infrastructure`. Domain pages provide CSV and JSON downloads when measures are available, and every chart includes a text summary and data table.
+
+The existing `/economic-data` route remains available for the live FRED profile and source-series links. FRED and official-source credentials remain server-side: the atlas adds no frontend secret and uses only the existing `VITE_NEWS_API_URL`.
+Legacy `sound-money`, `paper-elections`, and `bond-issues` links redirect to their replacement desk pages.
 
 ## Deployment Notes
 

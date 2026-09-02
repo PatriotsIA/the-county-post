@@ -7,6 +7,12 @@ const RSS_CACHE_MS = 5 * 60_000;
 
 const feedCache = new Map<string, { expiresAt: number; promise: Promise<NewsFeedItem[]> }>();
 
+type FeedMixOptions = {
+  balancePublishers?: boolean;
+  singlePublisherMax?: number;
+  otherSourcesTarget?: number;
+};
+
 export async function fetchNewsFeed(feedUrl: string, maxItems = DEFAULT_MAX_ITEMS): Promise<NewsFeedItem[]> {
   const cached = feedCache.get(feedUrl);
   if (cached && cached.expiresAt > Date.now()) return newest(await cached.promise, maxItems);
@@ -33,10 +39,22 @@ async function fetchNewsFeedUncached(feedUrl: string): Promise<NewsFeedItem[]> {
   return newest(rawItems, DEFAULT_MAX_ITEMS);
 }
 
-export async function fetchNewsFeeds(feedUrls: string[], maxItems = DEFAULT_MAX_ITEMS): Promise<NewsFeedItem[]> {
+export async function fetchNewsFeeds(
+  feedUrls: string[],
+  maxItems = DEFAULT_MAX_ITEMS,
+  options: FeedMixOptions = {},
+): Promise<NewsFeedItem[]> {
   const uniqueUrls = Array.from(new Set(feedUrls.filter(Boolean)));
   const results = await Promise.all(uniqueUrls.map((feedUrl) => fetchNewsFeed(feedUrl, maxItems)));
-  return newest(dedupeItems(results.flat()), maxItems);
+  const items = newest(dedupeItems(results.flat()), DEFAULT_MAX_ITEMS);
+  return options.balancePublishers
+    ? balancePublisherItems(
+        items,
+        maxItems,
+        options.singlePublisherMax,
+        options.otherSourcesTarget,
+      )
+    : items.slice(0, maxItems);
 }
 
 async function tryLocalProxy(feedUrl: string) {
@@ -74,6 +92,7 @@ async function tryProvider(feedUrl: string) {
         author?: string;
         pubDate?: string;
         description?: string;
+        categories?: string[];
         thumbnail?: string;
         content?: string;
         enclosure?: { link?: string; type?: string };
@@ -94,6 +113,7 @@ async function tryProvider(feedUrl: string) {
         publishedAt: item.pubDate,
         description: decodeEntities(stripHtml(item.description || "")).slice(0, 200),
         imageUrl: imageFromItem(item),
+        categories: item.categories || [],
       };
     });
   } catch {
@@ -129,6 +149,7 @@ function parseRssXml(xml: string) {
       publishedAt: text(item, "pubDate"),
       description: decodeEntities(stripHtml(description)).slice(0, 200),
       imageUrl: imageFromRawItem(item, description),
+      categories: categoriesFromRawItem(item),
     };
   });
 
@@ -145,6 +166,7 @@ function parseRssXml(xml: string) {
       publishedAt: text(entry, "published") || text(entry, "updated"),
       description: decodeEntities(stripHtml(description)).slice(0, 200),
       imageUrl: imageFromRawItem(entry, description),
+      categories: categoriesFromRawItem(entry),
     };
   });
 }
@@ -173,6 +195,12 @@ function imageFromRawItem(item: Element, description: string) {
   return description.match(/<img[^>]+src=["']([^"']+)["']/i)?.[1] || "";
 }
 
+function categoriesFromRawItem(item: Element) {
+  return Array.from(item.getElementsByTagName("category"))
+    .map((category) => category.getAttribute("term") || category.textContent?.trim() || "")
+    .filter(Boolean);
+}
+
 function imageFromItem(item: { thumbnail?: string; content?: string; enclosure?: { link?: string; type?: string } }) {
   if (item.thumbnail) return item.thumbnail;
   if (item.enclosure?.type?.startsWith("image/")) return item.enclosure.link || "";
@@ -199,18 +227,182 @@ function newest(items: NewsFeedItem[], maxItems: number) {
 }
 
 function dedupeItems(items: NewsFeedItem[]) {
-  const seen = new Set<string>();
+  const accepted: Array<{ link: string; title: string; image: string; item: NewsFeedItem }> = [];
   return items.filter((item) => {
-    const key = normalizeDedupeKey(item.link || item.title);
-    if (seen.has(key)) return false;
-    seen.add(key);
+    const title = normalizeTitle(item.title, item.source);
+    const link = normalizeDedupeKey(item.link);
+    const image = normalizeImageKey(item.imageUrl);
+    if (accepted.some((existing) => existing.link === link || (image && existing.image === image) || isNearDuplicate(item, title, existing.item, existing.title))) return false;
+    accepted.push({ link, title, image, item });
     return true;
   });
+}
+
+export function balancePublisherItems(
+  items: NewsFeedItem[],
+  maxItems: number,
+  singlePublisherMax = 25,
+  otherSourcesTarget = 25,
+) {
+  const cappedLimit = Math.max(0, Math.floor(maxItems));
+  if (!cappedLimit) return [];
+
+  const groups = new Map<string, NewsFeedItem[]>();
+  for (const item of items) {
+    const key = itemPublisherKey(item) || `unknown:${normalizeDedupeKey(item.link)}`;
+    const group = groups.get(key) || [];
+    group.push(item);
+    groups.set(key, group);
+  }
+  const dominant = [...groups.entries()].sort((left, right) => right[1].length - left[1].length)[0];
+  const publisherLimit = Math.max(1, Math.floor(singlePublisherMax));
+  if (!dominant || dominant[1].length <= publisherLimit) return items.slice(0, cappedLimit);
+
+  const [dominantKey, dominantItems] = dominant;
+  const otherItems = items.filter((item) => itemPublisherKey(item) !== dominantKey);
+  const desiredOtherCount = Math.min(
+    Math.max(1, Math.floor(otherSourcesTarget)),
+    otherItems.length,
+    Math.floor(cappedLimit / 2),
+  );
+  const desiredDominantCount = Math.min(
+    publisherLimit,
+    dominantItems.length,
+    cappedLimit - desiredOtherCount,
+  );
+  const selected = new Set([
+    ...dominantItems.slice(0, desiredDominantCount),
+    ...otherItems.slice(0, desiredOtherCount),
+  ]);
+  return items.filter((item) => selected.has(item)).slice(0, cappedLimit);
+}
+
+function normalizeTitle(value: string, source?: string) {
+  const sourceSuffix = source ? ` - ${source}`.toLowerCase() : "";
+  const withoutSource = sourceSuffix && value.toLowerCase().endsWith(sourceSuffix) ? value.slice(0, -sourceSuffix.length) : value;
+  const headline = withoutSource.split(/\s[-–—]\s/)[0] || withoutSource;
+  return headline
+    .toLowerCase()
+    .replace(/[’']/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function isNearDuplicate(item: NewsFeedItem, title: string, existingItem: NewsFeedItem, existingTitle: string) {
+  if (!title || !existingTitle) return false;
+  if (isDistinctRecurringEdition(item, title, existingItem, existingTitle)) return false;
+  if (title === existingTitle || title.includes(existingTitle) || existingTitle.includes(title)) return true;
+
+  const titleSimilarity = tokenSimilarity(title, existingTitle);
+  if (titleSimilarity >= 0.82) return true;
+  if (samePublisher(item, existingItem) && sharesEventContext(title, existingTitle)) return true;
+
+  if (!isDvidsItem(item) || !isDvidsItem(existingItem)) return false;
+  const description = normalizeTitle(item.description || "");
+  const existingDescription = normalizeTitle(existingItem.description || "");
+  return description.length >= 36 && existingDescription.length >= 36 && tokenSimilarity(description, existingDescription) >= 0.72;
+}
+
+function tokenSimilarity(left: string, right: string) {
+  const leftTokens = new Set(left.split(" ").filter((token) => token.length > 2));
+  const rightTokens = new Set(right.split(" ").filter((token) => token.length > 2));
+  if (!leftTokens.size || !rightTokens.size) return 0;
+
+  const shared = [...leftTokens].filter((token) => rightTokens.has(token)).length;
+  return shared / (leftTokens.size + rightTokens.size - shared);
+}
+
+function sharesEventContext(left: string, right: string) {
+  const leftTokens = new Set(left.split(" ").map(stemToken).filter((token) => token.length > 2));
+  const rightTokens = new Set(right.split(" ").map(stemToken).filter((token) => token.length > 2));
+  const shared = [...leftTokens].filter((token) => rightTokens.has(token));
+  return shared.length >= 3 && shared.some((token) => !genericStoryTokens.has(token));
+}
+
+function stemToken(token: string) {
+  if (token.startsWith("escape")) return "escape";
+  return token.replace(/(ing|ed|es|s)$/u, "");
+}
+
+const genericStoryTokens = new Set(["county", "local", "news", "official", "officials", "report", "update", "today"]);
+const recurringSeriesTokens = new Set(["report", "reports", "log", "logs", "blotter", "briefing", "roundup"]);
+
+function isDistinctRecurringEdition(
+  item: NewsFeedItem,
+  title: string,
+  existingItem: NewsFeedItem,
+  existingTitle: string,
+) {
+  if (!samePublisher(item, existingItem)) return false;
+  const publishedAt = timestamp(item.publishedAt);
+  const existingPublishedAt = timestamp(existingItem.publishedAt);
+  if (publishedAt === undefined || existingPublishedAt === undefined) return false;
+  if (Math.abs(publishedAt - existingPublishedAt) < 48 * 60 * 60 * 1000) return false;
+
+  const titleTokens = title.split(" ");
+  const existingTitleTokens = existingTitle.split(" ");
+  return (
+    title === existingTitle ||
+    [...recurringSeriesTokens].some(
+      (token) => titleTokens.includes(token) && existingTitleTokens.includes(token),
+    )
+  );
+}
+
+function samePublisher(left: NewsFeedItem, right: NewsFeedItem) {
+  const leftPublisher = publisherKey(left.source);
+  const rightPublisher = publisherKey(right.source);
+  return Boolean(leftPublisher && leftPublisher === rightPublisher);
+}
+
+function publisherKey(value?: string) {
+  const normalized = (value || "")
+    .toLowerCase()
+    .replace(/\b(the|north|south|east|west|northeast|northwest|southeast|southwest)\b/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+  if (normalized.includes("my pulse news")) return "mypulsenews.com";
+  return normalized;
+}
+
+function itemPublisherKey(item: NewsFeedItem) {
+  try {
+    const domain = new URL(normalizeDedupeKey(item.link)).hostname.toLowerCase().replace(/^www\./, "");
+    if (domain && domain !== "news.google.com" && domain !== "bing.com" && !domain.endsWith(".bing.com")) {
+      return domain;
+    }
+  } catch {
+    // Fall back to the normalized publisher label.
+  }
+  return publisherKey(item.source);
+}
+
+function isDvidsItem(item: NewsFeedItem) {
+  return Boolean(item.source?.toLowerCase().includes("dvids") || item.link.toLowerCase().includes("dvidshub.net"));
+}
+
+function normalizeImageKey(value?: string) {
+  if (!value) return "";
+  try {
+    const url = new URL(value);
+    if (/(logo|masthead|favicon|placeholder|default[-_]?image|site[-_]?icon)/.test(url.pathname.toLowerCase())) {
+      return "";
+    }
+    url.search = "";
+    url.hash = "";
+    return url.toString();
+  } catch {
+    return value.toLowerCase().replace(/\s+/g, "");
+  }
 }
 
 function normalizeDedupeKey(value: string) {
   try {
     const url = new URL(value);
+    if (url.hostname.endsWith("bing.com") && url.pathname.endsWith("/news/apiclick.aspx")) {
+      const targetUrl = url.searchParams.get("url");
+      if (targetUrl) return normalizeDedupeKey(targetUrl);
+    }
     url.search = "";
     url.hash = "";
     return url.toString();
@@ -231,10 +423,17 @@ function stripHtml(value: string) {
 
 function decodeEntities(value: string) {
   return value
+    .replace(/&#x([0-9a-f]+);/gi, (entity, code: string) => decodeNumericEntity(entity, code, 16))
+    .replace(/&#(\d+);/g, (entity, code: string) => decodeNumericEntity(entity, code, 10))
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/&nbsp;/g, " ");
+}
+
+function decodeNumericEntity(entity: string, code: string, radix: number) {
+  const value = Number.parseInt(code, radix);
+  return Number.isInteger(value) && value >= 0 && value <= 0x10ffff ? String.fromCodePoint(value) : entity;
 }

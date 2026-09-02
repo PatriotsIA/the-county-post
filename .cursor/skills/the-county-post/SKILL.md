@@ -35,6 +35,13 @@ Copy `.env.example` to `.env` and set:
 - RSS fallback uses `RSS_2_API` as the rss2json API key, with `VITE_RSS2JSON_API_KEY` still supported as a legacy alias. `vite.config.ts` explicitly exposes `RSS_2_API`.
 - The UI should indicate the active article source per section: County News API or Fallback RSS.
 
+## Ads & partners
+- Ad creatives live in `src/data/ads.ts`. County-scoped ads use `countyKeys` (for example `texas/randall`).
+- Partner listings are derived from ads in `src/data/partners.ts`; do not maintain a separate partner list.
+- When adding a county-scoped ad, set `countyKeys` and it will appear in carousels, feed sponsors (if wired), and partner pages for those counties automatically.
+- Global partners page: `/partners` (`GlobalPartnerDirectory`).
+- County partners page: `/:stateSlug/:countySlug/partners` (`CountyPartnerDirectory`).
+
 ## Submissions (EmailJS)
 - `src/components/SubmissionForm.tsx` posts via `sendCountyFormEmail` (`src/lib/email.ts`).
 - Template variables sent: `title`, `name`, `email`, `reply_to`, `to_email`, `county_name`, `county_slug`, `state_name`, `state_slug`, `message`, `page_url`, `submitted_at`.

@@ -20,10 +20,51 @@ import patriotMessaging from "../../ad-assets/PatriotMessaging.jpg";
 import patriotTrailer from "../../ad-assets/PatriotTrailerStore.jpg";
 import pestCon from "../../ad-assets/PestCon250.jpg";
 import piaBanner from "../../ad-assets/PIA980.jpg";
-import piaStore from "../../ad-assets/PIAStore.jpg";
+import piaMerchStore from "../../ad-assets/pia-merch-store-ad.jpg";
 import plainsBank from "../../ad-assets/PlainsBank250.jpg";
+import loriHorner from "../../ad-assets/lori-horner-ad.png";
 
 export type AdSlotId = "inline" | "banner";
+
+export const LORI_HORNER_AD_ID = "lori-horner-inline";
+const loriHornerCountyKeys = ["texas/randall", "texas/potter"] as const;
+
+export function countyAdKey(stateSlug: string, countySlug: string) {
+  return `${stateSlug}/${countySlug}`;
+}
+
+export function isAdVisibleInCounty(ad: AdCreative, countyKey?: string) {
+  if (!ad.countyKeys?.length) return true;
+  if (!countyKey) return false;
+  return ad.countyKeys.includes(countyKey);
+}
+
+export function getAdsForSlot(slot: AdSlotId, countyKey?: string) {
+  return ads.filter((ad) => ad.slot === slot && isAdVisibleInCounty(ad, countyKey));
+}
+
+export function getSportsFeedSponsorId(countyKey?: string) {
+  if (countyKey && loriHornerCountyKeys.includes(countyKey as (typeof loriHornerCountyKeys)[number])) {
+    return LORI_HORNER_AD_ID;
+  }
+  return undefined;
+}
+
+export const FEATURED_AD_ID = "merch-inline";
+export const CAROUSEL_ONLY_AD_IDS = new Set([FEATURED_AD_ID]);
+
+export function featuredAdRank(id: string, countyKey?: string) {
+  if (id === FEATURED_AD_ID) return 0;
+  if (id === LORI_HORNER_AD_ID && countyKey && loriHornerCountyKeys.includes(countyKey as (typeof loriHornerCountyKeys)[number])) {
+    return 1;
+  }
+  if (id === "guerrilla-gear-inline") return 2;
+  return 3;
+}
+
+export function isCarouselOnlyAd(id: string) {
+  return CAROUSEL_ONLY_AD_IDS.has(id);
+}
 
 export type AdCreative = {
   id: string;
@@ -32,11 +73,31 @@ export type AdCreative = {
   name: string;
   alt: string;
   href: string;
+  countyKeys?: string[];
 };
 
-const partnerDirectory = "/partners";
+export const PARTNER_DIRECTORY_PATH = "/partners";
 
+// When adding a county-scoped ad (countyKeys), it is included automatically on that
+// county's partners page and in the global partners directory via src/data/partners.ts.
 export const ads: AdCreative[] = [
+  {
+    id: "merch-inline",
+    slot: "inline",
+    image: piaMerchStore,
+    name: "PATRIOT Merch",
+    alt: "PATRIOT Merch — custom patriotic designs at Shop.PatriotsInAction.com",
+    href: "https://shop.patriotsinaction.com/",
+  },
+  {
+    id: LORI_HORNER_AD_ID,
+    slot: "inline",
+    image: loriHorner,
+    name: "Lori Horner Realty Group",
+    alt: "Lori Horner Realty Group",
+    href: "https://www.lorihorner.com/",
+    countyKeys: [...loriHornerCountyKeys],
+  },
   {
     id: "lemc-inline",
     slot: "inline",
@@ -59,7 +120,7 @@ export const ads: AdCreative[] = [
     image: plainsBank,
     name: "Plains Bank",
     alt: "Plains Bank",
-    href: partnerDirectory,
+    href: PARTNER_DIRECTORY_PATH,
   },
   {
     id: "patriot-dispatch-inline",
@@ -83,7 +144,7 @@ export const ads: AdCreative[] = [
     image: pastureInline,
     name: "Pasture Exchange",
     alt: "Pasture Exchange",
-    href: partnerDirectory,
+    href: PARTNER_DIRECTORY_PATH,
   },
   {
     id: "patriot-trailer-inline",
@@ -115,7 +176,7 @@ export const ads: AdCreative[] = [
     image: amberwoodBrush,
     name: "Amberwood Brush",
     alt: "Amberwood Brush",
-    href: partnerDirectory,
+    href: PARTNER_DIRECTORY_PATH,
   },
   {
     id: "arw-inline",
@@ -123,7 +184,7 @@ export const ads: AdCreative[] = [
     image: arwLogo,
     name: "ARW",
     alt: "ARW",
-    href: partnerDirectory,
+    href: PARTNER_DIRECTORY_PATH,
   },
   {
     id: "brown-gmc-inline",
@@ -131,7 +192,7 @@ export const ads: AdCreative[] = [
     image: brownGmc,
     name: "Brown GMC",
     alt: "Brown GMC",
-    href: partnerDirectory,
+    href: PARTNER_DIRECTORY_PATH,
   },
   {
     id: "canyon-ridge-inline",
@@ -139,7 +200,7 @@ export const ads: AdCreative[] = [
     image: canyonRidge,
     name: "Canyon Ridge",
     alt: "Canyon Ridge",
-    href: partnerDirectory,
+    href: PARTNER_DIRECTORY_PATH,
   },
   {
     id: "catchings-inline",
@@ -147,7 +208,7 @@ export const ads: AdCreative[] = [
     image: catchings,
     name: "Catchings",
     alt: "Catchings",
-    href: partnerDirectory,
+    href: PARTNER_DIRECTORY_PATH,
   },
   {
     id: "dyers-inline",
@@ -155,7 +216,7 @@ export const ads: AdCreative[] = [
     image: dyers,
     name: "Dyer's Bar-B-Que",
     alt: "Dyer's Bar-B-Que",
-    href: partnerDirectory,
+    href: PARTNER_DIRECTORY_PATH,
   },
   {
     id: "hoffbrau-inline",
@@ -163,7 +224,7 @@ export const ads: AdCreative[] = [
     image: hoffbrau,
     name: "Hoffbrau",
     alt: "Hoffbrau",
-    href: partnerDirectory,
+    href: PARTNER_DIRECTORY_PATH,
   },
   {
     id: "become-a-patriot-inline",
@@ -187,15 +248,7 @@ export const ads: AdCreative[] = [
     image: lawyersTitle,
     name: "Lawyers Title",
     alt: "Lawyers Title",
-    href: partnerDirectory,
-  },
-  {
-    id: "merch-inline",
-    slot: "inline",
-    image: piaStore,
-    name: "The Patriot Merch Store",
-    alt: "The Patriot Merch Store",
-    href: "https://shop.patriotsinaction.com/",
+    href: PARTNER_DIRECTORY_PATH,
   },
   {
     id: "pestcon-inline",
@@ -203,7 +256,7 @@ export const ads: AdCreative[] = [
     image: pestCon,
     name: "PestCon",
     alt: "PestCon",
-    href: partnerDirectory,
+    href: PARTNER_DIRECTORY_PATH,
   },
   {
     id: "mattress-banner",
@@ -211,7 +264,7 @@ export const ads: AdCreative[] = [
     image: mattressBanner,
     name: "Mattress By Appointment",
     alt: "Mattress By Appointment",
-    href: partnerDirectory,
+    href: PARTNER_DIRECTORY_PATH,
   },
   {
     id: "pasture-exchange-banner",
@@ -219,7 +272,7 @@ export const ads: AdCreative[] = [
     image: pastureBanner,
     name: "Pasture Exchange",
     alt: "Pasture Exchange",
-    href: partnerDirectory,
+    href: PARTNER_DIRECTORY_PATH,
   },
   {
     id: "pia-banner",
