@@ -13,9 +13,7 @@ import {
   isPartnerDirectoryHref,
 } from "../data/partners";
 
-function PartnerCallout({ county }: { county?: CountySite }) {
-  const submitPath = county ? `/${county.state.slug}/${county.slug}/submit` : "/submit";
-
+function PartnerCallout() {
   return (
     <section className="partner-callout">
       <div>
@@ -23,9 +21,9 @@ function PartnerCallout({ county }: { county?: CountySite }) {
         <h2>Become a County Post partner</h2>
         <p>Put your organization in front of readers following national, state, and local news.</p>
       </div>
-      <Link to={submitPath} className="partner-callout-action">
-        Contact the desk
-      </Link>
+      <a href="https://www.advertise.thecountypost.com/advertise" className="partner-callout-action" target="_blank" rel="noreferrer">
+        Learn More
+      </a>
     </section>
   );
 }
@@ -131,7 +129,7 @@ export function CountyPartnerDirectory({ county }: { county: CountySite }) {
         </p>
       </section>
 
-      <PartnerCallout county={county} />
+      <PartnerCallout />
 
       {localPartners.length ? (
         <section className="card partner-section">

@@ -352,6 +352,9 @@ function App() {
         <NavLink to="/op-eds" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")} onClick={() => setMobileMenuOpen(false)}>
           Op-Eds
         </NavLink>
+        <NavLink to="/partners" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")} onClick={() => setMobileMenuOpen(false)}>
+          Partners
+        </NavLink>
         <NavLink to="/about" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")} onClick={() => setMobileMenuOpen(false)}>
           About
         </NavLink>
@@ -490,6 +493,7 @@ function contextLinks(county?: NonNullable<ReturnType<typeof getCounty>>, state?
       { to: `${base}/economic-data`, label: "Economic Data" },
       ...subjectGroups.map((group) => ({ to: `${base}/${group.slug}`, label: group.title })),
       { to: `${base}/op-eds`, label: "County Op-Eds" },
+      { to: `${base}/partners`, label: "Partners" },
       { to: `${base}/classifieds`, label: "Classifieds" },
       { to: `${base}/submit`, label: "Submit A Story" },
     ];
@@ -529,7 +533,7 @@ function isEditionChromePath(
   state?: ReturnType<typeof getStateBySlug>,
 ) {
   if (county || state) return true;
-  return pathname === "/" || pathname === "/states" || pathname === "/op-eds" || pathname === "/submit" || pathname.startsWith("/topics/");
+  return pathname === "/" || pathname === "/states" || pathname === "/op-eds" || pathname === "/partners" || pathname === "/submit" || pathname.startsWith("/topics/");
 }
 
 function pathAfter(pathname: string, prefix: string) {
@@ -1247,6 +1251,20 @@ function MastheadHeroCopy({
       );
     }
 
+    if (rest === "partners") {
+      return (
+        <MastheadHeroText
+          kicker="Advertiser directory"
+          title={
+            <>
+              {county.displayName} Partners <span className="muted">({county.state.abbr})</span>
+            </>
+          }
+          lead="Local and sitewide partners supporting The County Post in this community."
+        />
+      );
+    }
+
     if (rest === "submit") {
       return (
         <MastheadHeroText
@@ -1391,6 +1409,16 @@ function MastheadHeroCopy({
         kicker="Opinion"
         title="National Op-Ed Desk"
         lead="Columns and analysis across the United States."
+      />
+    );
+  }
+
+  if (pathname === "/partners") {
+    return (
+      <MastheadHeroText
+        kicker="Advertiser directory"
+        title="Our Partners"
+        lead="Businesses and organizations supporting The County Post across every edition."
       />
     );
   }
