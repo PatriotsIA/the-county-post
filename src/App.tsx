@@ -10,12 +10,13 @@ import { CountyWeatherPage } from "./components/CountyWeather";
 import { CountyDataSnapshot } from "./components/CountyDataSnapshot";
 import { CountyShowUpMeter } from "./components/CountyShowUpMeter";
 import { CountyPartnerDirectory, GlobalPartnerDirectory } from "./components/PartnerDirectory";
+import { CountyLocalSourcesDirectory } from "./components/LocalSourcesDirectory";
 import { AtlasDomainNav } from "./components/AtlasDomainNav";
 import { atlasDomainLabels } from "./lib/atlas-domain-labels";
 import { EditionMap } from "./components/EditionMap";
 import { TopTicker } from "./components/TopTicker";
 import { ads, countyAdKey, getSportsFeedSponsorId, isCarouselOnlyAd } from "./data/ads";
-import { getCounty, getCountiesForState, getCountyMarketCities, getCountyMarketCity, searchCounties } from "./data/counties";
+import { getCounty, getCountiesForState, searchCounties } from "./data/counties";
 import { site } from "./data/site";
 import { getStateBySlug, searchStates, states } from "./data/states";
 import { buildCountyFallbackFeedUrls, buildNationalFallbackFeedUrls, buildStateFallbackFeedUrls } from "./lib/fallback-feed-urls";
@@ -403,6 +404,7 @@ function App() {
           <Route path="/:stateSlug/:countySlug/economic-data" element={<CountyEconomicDataPage />} />
           <Route path="/:stateSlug/:countySlug/op-eds" element={<CountyOpEdPage />} />
           <Route path="/:stateSlug/:countySlug/partners" element={<CountyPartnersPage />} />
+          <Route path="/:stateSlug/:countySlug/local-sources" element={<CountyLocalSourcesPage />} />
           <Route path="/:stateSlug/:countySlug/submit" element={<CountySubmitPage />} />
           <Route path="/:stateSlug/:countySlug/classifieds" element={<CountyClassifiedsPage />} />
           <Route path="/:stateSlug/:countySlug/:subjectSlug" element={<CountySubjectPage />} />
@@ -493,6 +495,7 @@ function contextLinks(county?: NonNullable<ReturnType<typeof getCounty>>, state?
       { to: `${base}/economic-data`, label: "Economic Data" },
       ...subjectGroups.map((group) => ({ to: `${base}/${group.slug}`, label: group.title })),
       { to: `${base}/op-eds`, label: "County Op-Eds" },
+      { to: `${base}/local-sources`, label: "Local Sources" },
       { to: `${base}/partners`, label: "Partners" },
       { to: `${base}/classifieds`, label: "Classifieds" },
       { to: `${base}/submit`, label: "Submit A Story" },
@@ -966,15 +969,10 @@ function CountyPage() {
     return <NotFound />;
   }
 
-  const marketCities = getCountyMarketCities(county, 3);
-  const fallbackCity = marketCities[0] || getCountyMarketCity(county);
-  const localCities = Array.from(new Set([fallbackCity, ...marketCities.slice(1), ...(county.localCities || [])]));
-  const expandedLabel = localCities.length > 1 ? `nearby markets including ${localCities.join(" and ")}` : `${fallbackCity}, ${county.state.abbr}`;
   const locality = {
     countyName: county.name,
     stateName: county.state.name,
     stateAbbr: county.state.abbr,
-    cities: localCities,
     strict: true,
   };
   const countyKey = countyAdKey(county.state.slug, county.slug);
@@ -990,7 +988,6 @@ function CountyPage() {
         apiPath={countyApiPath(county.state.slug, county.slug, "general")}
         fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "general")}
         {...pageSectionProps(countyLeadPage, "localNews")}
-        expandedLabel={expandedLabel}
         pageSize={16}
         kind="general"
         locality={locality}
@@ -1000,7 +997,6 @@ function CountyPage() {
         kicker="Scores & highlights"
         apiPath={countyApiPath(county.state.slug, county.slug, "sports")}
         fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "sports")}
-        expandedLabel={expandedLabel}
         pageSize={12}
         kind="sports"
         sponsorId={sportsSponsorId}
@@ -1013,7 +1009,6 @@ function CountyPage() {
         kicker="Community records"
         apiPath={countyApiPath(county.state.slug, county.slug, "obituaries")}
         fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "obituaries")}
-        expandedLabel={expandedLabel}
         pageSize={12}
         kind="obituaries"
         locality={locality}
@@ -1026,7 +1021,6 @@ function CountyPage() {
         kicker="Civic desk"
         apiPath={countyApiPath(county.state.slug, county.slug, "politics")}
         fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "politics")}
-        expandedLabel={expandedLabel}
         pageSize={12}
         kind="politics"
         locality={locality}
@@ -1039,7 +1033,6 @@ function CountyPage() {
         kicker="Markets"
         apiPath={countyApiPath(county.state.slug, county.slug, "economy")}
         fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "economy")}
-        expandedLabel={expandedLabel}
         pageSize={12}
         kind="economy"
         locality={locality}
@@ -1052,7 +1045,6 @@ function CountyPage() {
         kicker="Public safety"
         apiPath={countyApiPath(county.state.slug, county.slug, "crime")}
         fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "crime")}
-        expandedLabel={expandedLabel}
         pageSize={12}
         kind="crime"
         locality={locality}
@@ -1066,7 +1058,6 @@ function CountyPage() {
         kicker="Local voices"
         apiPath={countyApiPath(county.state.slug, county.slug, "opinion")}
         fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "opinion")}
-        expandedLabel={expandedLabel}
         kind="opinion"
         locality={locality}
         loadEnabled={countyBackgroundLoader.isEnabled(5)}
@@ -1078,7 +1069,6 @@ function CountyPage() {
         apiPath={stateApiPath(county.state.slug, "general")}
         fallbackFeedUrls={buildStateFallbackFeedUrls(county.state, "general")}
         pageSize={12}
-        sponsorId="arw-inline"
         locality={{ stateName: county.state.name, stateAbbr: county.state.abbr, cities: [], strict: true }}
         actionLink={{ to: stateHomePath(county.state), label: `View ${county.state.name} page` }}
         loadEnabled={countyBackgroundLoader.isEnabled(6)}
@@ -1103,6 +1093,9 @@ function CountyPage() {
       </Link>
       <Link to={`/${county.state.slug}/${county.slug}/partners`} className="button-link">
         View county partners
+      </Link>
+      <Link to={`/${county.state.slug}/${county.slug}/local-sources`} className="button-link">
+        View local news sources
       </Link>
     </div>
   );
@@ -1155,8 +1148,6 @@ function MastheadHeroCopy({
   if (county) {
     const rest = pathAfter(pathname, `/${county.state.slug}/${county.slug}`);
     if (!rest) {
-      const marketCities = getCountyMarketCities(county, 3);
-      const fallbackCity = marketCities[0] || getCountyMarketCity(county);
       return (
         <MastheadHeroText
           className="county-edition-hero"
@@ -1171,12 +1162,12 @@ function MastheadHeroCopy({
           <div className="county-edition-hero-copy">
             <div className="meta-grid">
               <div>
-                <p className="meta-label">Primary market</p>
-                <p className="meta-value">{fallbackCity}, {county.state.abbr}</p>
+                <p className="meta-label">Local focus</p>
+                <p className="meta-value">County stories only</p>
               </div>
               <div>
                 <p className="meta-label">National lens</p>
-                <p className="meta-value">Balanced, non-partisan aggregation</p>
+                <p className="meta-value">Every source. One place.</p>
               </div>
               <div>
                 <p className="meta-label">County Sponsored By:</p>
@@ -1265,6 +1256,20 @@ function MastheadHeroCopy({
       );
     }
 
+    if (rest === "local-sources") {
+      return (
+        <MastheadHeroText
+          kicker="Local media directory"
+          title={
+            <>
+              {county.displayName} Local Sources <span className="muted">({county.state.abbr})</span>
+            </>
+          }
+          lead="Reviewed newspapers, radio stations, television stations, and digital newsrooms serving this county."
+        />
+      );
+    }
+
     if (rest === "submit") {
       return (
         <MastheadHeroText
@@ -1337,7 +1342,7 @@ function MastheadHeroCopy({
           <div className="meta-grid">
             <div>
               <p className="meta-label">National lens</p>
-              <p className="meta-value">Balanced, non-partisan aggregation</p>
+              <p className="meta-value">Every source. One place.</p>
             </div>
             <div>
               <p className="meta-label">Counties covered</p>
@@ -1479,10 +1484,6 @@ function CountySubjectPage() {
   const subject = getSubjectPage(subjectSlug);
   if (!subject) return <NotFound />;
 
-  const marketCities = getCountyMarketCities(county, 3);
-  const fallbackCity = marketCities[0] || getCountyMarketCity(county);
-  const localCities = Array.from(new Set([fallbackCity, ...marketCities.slice(1), ...(county.localCities || [])]));
-
   return (
     <div className="layout-grid">
       <NewsFeedSection
@@ -1490,14 +1491,12 @@ function CountySubjectPage() {
         kicker="County desk"
         apiPath={countyApiPath(county.state.slug, county.slug, subject.kind)}
         fallbackFeedUrls={buildCountyFallbackFeedUrls(county, subject.kind)}
-        expandedLabel={`nearby markets including ${localCities.join(" and ")}`}
         pageSize={18}
         kind={subject.kind}
         locality={{
           countyName: county.name,
           stateName: county.state.name,
           stateAbbr: county.state.abbr,
-          cities: localCities,
           strict: true,
         }}
         actionLink={
@@ -1515,10 +1514,6 @@ function CountySubjectPage() {
 
 function CountySubjectGroupPage({ county, group }: { county: NonNullable<ReturnType<typeof getCounty>>; group: SubjectGroup }) {
   const loader = useSequentialFeedLoader(true, group.subjects.length, `${county.fips || county.slug}:${group.slug}`);
-  const marketCities = getCountyMarketCities(county, 3);
-  const fallbackCity = marketCities[0] || getCountyMarketCity(county);
-  const localCities = Array.from(new Set([fallbackCity, ...marketCities.slice(1), ...(county.localCities || [])]));
-  const expandedLabel = localCities.length > 1 ? `nearby markets including ${localCities.join(" and ")}` : `${fallbackCity}, ${county.state.abbr}`;
 
   return (
     <div className="layout-grid">
@@ -1540,14 +1535,12 @@ function CountySubjectGroupPage({ county, group }: { county: NonNullable<ReturnT
           kicker={subject.kicker}
           apiPath={countyApiPath(county.state.slug, county.slug, subject.kind)}
           fallbackFeedUrls={buildCountyFallbackFeedUrls(county, subject.kind)}
-          expandedLabel={expandedLabel}
           pageSize={14}
           kind={subject.kind}
           locality={{
             countyName: county.name,
             stateName: county.state.name,
             stateAbbr: county.state.abbr,
-            cities: localCities,
             strict: true,
           }}
           actionLink={{ to: `/${county.state.slug}/${county.slug}/${subject.slug}`, label: "Open subcategory" }}
@@ -1567,6 +1560,14 @@ function CountyPartnersPage() {
   return <CountyPartnerDirectory county={county} />;
 }
 
+function CountyLocalSourcesPage() {
+  const { stateSlug, countySlug } = useParams<{ stateSlug: string; countySlug: string }>();
+  const county = getCounty(stateSlug, countySlug);
+  if (!county) return <NotFound />;
+
+  return <CountyLocalSourcesDirectory county={county} />;
+}
+
 function CountyOpEdPage() {
   const { stateSlug, countySlug } = useParams<{ stateSlug: string; countySlug: string }>();
   const county = getCounty(stateSlug, countySlug);
@@ -1575,10 +1576,6 @@ function CountyOpEdPage() {
     return <NotFound />;
   }
 
-  const marketCities = getCountyMarketCities(county, 3);
-  const fallbackCity = marketCities[0] || getCountyMarketCity(county);
-  const localCities = Array.from(new Set([fallbackCity, ...marketCities.slice(1), ...(county.localCities || [])]));
-
   return (
     <div className="layout-grid">
       <NewsFeedSection
@@ -1586,14 +1583,12 @@ function CountyOpEdPage() {
         kicker="County op-eds"
         apiPath={countyApiPath(county.state.slug, county.slug, "opinion")}
         fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "opinion")}
-        expandedLabel={`nearby markets including ${localCities.join(" and ")}`}
         pageSize={16}
         kind="opinion"
         locality={{
           countyName: county.name,
           stateName: county.state.name,
           stateAbbr: county.state.abbr,
-          cities: localCities,
           strict: true,
         }}
       />

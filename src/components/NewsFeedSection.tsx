@@ -23,7 +23,6 @@ type Props = {
   initialItems?: NewsFeedItem[];
   initialStatus?: "idle" | "loading" | "loaded" | "error";
   initialSource?: FeedSource;
-  expandedLabel?: string;
   kicker?: string;
   pageSize?: number;
   pageStep?: number;
@@ -41,6 +40,10 @@ type Props = {
 const MAX_REQUESTED_ITEMS = 200;
 type FeedSource = "api" | "fallback";
 const inFeedAds = ads.filter((ad) => ad.slot === "inline" && !isCarouselOnlyAd(ad.id));
+const DEFAULT_IN_FEED_AD_WEIGHT = 3;
+const inFeedAdRotation = Array.from({ length: DEFAULT_IN_FEED_AD_WEIGHT }, (_, round) =>
+  inFeedAds.filter((ad) => (ad.inFeedWeight ?? DEFAULT_IN_FEED_AD_WEIGHT) > round),
+).flat();
 
 export function NewsFeedSection({
   title,
@@ -50,7 +53,6 @@ export function NewsFeedSection({
   initialItems,
   initialStatus = "idle",
   initialSource,
-  expandedLabel,
   kicker,
   pageSize = 12,
   pageStep = 16,
@@ -76,10 +78,9 @@ export function NewsFeedSection({
   const fallbackFeedUrlsKey = fallbackFeedUrls.join("\n");
   const stableFallbackFeedUrls = useMemo(() => fallbackFeedUrlsKey.split("\n").filter(Boolean), [fallbackFeedUrlsKey]);
   const hasInitialPageData = initialItems !== undefined || initialStatus === "loading" || initialStatus === "error";
-  const shouldUseServerFilteredItems = source === "api";
   const filteredItems = useMemo(
-    () => dedupeTitles(shouldUseServerFilteredItems ? items : filterFeedItems(items, kind, locality)),
-    [items, kind, locality, shouldUseServerFilteredItems],
+    () => dedupeTitles(source === "api" ? filterApiItemsByLocality(items, locality) : filterFeedItems(items, kind, locality)),
+    [items, kind, locality, source],
   );
   const feedEntries = useMemo(
     () => createFeedEntries(filteredItems, `${title}-${kind}-${locality?.countyName || locality?.stateName || ""}`, gridColumns),
@@ -285,9 +286,6 @@ export function NewsFeedSection({
           </div>
         ) : null}
         {status === "loaded" && source ? <p className="feed-source">Fetching articles via {source === "api" ? "County News API" : "Fallback RSS"}</p> : null}
-        {expandedLabel ? (
-          <p className="muted">County-specific stories appear first. When coverage is sparse, this feed expands to {expandedLabel}.</p>
-        ) : null}
         <div className="feed-scroll" ref={containerRef}>
           <div className="feed-grid" ref={gridRef}>
             {feedEntries.map((entry) =>
@@ -321,7 +319,13 @@ export function NewsFeedSection({
           <div ref={sentinelRef} aria-hidden style={{ height: "48px" }} />
           {status === "loading" && items.length ? <p className="muted">Loading more stories…</p> : null}
         </div>
-        {!filteredItems.length && status === "loaded" ? <p className="muted">No matching stories available yet.</p> : null}
+        {!filteredItems.length && status === "loaded" ? (
+          <p className="muted">
+            {locality?.countyName
+              ? `No verified ${locality.countyName} County stories are available yet. If news is happening in your county, help create the record and share it with The County Post.`
+              : "No matching stories available yet."}
+          </p>
+        ) : null}
       </div>
     </section>
   );
@@ -341,10 +345,10 @@ function createFeedEntries(items: NewsFeedItem[], feedIdentity: string, gridColu
     const adIndex = gridColumns + ((seed + adPosition) % gridColumns);
     entries.push(...chunk.slice(0, adIndex).map((item) => ({ type: "article" as const, item })));
 
-    if (chunk.length && inFeedAds.length) {
+    if (chunk.length && inFeedAdRotation.length) {
       entries.push({
         type: "ad",
-        ad: inFeedAds[(seed + adPosition) % inFeedAds.length],
+        ad: inFeedAdRotation[(seed + adPosition) % inFeedAdRotation.length],
         position: adPosition,
       });
     }
@@ -359,25 +363,20 @@ function hashFeedIdentity(value: string) {
   return Array.from(value).reduce((hash, character) => (hash * 31 + character.charCodeAt(0)) >>> 0, 0);
 }
 
-const feedSponsorIds: Record<FeedKind, string> = {
+const feedSponsorIds: Partial<Record<FeedKind, string>> = {
   general: "guerrilla-gear-inline",
-  weather: "arw-inline",
   sports: "lemc-inline",
-  politics: "patriot-dispatch-inline",
   economy: "plains-bank-inline",
   crime: "pasture-exchange-inline",
   obituaries: "patriot-trailer-inline",
   opinion: "cbt-inline",
   "monetary-policy": "brown-gmc-inline",
-  "markets-investing": "canyon-ridge-inline",
   "jobs-business": "catchings-inline",
   "property-taxes": "dyers-inline",
   "municipal-bonds": "hoffbrau-inline",
   "budgets-levies": "lawyers-title-inline",
   "voting-systems": "pestcon-inline",
-  "election-administration": "patriot-dispatch-inline",
   "audits-recounts": "amberwood-brush-inline",
-  "open-records": "arw-inline",
 };
 
 function FeedSponsor({ kind, sponsorId }: { kind: FeedKind; sponsorId?: string }) {
@@ -601,6 +600,15 @@ function filterFeedItems(items: NewsFeedItem[], kind: FeedKind, locality?: Local
   });
 }
 
+function filterApiItemsByLocality(items: NewsFeedItem[], locality?: LocalityScope) {
+  if (!locality?.countyName) return items;
+  return items.filter((item) => {
+    const contentHaystack = `${item.title} ${item.description || ""} ${(item.categories || []).join(" ")}`.toLowerCase();
+    const fullHaystack = `${contentHaystack} ${item.source || ""}`.toLowerCase();
+    return matchesLocality(item, contentHaystack, fullHaystack, locality);
+  });
+}
+
 function matchesLocality(
   item: NewsFeedItem,
   contentHaystack: string,
@@ -619,8 +627,7 @@ function matchesLocality(
     const explicitlyInState = Boolean(allowedStateName && includesTerm(fullHaystack, allowedStateName));
     if (!explicitlyInState) return false;
 
-    const countyOrNearbyMarketTerms = [`${locality.countyName} county`, ...(locality.cities || [])];
-    return countyOrNearbyMarketTerms.some((term) => includesTerm(fullHaystack, term.toLowerCase()));
+    return includesTerm(fullHaystack, `${locality.countyName.toLowerCase()} county`);
   }
 
   const localityTerms = [locality.stateName, locality.stateAbbr, ...(locality.cities || [])];

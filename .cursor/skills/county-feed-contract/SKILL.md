@@ -19,10 +19,11 @@ description: Maintains The County Post frontend integration with the county-news
 1. Prefer `GET /v1/pages/counties/:stateSlug/:countySlug` for county pages; use API section results as already filtered.
 2. Preserve a browser RSS fallback when `VITE_NEWS_API_URL` is unavailable or fails.
 3. Keep the fallback's county/state locality and near-duplicate behavior aligned with the API. A fallback must not weaken same-name county protections.
-4. Do not strip or reinterpret `meta.sourcesUsed`; it identifies county primary, market, and nearby coverage tiers during rollout.
-5. Keep no-image labels user-facing (`X County News`), never expose fallback query text.
-6. Mirror reviewed county-native source profile changes from the API so direct feeds, targeted source searches, and strict locality behavior remain aligned during browser fallback.
-7. Preserve the county general-news publisher mix: up to 25 stories from the dominant publisher and up to 25 from other publishers, with a 50-item lead request.
+4. Keep county story sections county-only for both API and RSS results. Do not fill sparse feeds with stories from nearby cities or media markets.
+5. Preserve `meta.sourcesUsed` unchanged for diagnostics, but do not use broader source tiers to relax county locality.
+6. Keep no-image labels user-facing (`X County News`), never expose fallback query text.
+7. Mirror reviewed county-native source profile changes from the API so direct feeds, targeted source searches, the Local Sources directory, and strict locality behavior remain aligned during browser fallback.
+8. Preserve the county general-news publisher mix: up to 25 stories from the dominant publisher and up to 25 from other publishers, with a 50-item lead request.
 
 ## API changes
 
@@ -35,4 +36,4 @@ npm run lint
 npm run build
 ```
 
-For feed changes, verify an API-backed county route and the RSS fallback path, including an ambiguous county name such as Polk in Arkansas versus Florida.
+For feed changes, verify an API-backed county route and the RSS fallback path, including an ambiguous county name such as Polk in Arkansas versus Florida and a sparse county that must not show nearby-market stories.

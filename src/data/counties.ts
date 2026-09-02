@@ -1,6 +1,5 @@
 import { getCountyByState } from "@nickgraffis/us-counties";
 import { countyCentroidsByFips } from "./county-centroids";
-import { stateNewsHubs } from "./state-news-hubs";
 import { getStateBySlug, states, type StateSite } from "./states";
 
 type UsCounty = {
@@ -43,7 +42,7 @@ function createCountySite(county: UsCounty, state: StateSite): CountySite {
     displayName,
     latitude: centroid?.[0],
     longitude: centroid?.[1],
-    description: `County-level dispatches for ${displayName}, ${state.abbr}. Local headlines, sports, obituaries, and nearby stories in one place.`,
+    description: `County-level dispatches for ${displayName}, ${state.abbr}. Local headlines, sports, obituaries, and public-interest reporting from this county.`,
   };
 }
 
@@ -90,37 +89,6 @@ export function getCountiesForState(stateSlug?: string) {
   const state = getStateBySlug(stateSlug);
   if (!state) return [];
   return counties.filter((county) => county.state.slug === state.slug);
-}
-
-export function getCountyMarketCity(county: CountySite) {
-  return getCountyMarketCities(county, 1)[0] || county.name;
-}
-
-export function getCountyMarketCities(county: CountySite, limit = 2) {
-  const explicitCities = county.primaryCity ? [county.primaryCity] : [];
-  const hubs = stateNewsHubs[county.state.slug] || [];
-
-  const sortedHubs =
-    county.latitude !== undefined && county.longitude !== undefined
-      ? [...hubs].sort(
-          (a, b) =>
-            haversineMiles(county.latitude!, county.longitude!, a.latitude, a.longitude) -
-            haversineMiles(county.latitude!, county.longitude!, b.latitude, b.longitude),
-        )
-      : hubs;
-
-  return Array.from(new Set([...explicitCities, ...sortedHubs.map((hub) => hub.city)])).slice(0, limit);
-}
-
-function haversineMiles(latA: number, lonA: number, latB: number, lonB: number) {
-  const earthRadiusMiles = 3958.8;
-  const toRadians = (value: number) => (value * Math.PI) / 180;
-  const dLat = toRadians(latB - latA);
-  const dLon = toRadians(lonB - lonA);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRadians(latA)) * Math.cos(toRadians(latB)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  return 2 * earthRadiusMiles * Math.asin(Math.sqrt(a));
 }
 
 export function searchCounties(query: string, limit = 25) {

@@ -1,5 +1,5 @@
 import { getOtherStatesWithCountyName, isAmbiguousCountyName } from "../data/county-name-index";
-import { getCountyMarketCities, type CountySite } from "../data/counties";
+import { type CountySite } from "../data/counties";
 import { stateNewsHubs } from "../data/state-news-hubs";
 import type { StateSite } from "../data/states";
 import {
@@ -89,7 +89,6 @@ export function buildStateFallbackFeedUrls(state: StateSite, kind: Topic) {
 }
 
 export function buildCountyFallbackFeedUrls(county: CountySite, kind: Topic) {
-  const marketCities = getCountyMarketCities(county, 3);
   const countyKind = topicToCountyKind(kind);
   const nativeSources = getCountyNativeNewsSources(county, kind);
   return Array.from(
@@ -98,7 +97,6 @@ export function buildCountyFallbackFeedUrls(county: CountySite, kind: Topic) {
       ...(nativeSources.length ? [buildReviewedNativeSourceFeedUrl(countyKind, county, nativeSources)] : []),
       buildNativeSourceDiscoveryFeedUrl(countyKind, county),
       ...getCountyNativeNewsFeedUrls(county, kind),
-      ...marketCities.map((city) => buildMarketFeedUrl(countyKind, city, county.state)),
     ]),
   );
 }
@@ -154,9 +152,8 @@ function buildReviewedNativeSourceFeedUrl(
     .filter(Boolean)
     .map((domain) => `site:${domain}`)
     .join(" OR ");
-  const places = [county.displayName, ...getCountyMarketCities(county, 3)].map((place) => `"${place}"`).join(" OR ");
   return googleNewsRssUrl(
-    `(${siteTerms}) "${county.state.name}" (${places}) (${localSourceTopicTerms(kind).join(" OR ")})`,
+    `(${siteTerms}) "${county.state.name}" "${county.displayName}" (${localSourceTopicTerms(kind).join(" OR ")})`,
   );
 }
 
@@ -255,48 +252,5 @@ function buildCountyFeedUrl(kind: CountyFallbackKind, countyName: string, state:
       return googleNewsRssUrl(scopedTopicQuery(scoped, ["election audit", "recount", "canvass", "post-election review"]));
     case "open-records":
       return googleNewsRssUrl(scopedTopicQuery(scoped, ["public records", "open records", "FOIA", "government transparency"]));
-  }
-}
-
-function buildMarketFeedUrl(kind: CountyFallbackKind, placeName: string, state: StateSite) {
-  const scopedPlace = `"${placeName} ${state.name}" OR "${placeName} ${state.abbr}"`;
-
-  switch (kind) {
-    case "localNews":
-      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["local news"]));
-    case "localSports":
-      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["sports", "high school sports", "college sports"]));
-    case "weather":
-      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["weather", "forecast", "National Weather Service", "storm", "flood", "tornado", "winter weather"]));
-    case "obituaries":
-      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["obituaries", "funeral home"]));
-    case "politics":
-      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["politics", "city council", "elections"]));
-    case "economy":
-      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["economy", "jobs", "business"]));
-    case "crime":
-      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["crime", "police", "sheriff", "courts"]));
-    case "opinion":
-      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["opinion", "editorial", "column"]));
-    case "monetary-policy":
-      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["inflation", "interest rates", "Federal Reserve", "currency policy"]));
-    case "markets-investing":
-      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["markets", "commodities", "stocks", "bonds", "investing"]));
-    case "jobs-business":
-      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["jobs", "employment", "business", "industry"]));
-    case "property-taxes":
-      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["property taxes", "property tax", "assessment", "appraisal", "tax levy"]));
-    case "municipal-bonds":
-      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["municipal bond", "school bond", "public debt", "bond election"]));
-    case "budgets-levies":
-      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["public budget", "county budget", "city budget", "school budget", "tax rate"]));
-    case "voting-systems":
-      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["voting systems", "ballot processing", "voting equipment"]));
-    case "election-administration":
-      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["election administration", "election office", "polling place", "voter registration"]));
-    case "audits-recounts":
-      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["election audit", "recount", "canvass"]));
-    case "open-records":
-      return googleNewsRssUrl(scopedTopicQuery(scopedPlace, ["public records", "open records", "FOIA", "government transparency"]));
   }
 }

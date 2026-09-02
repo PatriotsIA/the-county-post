@@ -1,6 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { getCountiesForState, getCounty, getCountyMarketCities } from "../../src/data/counties";
-import { states } from "../../src/data/states";
+import { getCounty } from "../../src/data/counties";
 import { buildCountyFallbackFeedUrls } from "../../src/lib/fallback-feed-urls";
 import { isTrustedCountyNativeNewsItem } from "../../src/lib/local-news-sources";
 import { balancePublisherItems } from "../../src/lib/rss";
@@ -201,7 +200,14 @@ function makeRouteItems({
         ...makeItems({ source: "Lubbock Daily Test", topic, count: Math.max(0, limit - 4), offset: 4, stateLabel: "Texas" }),
       ]
     : makeItems({
-        source: isArkansas ? "Arkansas State Test" : scope === "national" ? "National Test" : "Randall County Test",
+        source:
+          isArkansas && scope === "counties"
+            ? "Polk County Test"
+            : isArkansas
+              ? "Arkansas State Test"
+              : scope === "national"
+                ? "National Test"
+                : "Randall County Test",
         topic,
         count: limit,
         stateLabel: isArkansas ? "Arkansas" : "Texas",
@@ -624,11 +630,12 @@ test("market navigation and county layouts remain usable at 320px and desktop wi
   await expect(page.locator(".county-edition-hero")).toHaveCount(0);
 });
 
-test("county feeds merge nearby-market stories, sort newest first, and keep batched sections stable", async ({ page }) => {
+test("county feeds stay county-only, sort newest first, and keep batched sections stable", async ({ page }) => {
   await page.goto("/texas/randall");
 
   await expect(page.getByRole("heading", { level: 1, name: /Randall County/i })).toBeVisible();
-  await expect(page.getByText("Amarillo, TX")).toBeVisible();
+  await expect(page.getByText("County stories only")).toBeVisible();
+  await expect(page.getByText("Every source. One place.")).toBeVisible();
 
   const localSection = page.locator("section", { has: page.getByRole("heading", { name: "Local headlines" }) });
   const localCards = localSection.locator(".feed-card");
@@ -670,33 +677,41 @@ test("state pages populate state headlines from broad in-state feeds", async ({ 
   await expect(stateSection.locator(".feed-card").first().locator(".feed-meta")).toContainText("Jun 26, 2026");
 });
 
-test("rural counties expand to nearby hubs while keeping county matches first", async ({ page }) => {
+test("rural counties remain sparse instead of showing nearby-market stories", async ({ page }) => {
   await page.goto("/texas/briscoe");
 
   await expect(page.getByRole("heading", { level: 1, name: /Briscoe County/i })).toBeVisible();
-  await expect(page.getByText("Amarillo, TX")).toBeVisible();
-  await expect(page.getByText(/expands to nearby markets including Amarillo and Lubbock/i).first()).toBeVisible();
+  await expect(page.getByText("County stories only")).toBeVisible();
   await expect(page.getByText(/Houston Daily Test/)).toHaveCount(0);
 
   const localSection = page.locator("section", { has: page.getByRole("heading", { name: "Local headlines" }) });
-  const localCards = localSection.locator(".feed-card");
-  await expect.poll(async () => localCards.count()).toBeGreaterThanOrEqual(16);
-  await expect(localCards.first()).toContainText("Briscoe County Test");
-  await expect(localSection).toContainText("Lubbock Daily Test");
+  const articleCards = localSection.locator(".feed-card:not(.feed-ad-card)");
+  await expect(articleCards).toHaveCount(4);
+  await expect(articleCards.first()).toContainText("Briscoe County Test");
+  await expect(localSection).not.toContainText("Lubbock Daily Test");
 });
 
-test("one sampled county in every state receives an in-state fallback market", () => {
-  for (const state of states) {
-    const county = getCountiesForState(state.slug)[0];
-    expect(county, `${state.name} should have counties`).toBeTruthy();
-
-    const markets = getCountyMarketCities(county, 2);
-    expect(markets.length, `${county.displayName}, ${state.name} should have fallback markets`).toBeGreaterThan(0);
-  }
-
+test("county RSS fallback does not add nearby media markets", () => {
   const briscoe = getCounty("texas", "briscoe");
   expect(briscoe).toBeTruthy();
-  expect(getCountyMarketCities(briscoe!, 2)).toEqual(["Amarillo", "Lubbock"]);
+  const queries = buildCountyFallbackFeedUrls(briscoe!, "general").map((url) => decodeURIComponent(url).replace(/\+/g, " "));
+  expect(queries.every((url) => url.includes('"Briscoe County"'))).toBe(true);
+  expect(queries.some((url) => url.includes("Amarillo") || url.includes("Lubbock") || url.includes("Midland"))).toBe(false);
+});
+
+test("county Local Sources lists reviewed outlets and keeps unknown directories honest", async ({ page }) => {
+  await page.goto("/arkansas/polk/local-sources");
+
+  await expect(page.getByRole("heading", { level: 1, name: "Polk County Local Sources", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Local Sources" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "The Mena Star" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "My Pulse News / KENA" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Visit news outlet" })).toHaveCount(2);
+
+  await page.goto("/texas/harris/local-sources");
+  await expect(page.getByRole("heading", { level: 1, name: "Harris County Local Sources", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "No reviewed local sources are listed yet" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Submit a local source" })).toHaveAttribute("href", "/texas/harris/submit");
 });
 
 async function expectNoPageOverflow(page: Page) {

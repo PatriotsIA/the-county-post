@@ -1,9 +1,5 @@
 import { Link } from "react-router-dom";
-import {
-  getCountyMarketCities,
-  getCountyMarketCity,
-  type CountySite,
-} from "../data/counties";
+import { type CountySite } from "../data/counties";
 import { buildCountyFallbackFeedUrls } from "../lib/fallback-feed-urls";
 import {
   weatherSeverityClass,
@@ -19,9 +15,6 @@ import { NewsFeedSection } from "./NewsFeedSection";
 
 export function CountyWeatherPage({ county }: { county: CountySite }) {
   const weather = useCountyWeather(county.state.slug, county.slug);
-  const marketCities = getCountyMarketCities(county, 3);
-  const fallbackCity = marketCities[0] || getCountyMarketCity(county);
-  const localCities = Array.from(new Set([fallbackCity, ...marketCities.slice(1), ...(county.localCities || [])]));
   const weatherFeedPath = `/v1/feeds/counties/${county.state.slug}/${county.slug}/weather`;
   const atlasPath = `/${county.state.slug}/${county.slug}/data/environment-disasters`;
 
@@ -59,14 +52,12 @@ export function CountyWeatherPage({ county }: { county: CountySite }) {
         kicker="Weather news"
         apiPath={weatherFeedPath}
         fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "weather")}
-        expandedLabel={`weather reports for nearby markets including ${localCities.join(" and ")}`}
         pageSize={12}
         kind="weather"
         locality={{
           countyName: county.name,
           stateName: county.state.name,
           stateAbbr: county.state.abbr,
-          cities: localCities,
           strict: true,
         }}
         actionLink={{ to: atlasPath, label: "View environment & disasters data" }}

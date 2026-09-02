@@ -34,7 +34,7 @@
 - When the U.S. Drought Monitor reports D1–D4 conditions, a separate, plainly labeled weekly drought notice appears beneath the weather row. It is never assigned `role="alert"` or described as an NWS warning.
 - The weather page presents the optional station observation, all returned forecast and hourly periods, active alert details, U.S. Drought Monitor category/area percentages, the latest 14 available NASA POWER daily precipitation estimates, partial-response warnings, county/forecast zones, source freshness, and the NWS time zone.
 - Alert detail links and forecast/observation/zone provenance link directly to official NWS resources in a new tab. Drought details link to the official county page and REST data. The precipitation chart identifies its county-center estimate, data-through date, normal reporting delay, and potential inclusion of liquid-equivalent frozen precipitation. Attribution references the [NWS API](https://www.weather.gov/documentation/services-web-api), [NWS alerts API](https://www.weather.gov/documentation/services-web-alerts), [U.S. Drought Monitor web service](https://www.droughtmonitor.unl.edu/DmData/DataDownload/WebServiceInfo.aspx), and [NASA POWER Daily API](https://power.larc.nasa.gov/docs/services/api/temporal/daily/).
-- Weather stories use topic `weather` through the county News API feed. If that feed is unavailable, state-qualified county and nearby-market RSS queries provide the existing browser fallback without relaxing county locality checks.
+- Weather stories use topic `weather` through the county News API feed. If that feed is unavailable, state-qualified county RSS queries provide the browser fallback. County story sections do not expand into nearby media markets.
 - The typed weather client validates the response envelope, shares in-flight requests, and lets each React subscriber abort its own wait. The network request is cancelled only when no subscribers remain.
 - The response cache uses the shorter of `meta.cacheTtlSeconds` and `meta.alertsCacheTtlSeconds`, capped at one hour, so active alerts are not held for the longer forecast window.
 
@@ -52,6 +52,7 @@
 
 ## Frontend Behavior (News Loading)
 - Prefers API when configured; uses fallback RSS otherwise.
+- County sections enforce county-only locality for both API and RSS items. Sparse county feeds remain sparse instead of filling with nearby-market stories.
 - Client cache: 60s per API URL.
 - API failure backoff: 5 minutes before retrying the API.
 - RSS cache: 5 minutes per feed URL to limit rss2json calls during scroll/pagination.

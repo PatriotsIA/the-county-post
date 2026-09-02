@@ -1,8 +1,6 @@
 import cbt from "../../ad-assets/CBT4.jpg";
 import amberwoodBrush from "../../ad-assets/Amberwood-Brush-Site-250.jpg";
-import arwLogo from "../../ad-assets/ARWLogo250.jpg";
 import brownGmc from "../../ad-assets/BrownGMC-250.jpg";
-import canyonRidge from "../../ad-assets/CanyonRidge250.jpg";
 import catchings from "../../ad-assets/Catchings250.jpg";
 import becomeAPatriot from "../../ad-assets/BecomeAPatriot.jpg";
 import becomeAPatriot2 from "../../ad-assets/BecomeAPatriot2.jpg";
@@ -15,8 +13,6 @@ import mattressBanner from "../../ad-assets/matress-ad.jpg";
 import lawyersTitle from "../../ad-assets/LawyersTitle250.jpg";
 import pastureBanner from "../../ad-assets/Pasture-Exchange980.jpg";
 import pastureInline from "../../ad-assets/PastureEXCHANGELogo.jpg";
-import patriotDispatch from "../../ad-assets/PatriotDispatch.jpg";
-import patriotMessaging from "../../ad-assets/PatriotMessaging.jpg";
 import patriotTrailer from "../../ad-assets/PatriotTrailerStore.jpg";
 import pestCon from "../../ad-assets/PestCon250.jpg";
 import piaBanner from "../../ad-assets/PIA980.jpg";
@@ -74,6 +70,7 @@ export type AdCreative = {
   alt: string;
   href: string;
   countyKeys?: string[];
+  inFeedWeight?: number;
 };
 
 export const PARTNER_DIRECTORY_PATH = "/partners";
@@ -97,6 +94,7 @@ export const ads: AdCreative[] = [
     alt: "Lori Horner Realty Group",
     href: "https://www.lorihorner.com/",
     countyKeys: [...loriHornerCountyKeys],
+    inFeedWeight: 1,
   },
   {
     id: "lemc-inline",
@@ -121,22 +119,6 @@ export const ads: AdCreative[] = [
     name: "Plains Bank",
     alt: "Plains Bank",
     href: PARTNER_DIRECTORY_PATH,
-  },
-  {
-    id: "patriot-dispatch-inline",
-    slot: "inline",
-    image: patriotMessaging,
-    name: "Patriot Dispatch",
-    alt: "Patriot Dispatch",
-    href: "https://patriotsforaction.org/messaging",
-  },
-  {
-    id: "patriot-dispatch-card-inline",
-    slot: "inline",
-    image: patriotDispatch,
-    name: "Patriot Dispatch",
-    alt: "Patriot Dispatch",
-    href: "https://patriotsforaction.org/messaging",
   },
   {
     id: "pasture-exchange-inline",
@@ -179,27 +161,11 @@ export const ads: AdCreative[] = [
     href: PARTNER_DIRECTORY_PATH,
   },
   {
-    id: "arw-inline",
-    slot: "inline",
-    image: arwLogo,
-    name: "ARW",
-    alt: "ARW",
-    href: PARTNER_DIRECTORY_PATH,
-  },
-  {
     id: "brown-gmc-inline",
     slot: "inline",
     image: brownGmc,
     name: "Brown GMC",
     alt: "Brown GMC",
-    href: PARTNER_DIRECTORY_PATH,
-  },
-  {
-    id: "canyon-ridge-inline",
-    slot: "inline",
-    image: canyonRidge,
-    name: "Canyon Ridge",
-    alt: "Canyon Ridge",
     href: PARTNER_DIRECTORY_PATH,
   },
   {
