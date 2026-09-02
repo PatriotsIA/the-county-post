@@ -1,4 +1,5 @@
 import type { CountySite } from "../data/counties";
+import { countyAdKey } from "../data/ads";
 import { AdSlot } from "./AdSlot";
 import { useCountyTurnout } from "../lib/useCountyTurnout";
 
@@ -48,7 +49,7 @@ export function CountyShowUpMeter({ county }: { county: CountySite }) {
           <a href="https://patriotsinaction.com" target="_blank" rel="noreferrer">Learn More</a>
         </div>
       </div>
-      <AdSlot slot="inline" className="ad-slot-meter" />
+      <AdSlot slot="inline" className="ad-slot-meter" countyKey={countyAdKey(county.state.slug, county.slug)} />
     </section>
   );
 }

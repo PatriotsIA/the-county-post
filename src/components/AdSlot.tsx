@@ -1,22 +1,25 @@
 import { useEffect, useRef, useState } from "react";
-import { ads, featuredAdRank, type AdSlotId } from "../data/ads";
+import { getAdsForSlot, featuredAdRank, type AdSlotId } from "../data/ads";
 
 type Props = {
   slot: AdSlotId;
   limit?: number;
   className?: string;
+  countyKey?: string;
 };
 
 export function RotatingAdSpot({
   seed = 0,
   intervalMs = 8_000,
   label = "Advertisement",
+  countyKey,
 }: {
   seed?: number;
   intervalMs?: number;
   label?: string;
+  countyKey?: string;
 }) {
-  const creatives = ads.filter((ad) => ad.slot === "inline").sort((a, b) => featuredAdRank(a.id) - featuredAdRank(b.id));
+  const creatives = getAdsForSlot("inline").sort((a, b) => featuredAdRank(a.id, countyKey) - featuredAdRank(b.id, countyKey));
   const [activeIndex, setActiveIndex] = useState(() => (creatives.length ? seed % creatives.length : 0));
 
   useEffect(() => {
@@ -40,10 +43,9 @@ export function RotatingAdSpot({
   );
 }
 
-export function AdSlot({ slot, limit, className }: Props) {
-  const creatives = ads
-    .filter((ad) => ad.slot === slot)
-    .sort((a, b) => featuredAdRank(a.id) - featuredAdRank(b.id))
+export function AdSlot({ slot, limit, className, countyKey }: Props) {
+  const creatives = getAdsForSlot(slot, countyKey)
+    .sort((a, b) => featuredAdRank(a.id, countyKey) - featuredAdRank(b.id, countyKey))
     .slice(0, limit);
   if (!creatives.length) return null;
 
@@ -52,7 +54,7 @@ export function AdSlot({ slot, limit, className }: Props) {
   return <SquareAdCarousel creatives={creatives} className={className} />;
 }
 
-function SquareAdCarousel({ creatives, className }: { creatives: typeof ads; className?: string }) {
+function SquareAdCarousel({ creatives, className }: { creatives: ReturnType<typeof getAdsForSlot>; className?: string }) {
   const trackRef = useRef<HTMLDivElement | null>(null);
 
   const move = (direction: -1 | 1) => {
@@ -101,7 +103,7 @@ function SquareAdCarousel({ creatives, className }: { creatives: typeof ads; cla
   );
 }
 
-function BannerAdCarousel({ creatives }: { creatives: typeof ads }) {
+function BannerAdCarousel({ creatives }: { creatives: ReturnType<typeof getAdsForSlot> }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const swipeStartX = useRef<number | null>(null);
 

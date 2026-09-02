@@ -9,11 +9,12 @@ import { CountyEconomicData, CountyEconomicSnapshot } from "./components/CountyE
 import { CountyWeatherPage } from "./components/CountyWeather";
 import { CountyDataSnapshot } from "./components/CountyDataSnapshot";
 import { CountyShowUpMeter } from "./components/CountyShowUpMeter";
+import { CountyPartnerDirectory, GlobalPartnerDirectory } from "./components/PartnerDirectory";
 import { AtlasDomainNav } from "./components/AtlasDomainNav";
 import { atlasDomainLabels } from "./lib/atlas-domain-labels";
 import { EditionMap } from "./components/EditionMap";
 import { TopTicker } from "./components/TopTicker";
-import { ads, isCarouselOnlyAd } from "./data/ads";
+import { ads, countyAdKey, getSportsFeedSponsorId, isCarouselOnlyAd } from "./data/ads";
 import { getCounty, getCountiesForState, getCountyMarketCities, getCountyMarketCity, searchCounties } from "./data/counties";
 import { site } from "./data/site";
 import { getStateBySlug, searchStates, states } from "./data/states";
@@ -388,7 +389,7 @@ function App() {
           <Route path="/submit" element={<SubmitPage />} />
           <Route path="/states" element={<StateDirectory />} />
           <Route path="/states/:stateSlug/*" element={<LegacyStateRedirect />} />
-          <Route path="/partners" element={<PartnerDirectory />} />
+          <Route path="/partners" element={<GlobalPartnerDirectory />} />
           <Route path="/op-eds" element={<OpEdPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
@@ -398,6 +399,7 @@ function App() {
           <Route path="/:stateSlug/:countySlug/data/:domain" element={<CountyDataAtlasDomainRoute />} />
           <Route path="/:stateSlug/:countySlug/economic-data" element={<CountyEconomicDataPage />} />
           <Route path="/:stateSlug/:countySlug/op-eds" element={<CountyOpEdPage />} />
+          <Route path="/:stateSlug/:countySlug/partners" element={<CountyPartnersPage />} />
           <Route path="/:stateSlug/:countySlug/submit" element={<CountySubmitPage />} />
           <Route path="/:stateSlug/:countySlug/classifieds" element={<CountyClassifiedsPage />} />
           <Route path="/:stateSlug/:countySlug/:subjectSlug" element={<CountySubjectPage />} />
@@ -687,59 +689,6 @@ function StateDirectory() {
   );
 }
 
-function PartnerDirectory() {
-  const partners = Array.from(new Map(ads.map((ad) => [ad.name, ad])).values());
-  const nationwidePartners = partners.filter((partner) => partner.href !== "/partners");
-  const countyPartners = partners.filter((partner) => partner.href === "/partners");
-
-  return (
-    <div className="layout-grid">
-      <section className="hero-card">
-        <p className="kicker">Advertiser directory</p>
-        <h1>Our Partners</h1>
-        <p className="lead">Explore the businesses and organizations that support The County Post.</p>
-      </section>
-      <section className="partner-callout">
-        <div>
-          <p className="kicker">Founding partners</p>
-          <h2>Become a County Post partner</h2>
-          <p>Put your organization in front of readers following national, state, and local news.</p>
-        </div>
-        <Link to="/submit" className="partner-callout-action">Contact the desk</Link>
-      </section>
-      <section className="card partner-section">
-        <p className="kicker">Sitewide partners</p>
-        <h2>National partners supporting The County Post</h2>
-        <p className="muted">These organizations support readers across every County Post edition.</p>
-        <PartnerList partners={nationwidePartners} />
-      </section>
-      <section className="card partner-section">
-        <p className="kicker">County founding partners</p>
-        <h2>Partners supporting local editions</h2>
-        <p className="muted">These advertisers support coverage in County Post communities.</p>
-        <PartnerList partners={countyPartners} />
-      </section>
-    </div>
-  );
-}
-
-function PartnerList({ partners }: { partners: typeof ads }) {
-  return (
-    <div className="partner-directory">
-      {partners.map((partner) => (
-        <article key={partner.id} className="partner-card">
-          <img src={partner.image} alt="" />
-          <div>
-            <h3>{partner.name}</h3>
-            <p>Supporting independent county-by-county news coverage.</p>
-            {partner.href === "/partners" ? <span className="partner-directory-label">County Post partner</span> : <a href={partner.href} target="_blank" rel="noreferrer sponsored">Visit partner</a>}
-          </div>
-        </article>
-      ))}
-    </div>
-  );
-}
-
 function StatePage() {
   const { stateSlug } = useParams<{ stateSlug: string }>();
   const state = getStateBySlug(stateSlug);
@@ -1024,6 +973,8 @@ function CountyPage() {
     cities: localCities,
     strict: true,
   };
+  const countyKey = countyAdKey(county.state.slug, county.slug);
+  const sportsSponsorId = getSportsFeedSponsorId(countyKey);
 
   return (
     <div className="layout-grid compact-county-stack">
@@ -1048,6 +999,7 @@ function CountyPage() {
         expandedLabel={expandedLabel}
         pageSize={12}
         kind="sports"
+        sponsorId={sportsSponsorId}
         locality={locality}
         loadEnabled={countyBackgroundLoader.isEnabled(0)}
         onLoadSettled={() => countyBackgroundLoader.markSettled(0)}
@@ -1104,7 +1056,7 @@ function CountyPage() {
         loadEnabled={countyBackgroundLoader.isEnabled(4)}
         onLoadSettled={() => countyBackgroundLoader.markSettled(4)}
       />
-      <AdSlot slot="inline" />
+      <AdSlot slot="inline" countyKey={countyKey} />
       <NewsFeedSection
         title="Opinion & op-eds"
         kicker="Local voices"
@@ -1144,6 +1096,9 @@ function CountyPage() {
 
       <Link to={`/${county.state.slug}/${county.slug}/op-eds`} className="button-link">
         View county op-eds
+      </Link>
+      <Link to={`/${county.state.slug}/${county.slug}/partners`} className="button-link">
+        View county partners
       </Link>
     </div>
   );
@@ -1574,6 +1529,14 @@ function CountySubjectGroupPage({ county, group }: { county: NonNullable<ReturnT
       ))}
     </div>
   );
+}
+
+function CountyPartnersPage() {
+  const { stateSlug, countySlug } = useParams<{ stateSlug: string; countySlug: string }>();
+  const county = getCounty(stateSlug, countySlug);
+  if (!county) return <NotFound />;
+
+  return <CountyPartnerDirectory county={county} />;
 }
 
 function CountyOpEdPage() {

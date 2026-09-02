@@ -2400,6 +2400,36 @@ button:disabled {
   color: var(--news-red);
 }
 
+.partner-coverage {
+  margin: 3px 0 7px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.partner-county-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.partner-county-link {
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  background: var(--white);
+  color: var(--news-blue);
+  font-family: "Roboto Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.partner-county-link:hover {
+  border-color: var(--news-red);
+  color: var(--news-red);
+}
+
 .feed-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
