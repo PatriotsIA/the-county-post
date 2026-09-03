@@ -76,13 +76,13 @@ The `SubmissionForm` component posts to EmailJS using the three `VITE_EMAILJS_*`
 
 ## Routes
 
-- `/` standalone advertiser information, county/state campaign builder, Stripe checkout, pricing, placement examples, and national sales contact
+- `/` standalone advertiser information, County Post Marketing Campaign builder, Stripe checkout, pricing, placement examples, and national sales contact
 - `/advertise` legacy redirect to `/#checkout`
 - `/payments` legacy redirect to `/#checkout`
 - `/terms` retained Terms of Service statement
 - `/privacy` retained Privacy Policy statement
 
-State campaign pricing is calculated from each selected state's county count: regular ad networks are $10 per county per month and feed sponsorships are $20 per county per selected feed per month. Annual checkout provides 12 months for the price of 10. County population-tier pricing and multi-county discounts remain available.
+State-level County Post Marketing Campaign pricing is calculated from each selected state's county count: regular ad networks are $10 per county per month and feed sponsorships are $20 per county per selected feed per month. Annual checkout provides 12 months for the price of 10. County population-tier pricing and multi-county discounts remain available.
 
 County home pages load a compact, cross-domain atlas snapshot from the News API. The data hub calls `GET /v1/counties/:stateSlug/:countySlug/atlas`; domain routes call the matching `/atlas/:domain` endpoint and lazy-load chart code. The UI preserves source links, metric vintages, modeled/preliminary flags, margins of error, coverage notices, suppression reasons, and partial-release warnings. Missing values are never rendered as zero.
 

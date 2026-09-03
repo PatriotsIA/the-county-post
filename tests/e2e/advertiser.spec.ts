@@ -26,12 +26,15 @@ test("renders checkout first, national contact next, and consolidated pricing", 
   await page.goto("/");
 
   await expect(page.getByRole("heading", { level: 1, name: "Put your business on the Post" })).toBeVisible();
-  await expect(page.getByRole("heading", { level: 2, name: "County and state campaign rates" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "County Post Marketing Campaign rates" })).toBeVisible();
   await expect(page.locator(".advertiser-main section").first()).toHaveAttribute("id", "checkout");
   await expect(page.locator("#checkout + #national-advertising")).toBeVisible();
   await expect(page.locator("#national-advertising + #pricing")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "See your campaign in the County Post design" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "County and state campaign rates" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "See your County Post Marketing Campaign in the County Post design" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "County Post Marketing Campaign rates" })).toBeVisible();
+  await expect(page.getByLabel("Coming soon")).toContainText(
+    "Advertising Options on Our Next Release: The County Post: Classifieds Marketplace - Coming Soon!",
+  );
   await expect(page.getByText("Texas: 254 counties · $2,540/month")).toBeVisible();
   await expect(page.getByText("Texas: one feed · $5,080/month")).toBeVisible();
   await expect(page.getByRole("img", { name: "The County Post" }).first()).toHaveAttribute("src", /county-post-final-logo/);
@@ -72,7 +75,7 @@ test("calculates state and per-feed pricing and submits state fulfillment detail
   });
   await page.goto("/");
 
-  await page.getByLabel("Campaign reach").selectOption("state");
+  await page.getByLabel("County Post Marketing Campaign reach").selectOption("state");
   await page.getByLabel("Add a state").fill("Texas");
   await page.getByRole("button", { name: "Texas (TX)" }).click();
   await expect(page.locator(".checkout-summary strong")).toHaveText("$2,540/month");
@@ -167,6 +170,6 @@ test("remains usable without horizontal overflow at mobile width", async ({ page
   await page.goto("/");
 
   await expect(page.getByRole("navigation", { name: "Advertiser navigation" })).toBeVisible();
-  await expect(page.getByLabel("Campaign reach")).toBeVisible();
+  await expect(page.getByLabel("County Post Marketing Campaign reach")).toBeVisible();
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1)).toBe(true);
 });

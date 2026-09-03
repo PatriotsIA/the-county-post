@@ -28,3 +28,4 @@ dist-ssr
 *.sln
 *.sw?
 texas-county-mapping.csv
+test-results/advertiser-calculates-stat-4bd07-s-state-fulfillment-details-chromium/error-context.md

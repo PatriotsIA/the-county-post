@@ -29,7 +29,7 @@ function App() {
           </span>
         </Link>
         <nav className="advertiser-nav" aria-label="Advertiser navigation">
-          <Link to="/#checkout">Build a campaign</Link>
+          <Link to="/#checkout">Build a County Post Marketing Campaign</Link>
           <Link to="/#placement-examples">Placement examples</Link>
           <Link to="/#pricing">Pricing</Link>
           <Link to="/#national-advertising">National advertising</Link>
@@ -40,6 +40,10 @@ function App() {
           </a>
         </nav>
       </header>
+
+      <aside className="release-banner" aria-label="Coming soon">
+        Advertising Options on Our Next Release: <strong>The County Post: Classifieds Marketplace</strong> - Coming Soon!
+      </aside>
 
       <main className="advertiser-main">
         <Routes>

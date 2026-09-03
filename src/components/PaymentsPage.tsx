@@ -170,16 +170,18 @@ export function PaymentsPage() {
             Payment received. Our advertising team will confirm inventory and creative before launch.
           </p>
         ) : checkoutResult === "cancelled" ? (
-          <p className="checkout-result" role="status">Checkout was cancelled. Your campaign selections have not been charged.</p>
+          <p className="checkout-result" role="status">
+            Checkout was cancelled. Your County Post Marketing Campaign selections have not been charged.
+          </p>
         ) : null}
 
         <form className="checkout-form" onSubmit={checkout}>
           <div className="checkout-options checkout-options-three">
             <label>
-              Campaign reach
+              County Post Marketing Campaign reach
               <select value={scope} onChange={(event) => setScope(event.target.value as CampaignScope)}>
-                <option value="county">County campaign</option>
-                <option value="state">State campaign</option>
+                <option value="county">County reach</option>
+                <option value="state">State reach</option>
               </select>
             </label>
             <label>
@@ -317,7 +319,7 @@ export function PaymentsPage() {
 
       <section id="national-advertising" className="card national-advertising">
         <p className="kicker">National advertising</p>
-        <h2>Build a national County Post campaign with our sales team</h2>
+        <h2>Build a National County Post Marketing Campaign with our sales team</h2>
         <p>
           National lanes and exclusive national placements are planned directly with us. They are not sold through the checkout form.
         </p>
@@ -339,7 +341,7 @@ function PricingInformation() {
   return (
     <section id="pricing" className="card payments-block">
       <p className="kicker">Transparent pricing</p>
-      <h2>County and state campaign rates</h2>
+      <h2>County Post Marketing Campaign rates</h2>
       <div className="state-pricing-grid">
         <article>
           <span>State ad network</span>
@@ -361,7 +363,7 @@ function PricingInformation() {
       <h3 className="county-pricing-heading">Monthly county pricing by population</h3>
       <div className="payments-table-wrap">
         <table className="payments-table">
-          <caption>County campaign monthly rates by county population</caption>
+          <caption>County Post Marketing Campaign monthly rates by county population</caption>
           <thead>
             <tr>
               <th scope="col">County population</th>
@@ -406,8 +408,8 @@ function PricingExplanation({
     <aside className="checkout-pricing-note">
       <strong>{placement === "state-ad" ? "State ad network: $10 per county" : "State feed sponsorship: $20 per county, per feed"}</strong>
       <span>
-        State campaigns run on the state page and throughout every county edition in each selected state. Texas is $2,540/month for a
-        regular state ad or $5,080/month for one sponsored feed.
+        State-level County Post Marketing Campaigns run on the state page and throughout every county edition in each selected state.
+        Texas is $2,540/month for a regular state ad or $5,080/month for one sponsored feed.
       </span>
     </aside>
   );

@@ -16,7 +16,7 @@ export function AdvertiserPlacementShowcase({ businessName, creativeUrl }: Props
       <header className="ad-showcase-heading">
         <div>
           <p className="kicker">Placement examples</p>
-          <h2>See your campaign in the County Post design</h2>
+          <h2>See your County Post Marketing Campaign in the County Post design</h2>
         </div>
         <div className="ad-showcase-heading-action">
           <p>
@@ -67,7 +67,10 @@ export function AdvertiserPlacementShowcase({ businessName, creativeUrl }: Props
           <div>
             <h3>Section-break carousel</h3>
             <p className="ad-showcase-spec">Wide creative · between news sections</p>
-            <p>State campaigns receive network delivery across state pages and every county edition in each selected state.</p>
+            <p>
+              State-level County Post Marketing Campaigns receive network delivery across state pages and every county edition in each
+              selected state.
+            </p>
           </div>
         </article>
 
