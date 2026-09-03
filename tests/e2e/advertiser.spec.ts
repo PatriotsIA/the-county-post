@@ -36,6 +36,9 @@ test("renders checkout first, national contact next, and consolidated pricing", 
   await expect(page.getByText("Texas: one feed · $5,080/month")).toBeVisible();
   await expect(page.getByRole("img", { name: "The County Post" }).first()).toHaveAttribute("src", /county-post-final-logo/);
   await expect(page.getByText("Lori Horner")).toHaveCount(0);
+  const nationalExample = page.getByRole("img", { name: /Full-page example of The County Post national edition/ });
+  await nationalExample.scrollIntoViewIfNeeded();
+  await expect(nationalExample).toBeVisible();
   await expect(page.locator(".creative-specs + label")).toContainText("Upload ad creative");
   await expect(page.locator(".creative-specs")).toContainText("Color card: 250×250 full-color JPG or PNG");
   await expect(page.locator(".creative-specs")).toContainText("Network band: 980×300 JPG or PNG");

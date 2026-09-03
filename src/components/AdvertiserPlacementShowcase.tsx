@@ -1,4 +1,5 @@
 import { useState } from "react";
+import nationalExample from "../../national-example.png";
 
 type Props = {
   businessName: string;
@@ -87,6 +88,22 @@ export function AdvertiserPlacementShowcase({ businessName, creativeUrl }: Props
         State purchases cover the state page and all County Post county editions within that state. Feed sponsorships are priced
         separately for each selected feed.
       </p>
+
+      <figure className="full-page-site-example">
+        <figcaption>
+          <p className="kicker">Full-page example</p>
+          <h3>The County Post national edition</h3>
+          <p>See how advertising placements fit throughout the complete national reading experience.</p>
+        </figcaption>
+        <a href="https://thecountypost.com" target="_blank" rel="noreferrer" aria-label="Open the live County Post website">
+          <img
+            src={nationalExample}
+            alt="Full-page example of The County Post national edition with advertising placements"
+            loading="lazy"
+            decoding="async"
+          />
+        </a>
+      </figure>
     </section>
   );
 }
