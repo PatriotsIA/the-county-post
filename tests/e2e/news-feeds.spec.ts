@@ -214,6 +214,31 @@ function makeRouteItems({
       });
 }
 
+test("pins the County Post op-ed first on national, state, and county opinion desks", async ({ page }) => {
+  const opinionDesks = [
+    { path: "/op-eds", heading: "National opinion" },
+    { path: "/arkansas/op-eds", heading: "Arkansas State Op-Eds" },
+    { path: "/arkansas/polk/op-eds", heading: "Local opinion" },
+  ];
+
+  for (const desk of opinionDesks) {
+    await page.goto(desk.path);
+    const section = page.locator("section", { has: page.getByRole("heading", { name: desk.heading, exact: true }) });
+    const firstCard = section.locator(".feed-card").first();
+    await expect(firstCard.locator(".feed-title")).toHaveText("The Data Centers and the Rest of Us");
+    await expect(firstCard.locator(".feed-title")).toHaveAttribute("href", "/op-eds/the-data-centers-and-the-rest-of-us");
+    await expect(firstCard.locator(".feed-meta")).toContainText("The County Post");
+    await expect(section.locator(".feed-meta", { hasText: "The County Post" })).toHaveCount(1);
+  }
+
+  await page.goto("/op-eds/the-data-centers-and-the-rest-of-us");
+  await expect(page.getByRole("heading", { level: 1, name: "The Data Centers and the Rest of Us" })).toBeVisible();
+  await expect(page.getByText("By Dan Rogers, The County Post", { exact: true })).toBeVisible();
+  await expect(page.getByText("What a Thursday night with a spreadsheet taught me", { exact: false })).toBeVisible();
+  await expect(page.getByText("Dan Rogers is the publisher of The County Post and a Texas Panhandle cattleman.")).toBeVisible();
+  await expect(page.getByText(/letter from the editor/i)).toHaveCount(0);
+});
+
 test("county RSS fallback targets reviewed Polk outlets and local sources nationwide", () => {
   const polk = getCounty("arkansas", "polk");
   const harris = getCounty("texas", "harris");

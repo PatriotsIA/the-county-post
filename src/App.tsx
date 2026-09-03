@@ -11,6 +11,7 @@ import { CountyDataSnapshot } from "./components/CountyDataSnapshot";
 import { CountyShowUpMeter } from "./components/CountyShowUpMeter";
 import { CountyPartnerDirectory, GlobalPartnerDirectory } from "./components/PartnerDirectory";
 import { CountyLocalSourcesDirectory } from "./components/LocalSourcesDirectory";
+import { DataCentersOpEdPage } from "./components/CountyPostOpEd";
 import { AtlasDomainNav } from "./components/AtlasDomainNav";
 import { atlasDomainLabels } from "./lib/atlas-domain-labels";
 import { EditionMap } from "./components/EditionMap";
@@ -394,6 +395,7 @@ function App() {
           <Route path="/states" element={<StateDirectory />} />
           <Route path="/states/:stateSlug/*" element={<LegacyStateRedirect />} />
           <Route path="/partners" element={<GlobalPartnerDirectory />} />
+          <Route path="/op-eds/the-data-centers-and-the-rest-of-us" element={<DataCentersOpEdPage />} />
           <Route path="/op-eds" element={<OpEdPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />

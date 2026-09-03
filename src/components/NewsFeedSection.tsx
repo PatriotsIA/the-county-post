@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ads, isCarouselOnlyAd } from "../data/ads";
+import { prependFeaturedCountyPostOpEd } from "../data/county-post-op-eds";
 import { isTrustedCountyNativeNewsItem } from "../lib/local-news-sources";
 import { fetchNewsApiFeed, isNewsApiConfigured, type NewsFeedItem, type Topic } from "../lib/news-api";
 import { fetchNewsFeeds } from "../lib/rss";
@@ -78,10 +79,10 @@ export function NewsFeedSection({
   const fallbackFeedUrlsKey = fallbackFeedUrls.join("\n");
   const stableFallbackFeedUrls = useMemo(() => fallbackFeedUrlsKey.split("\n").filter(Boolean), [fallbackFeedUrlsKey]);
   const hasInitialPageData = initialItems !== undefined || initialStatus === "loading" || initialStatus === "error";
-  const filteredItems = useMemo(
-    () => dedupeTitles(source === "api" ? filterApiItemsByLocality(items, locality) : filterFeedItems(items, kind, locality)),
-    [items, kind, locality, source],
-  );
+  const filteredItems = useMemo(() => {
+    const scopedItems = source === "api" ? filterApiItemsByLocality(items, locality) : filterFeedItems(items, kind, locality);
+    return dedupeTitles(kind === "opinion" ? prependFeaturedCountyPostOpEd(scopedItems) : scopedItems);
+  }, [items, kind, locality, source]);
   const feedEntries = useMemo(
     () => createFeedEntries(filteredItems, `${title}-${kind}-${locality?.countyName || locality?.stateName || ""}`, gridColumns),
     [filteredItems, gridColumns, kind, locality?.countyName, locality?.stateName, title],
@@ -309,7 +310,10 @@ export function NewsFeedSection({
                       {entry.item.title}
                     </a>
                     <p className="feed-meta">
-                      {[entry.item.imageUrl ? entry.item.source : undefined, formatDate(entry.item.publishedAt)].filter(Boolean).join(" • ")}
+                      {[
+                        entry.item.imageUrl || entry.item.source === "The County Post" ? entry.item.source : undefined,
+                        formatDate(entry.item.publishedAt),
+                      ].filter(Boolean).join(" • ")}
                     </p>
                   </div>
                 </article>
@@ -399,7 +403,7 @@ function ArticleMedia({ item, locality }: { item: NewsFeedItem; locality?: Local
   }, [item.imageUrl]);
 
   if (!imageAvailable || !item.imageUrl) {
-    const label = fallbackThumbnailLabel(locality);
+    const label = item.source === "The County Post" ? "The County Post" : fallbackThumbnailLabel(locality);
     return (
       <div className="feed-source-mark" aria-label={label}>
         {label}
