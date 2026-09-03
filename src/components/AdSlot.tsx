@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getAdsForSlot, featuredAdRank, type AdSlotId } from "../data/ads";
 
 type Props = {
@@ -107,15 +107,15 @@ function BannerAdCarousel({ creatives }: { creatives: ReturnType<typeof getAdsFo
   const [activeIndex, setActiveIndex] = useState(0);
   const swipeStartX = useRef<number | null>(null);
 
-  const moveBanner = (direction: -1 | 1) => {
+  const moveBanner = useCallback((direction: -1 | 1) => {
     setActiveIndex((index) => (index + direction + creatives.length) % creatives.length);
-  };
+  }, [creatives.length]);
 
   useEffect(() => {
     if (creatives.length < 2) return;
     const interval = window.setInterval(() => moveBanner(1), 20_000);
     return () => window.clearInterval(interval);
-  }, [creatives.length]);
+  }, [creatives.length, moveBanner]);
 
   return (
     <aside className="ad-slot ad-slot-banner" aria-label="Sponsored advertisements">

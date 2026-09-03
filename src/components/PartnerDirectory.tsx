@@ -21,7 +21,7 @@ function PartnerCallout() {
         <h2>Become a County Post partner</h2>
         <p>Put your organization in front of readers following national, state, and local news.</p>
       </div>
-      <a href="https://www.advertise.thecountypost.com/advertise" className="partner-callout-action" target="_blank" rel="noreferrer">
+      <a href="https://www.advertise.thecountypost.com/" className="partner-callout-action" target="_blank" rel="noreferrer">
         Learn More
       </a>
     </section>

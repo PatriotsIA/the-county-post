@@ -1,3 +1,10 @@
+import type {
+  BillingCadence,
+  CountyPlacement,
+  SponsorableFeed,
+  StatePlacement,
+} from "../data/ad-pricing";
+
 export type CountyPopulation = {
   county: string;
   countySlug: string;
@@ -21,6 +28,28 @@ type CheckoutResponse = {
   url: string;
 };
 
+type CheckoutContact = {
+  billing: BillingCadence;
+  customerEmail: string;
+  businessName: string;
+  creativeAssetKey?: string;
+};
+
+export type AdvertiserCheckoutInput = CheckoutContact &
+  (
+    | {
+        scope: "county";
+        placement: CountyPlacement;
+        counties: Array<{ stateSlug: string; countySlug: string }>;
+      }
+    | {
+        scope: "state";
+        placement: StatePlacement;
+        states: string[];
+        feeds?: SponsorableFeed[];
+      }
+  );
+
 export async function fetchCountyPopulation(stateSlug: string, countySlug: string) {
   return request<CountyPopulation>(`v1/counties/${stateSlug}/${countySlug}/population`);
 }
@@ -39,14 +68,7 @@ export async function uploadAdCreative(file: File) {
   return upload.assetKey;
 }
 
-export async function startAdvertiserCheckout(input: {
-  placement: "color-card" | "section-sponsorship";
-  billing: "monthly" | "annual";
-  counties: Array<{ stateSlug: string; countySlug: string }>;
-  customerEmail: string;
-  businessName: string;
-  creativeAssetKey?: string;
-}) {
+export async function startAdvertiserCheckout(input: AdvertiserCheckoutInput) {
   return request<CheckoutResponse>("v1/checkout/sessions", {
     method: "POST",
     body: JSON.stringify(input),

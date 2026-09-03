@@ -76,30 +76,13 @@ The `SubmissionForm` component posts to EmailJS using the three `VITE_EMAILJS_*`
 
 ## Routes
 
-- `/` front page with county search, national feeds, and state directory
-- `/topics/:subjectSlug` national editorial desk and subcategory pages:
-  - Economy & Markets: `economy-markets`, `monetary-policy`, `markets-investing`, `jobs-business`
-  - Taxes & Public Finance: `taxes-public-finance`, `property-taxes`, `municipal-bonds`, `budgets-levies`
-  - Elections & Transparency: `elections-transparency`, `voting-systems`, `election-administration`, `audits-recounts`, `open-records`
-- `/advertise` advertiser placement preview and rate overview
-- `/payments` secure Stripe checkout for county ad campaigns
-- `/partners` global partner directory
-- `/submit` national submit op-eds/stories page
-- `/states` state and county directory
-- `/states/:stateSlug` state news page
-- `/states/:stateSlug/:subjectSlug` state subject pages, including `op-eds`
-- `/states/:stateSlug/submit` state submit op-eds/stories page
-- `/:stateSlug/:countySlug` county news page with feeds and submission form
-- `/:stateSlug/:countySlug/weather` county current conditions, active NWS alerts, weekly drought conditions, 14-day precipitation history, seven-day/period and hourly forecasts, and weather stories
-- `/:stateSlug/:countySlug/data` County Data Atlas hub with compact cross-domain measures and coverage status
-- `/:stateSlug/:countySlug/data/:domain` atlas domain detail with trends, comparisons, compositions, citations, vintages, and downloads
-- `/:stateSlug/:countySlug/economic-data` county FRED economic profile with unemployment, income, and GDP history
-- `/:stateSlug/:countySlug/op-eds` county opinion page
-- `/:stateSlug/:countySlug/partners` county partner directory
-- `/:stateSlug/:countySlug/:subjectSlug` county editorial desk and subcategory pages using the same slugs
-- `/:stateSlug/:countySlug/submit` county submit op-eds/stories page
+- `/` standalone advertiser information, county/state campaign builder, Stripe checkout, pricing, placement examples, and national sales contact
+- `/advertise` legacy redirect to `/#checkout`
+- `/payments` legacy redirect to `/#checkout`
+- `/terms` retained Terms of Service statement
+- `/privacy` retained Privacy Policy statement
 
-The contextual navigation bar appears below the masthead and links to the active national, state, or county section pages.
+State campaign pricing is calculated from each selected state's county count: regular ad networks are $10 per county per month and feed sponsorships are $20 per county per selected feed per month. Annual checkout provides 12 months for the price of 10. County population-tier pricing and multi-county discounts remain available.
 
 County home pages load a compact, cross-domain atlas snapshot from the News API. The data hub calls `GET /v1/counties/:stateSlug/:countySlug/atlas`; domain routes call the matching `/atlas/:domain` endpoint and lazy-load chart code. The UI preserves source links, metric vintages, modeled/preliminary flags, margins of error, coverage notices, suppression reasons, and partial-release warnings. Missing values are never rendered as zero.
 
