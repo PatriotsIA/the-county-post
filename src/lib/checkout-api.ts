@@ -32,6 +32,7 @@ type CheckoutContact = {
   billing: BillingCadence;
   customerEmail: string;
   businessName: string;
+  referredBy?: string;
   creativeAssetKey?: string;
 };
 

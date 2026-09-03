@@ -83,6 +83,7 @@ test("calculates state and per-feed pricing and submits state fulfillment detail
 
   await page.getByLabel("Business name").fill("Texas Example");
   await page.getByLabel("Contact email").fill("ads@example.com");
+  await page.getByLabel("Referred to by (optional)").fill("County Post Sales Team");
   await page.getByRole("button", { name: "Continue to secure Stripe checkout" }).click();
 
   await expect(page.getByText("Payment received.")).toBeVisible();
@@ -94,6 +95,7 @@ test("calculates state and per-feed pricing and submits state fulfillment detail
     feeds: ["general", "sports"],
     customerEmail: "ads@example.com",
     businessName: "Texas Example",
+    referredBy: "County Post Sales Team",
   });
 });
 

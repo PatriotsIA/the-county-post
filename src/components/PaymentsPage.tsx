@@ -42,6 +42,7 @@ export function PaymentsPage() {
   const [billing, setBilling] = useState<BillingCadence>("monthly");
   const [businessName, setBusinessName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
+  const [referredBy, setReferredBy] = useState("");
   const [countyQuery, setCountyQuery] = useState("");
   const [stateQuery, setStateQuery] = useState("");
   const [counties, setCounties] = useState<SelectedCounty[]>([]);
@@ -124,7 +125,13 @@ export function PaymentsPage() {
     setMessage(creative ? "Uploading your creative, then opening secure checkout…" : "Opening secure checkout…");
     try {
       const creativeAssetKey = creative ? await uploadAdCreative(creative) : undefined;
-      const contact = { billing, customerEmail, businessName, creativeAssetKey };
+      const contact = {
+        billing,
+        customerEmail,
+        businessName,
+        ...(referredBy.trim() ? { referredBy: referredBy.trim() } : {}),
+        creativeAssetKey,
+      };
       const checkoutSession =
         scope === "county"
           ? await startAdvertiserCheckout({
@@ -208,7 +215,7 @@ export function PaymentsPage() {
 
           <PricingExplanation scope={scope} placement={scope === "county" ? countyPlacement : statePlacement} />
 
-          <div className="checkout-options">
+          <div className="checkout-options checkout-options-three">
             <label>
               Business name
               <input value={businessName} onChange={(event) => setBusinessName(event.target.value)} maxLength={120} required />
@@ -216,6 +223,15 @@ export function PaymentsPage() {
             <label>
               Contact email
               <input type="email" value={customerEmail} onChange={(event) => setCustomerEmail(event.target.value)} required />
+            </label>
+            <label>
+              Referred to by (optional)
+              <input
+                value={referredBy}
+                onChange={(event) => setReferredBy(event.target.value)}
+                maxLength={120}
+                placeholder="Salesperson or referrer name"
+              />
             </label>
           </div>
 
