@@ -1,7 +1,6 @@
 import cbt from "../../ad-assets/CBT4.jpg";
 import amberwoodBrush from "../../ad-assets/Amberwood-Brush-Site-250.jpg";
 import brownGmc from "../../ad-assets/BrownGMC-250.jpg";
-import catchings from "../../ad-assets/Catchings250.jpg";
 import becomeAPatriot from "../../ad-assets/BecomeAPatriot.jpg";
 import becomeAPatriot2 from "../../ad-assets/BecomeAPatriot2.jpg";
 import dyers from "../../ad-assets/Dyers250.jpg";
@@ -166,14 +165,6 @@ export const ads: AdCreative[] = [
     image: brownGmc,
     name: "Brown GMC",
     alt: "Brown GMC",
-    href: PARTNER_DIRECTORY_PATH,
-  },
-  {
-    id: "catchings-inline",
-    slot: "inline",
-    image: catchings,
-    name: "Catchings",
-    alt: "Catchings",
     href: PARTNER_DIRECTORY_PATH,
   },
   {
