@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && npm run seo:sitemap",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "seo:sitemap": "vite build --ssr scripts/seo/generate-sitemaps.ts --outDir .seo-build --emptyOutDir --logLevel warn && node .seo-build/generate-sitemaps.js"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",

@@ -14,6 +14,7 @@ export type CountySite = {
   state: StateSite;
   fips: string;
   displayName: string;
+  pageName: string;
   primaryCity?: string;
   localCities?: string[];
   latitude?: number;
@@ -32,6 +33,7 @@ export function slugify(value: string) {
 function createCountySite(county: UsCounty, state: StateSite): CountySite {
   const slug = slugify(county.name);
   const displayName = `${county.name} County`;
+  const pageName = `The County Post - ${displayName}`;
   const centroid = countyCentroidsByFips[county.FIPS];
 
   return {
@@ -40,6 +42,7 @@ function createCountySite(county: UsCounty, state: StateSite): CountySite {
     state,
     fips: county.FIPS,
     displayName,
+    pageName,
     latitude: centroid?.[0],
     longitude: centroid?.[1],
     description: `County-level dispatches for ${displayName}, ${state.abbr}. Local headlines, sports, obituaries, and public-interest reporting from this county.`,

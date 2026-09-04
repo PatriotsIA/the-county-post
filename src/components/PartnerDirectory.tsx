@@ -1,3 +1,5 @@
+import { Seo } from "./Seo";
+import { collectionPageLd, jsonLdGraph } from "../lib/seo";
 import { Link } from "react-router-dom";
 import type { AdCreative } from "../data/ads";
 import type { CountySite } from "../data/counties";
@@ -66,6 +68,22 @@ export function GlobalPartnerDirectory() {
 
   return (
     <div className="layout-grid">
+      <Seo
+        title="Partners & Advertisers"
+        description="Businesses and organizations that support The County Post across its national, state, and county editions."
+        policy="editorial"
+        jsonLd={jsonLdGraph(
+          collectionPageLd({
+            path: "/partners",
+            name: "Partners & Advertisers",
+            description: "Businesses and organizations that support The County Post across every edition.",
+            crumbs: [
+              { name: "United States", path: "/" },
+              { name: "Partners", path: "/partners" },
+            ],
+          }),
+        )}
+      />
       <section className="hero-card">
         <p className="kicker">Advertiser directory</p>
         <h1>Our Partners</h1>

@@ -27,6 +27,7 @@ EmailJS powers the submission form. `VITE_NEWS_API_URL` is the single base URL f
 ## Documentation
 
 - Comprehensive overview: `docs/architecture.md`
+- SEO, crawlability, and analytics: `docs/seo.md`
 - Visual dashboard canvas (open in Cursor): `/home/telephone/.cursor/projects/home-telephone-PIA-the-county-post/canvases/county-post-overview.canvas.tsx`
 
 ## News Loading
@@ -105,6 +106,20 @@ Atlas domains are `demographics`, `economy`, `housing`, `jobs-business`, `educat
 
 The existing `/economic-data` route remains available for the live FRED profile and source-series links. FRED and official-source credentials remain server-side: the atlas adds no frontend secret and uses only the existing `VITE_NEWS_API_URL`.
 Legacy `sound-money`, `paper-elections`, and `bond-issues` links redirect to their replacement desk pages.
+
+## SEO
+
+Per-page metadata, structured data, sitemaps, and crawler policy are documented
+in `docs/seo.md`. Three things are easy to break without noticing:
+
+- Every route must render exactly one `<Seo>` from `src/components/Seo.tsx`.
+  Add it in the same change as the route.
+- Counties must stay reachable by real `<a href>` links. Each state page renders
+  a full county index; a search box alone is not a crawl path.
+- `npm run build` regenerates `dist/sitemap.xml` and its children. Do not
+  hand-edit them.
+
+`npx playwright test tests/e2e/seo.spec.ts` guards all of the above.
 
 ## Deployment Notes
 

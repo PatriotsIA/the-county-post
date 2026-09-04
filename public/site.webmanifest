@@ -1,0 +1,16 @@
+{
+  "name": "The County Post",
+  "short_name": "County Post",
+  "description": "County-level news, weather, and official data for all 3,143 U.S. counties.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#e7e6e1",
+  "theme_color": "#e7e6e1",
+  "lang": "en-US",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/county-post-mark-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/county-post-mark-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -2,9 +2,58 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/county-post-logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>the-county-post</title>
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="alternate icon" href="/favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#e7e6e1" />
+
+    <!--
+      Default metadata for crawlers that do not execute JavaScript — every
+      social-card scraper, and any bot that indexes the raw response. React
+      renders per-route tags on mount and src/components/Seo.tsx removes these
+      defaults at that point, so the document never carries both.
+    -->
+    <title data-seo-default>The County Post — Local News for Every U.S. County</title>
+    <meta
+      data-seo-default
+      name="description"
+      content="County-level news for all 3,143 U.S. counties. Local headlines, sports, obituaries, public notices, weather, and a sourced data atlas for every county in America."
+    />
+    <meta data-seo-default name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <link data-seo-default rel="canonical" href="https://thecountypost.com/" />
+
+    <meta data-seo-default property="og:site_name" content="The County Post" />
+    <meta data-seo-default property="og:type" content="website" />
+    <meta data-seo-default property="og:title" content="The County Post — Local News for Every U.S. County" />
+    <meta
+      data-seo-default
+      property="og:description"
+      content="County-level news for all 3,143 U.S. counties. Local headlines, sports, obituaries, public notices, weather, and a sourced data atlas for every county in America."
+    />
+    <meta data-seo-default property="og:url" content="https://thecountypost.com/" />
+    <meta data-seo-default property="og:locale" content="en_US" />
+    <meta data-seo-default property="og:image" content="https://thecountypost.com/social-card.png" />
+    <meta data-seo-default property="og:image:width" content="1200" />
+    <meta data-seo-default property="og:image:height" content="630" />
+    <meta data-seo-default property="og:image:alt" content="The County Post — Every county. Every community. One nation." />
+
+    <meta data-seo-default name="twitter:card" content="summary_large_image" />
+    <meta data-seo-default name="twitter:title" content="The County Post — Local News for Every U.S. County" />
+    <meta
+      data-seo-default
+      name="twitter:description"
+      content="County-level news for all 3,143 U.S. counties. Local headlines, sports, obituaries, weather, and a sourced data atlas."
+    />
+    <meta data-seo-default name="twitter:image" content="https://thecountypost.com/social-card.png" />
+
+    <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+    <link rel="preconnect" href="https://www.googletagmanager.com" />
+    <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZDZY8JLQKQ"></script>
     <script>
@@ -13,7 +62,10 @@
         dataLayer.push(arguments);
       }
       gtag("js", new Date());
-      gtag("config", "G-ZDZY8JLQKQ");
+      // send_page_view is off because this is a single-page app: src/components/Seo.tsx
+      // sends one page_view per route, including the first. Leaving it on would
+      // double-count the landing page and still miss every client-side navigation.
+      gtag("config", "G-ZDZY8JLQKQ", { send_page_view: false });
     </script>
   </head>
   <body>

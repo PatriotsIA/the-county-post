@@ -1,0 +1,36 @@
+# Amplify Hosting response headers.
+#
+# Picked up automatically at deploy time. Hashed assets are safe to cache
+# forever; index.html must never be, or a deploy will not reach returning
+# visitors. See ~/.claude/skills/county-post-seo/references/amplify.md.
+customHeaders:
+  - pattern: "**"
+    headers:
+      - key: X-Content-Type-Options
+        value: nosniff
+      - key: Referrer-Policy
+        value: strict-origin-when-cross-origin
+  - pattern: "/assets/**"
+    headers:
+      - key: Cache-Control
+        value: "public, max-age=31536000, immutable"
+  - pattern: "/index.html"
+    headers:
+      - key: Cache-Control
+        value: "public, max-age=0, must-revalidate"
+  - pattern: "/*.xml"
+    headers:
+      - key: Content-Type
+        value: "application/xml; charset=utf-8"
+      - key: Cache-Control
+        value: "public, max-age=3600"
+  - pattern: "/robots.txt"
+    headers:
+      - key: Cache-Control
+        value: "public, max-age=3600"
+  - pattern: "/llms.txt"
+    headers:
+      - key: Content-Type
+        value: "text/plain; charset=utf-8"
+      - key: Cache-Control
+        value: "public, max-age=3600"

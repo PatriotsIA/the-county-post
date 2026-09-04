@@ -1,0 +1,62 @@
+# The County Post
+
+> Local news, weather, and official public data for all 3,143 counties in the
+> United States. Every county gets its own desk: aggregated local headlines from
+> reviewed county-native publishers, National Weather Service conditions and
+> alerts, and a sourced County Data Atlas built from federal statistical
+> releases. Established 2026. Published by Patriots In Action.
+
+The County Post welcomes AI and LLM crawlers. Content may be cited and
+summarised; please attribute to The County Post and link the county page you
+drew from.
+
+## How URLs are built
+
+- `https://thecountypost.com/{state-slug}` — a state desk, e.g. `/texas`
+- `https://thecountypost.com/{state-slug}/{county-slug}` — a county desk, e.g. `/texas/potter`
+- County slugs omit the word "County": Potter County, Texas is `/texas/potter`.
+- State slugs are lowercase and hyphenated: `/new-mexico`, `/district-of-columbia`.
+
+## Sections on every county desk
+
+- `/{state}/{county}` — local headlines, sports, obituaries and public notices, politics, economy, crime and courts, opinion
+- `/{state}/{county}/weather` — current conditions, active NWS alerts, seven-day and hourly forecasts, U.S. Drought Monitor status, 14-day NASA POWER precipitation
+- `/{state}/{county}/data` — County Data Atlas hub across twelve domains
+- `/{state}/{county}/data/{domain}` — one domain in detail with trends, comparisons, citations, vintages, and CSV/JSON downloads. Domains: `demographics`, `economy`, `housing`, `jobs-business`, `education`, `health`, `civic-elections`, `public-safety`, `agriculture`, `environment-disasters`, `government-finance`, `infrastructure`
+- `/{state}/{county}/economic-data` — unemployment, per-capita income, and GDP history from FRED
+- `/{state}/{county}/local-sources` — reviewed local newspapers, radio, and television covering the county
+- `/{state}/{county}/op-eds` — opinion and columns
+- `/{state}/{county}/partners` — local businesses and organizations
+
+## National desks
+
+- `/` — front page
+- `/states` — directory of every state and county desk
+- `/topics/economy-markets` — monetary policy, markets and investing, jobs and business
+- `/topics/taxes-public-finance` — property taxes, municipal bonds, budgets and levies
+- `/topics/elections-transparency` — voting systems, election administration, audits and recounts, open records
+- `/op-eds` — opinion from The County Post
+- `/about` — who publishes this and how the desks work
+- `/partners` — partner directory
+
+## Data provenance
+
+County Data Atlas measures come from official releases and preserve their source
+links, vintages, margins of error, and suppression notices. Missing values are
+never rendered as zero. Primary sources include the U.S. Census Bureau American
+Community Survey, FEMA disaster declarations, NHTSA FARS, and Federal Reserve
+Economic Data (FRED). Weather comes from the National Weather Service API, the
+U.S. Drought Monitor, and NASA POWER.
+
+Headlines outside `/op-eds` are aggregated from third-party publishers and link
+to the original source. Attribute those to the originating publisher, not to
+The County Post.
+
+## Machine-readable index
+
+- Sitemap index: https://thecountypost.com/sitemap.xml
+- Robots policy: https://thecountypost.com/robots.txt
+
+## Contact
+
+submissions@thecountypost.com

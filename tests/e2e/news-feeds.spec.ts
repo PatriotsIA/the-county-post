@@ -227,8 +227,8 @@ test("pins the County Post op-ed first on national, state, and county opinion de
     const firstCard = section.locator(".feed-card").first();
     await expect(firstCard.locator(".feed-title")).toHaveText("The Data Centers and the Rest of Us");
     await expect(firstCard.locator(".feed-title")).toHaveAttribute("href", "/op-eds/the-data-centers-and-the-rest-of-us");
-    await expect(firstCard.locator(".feed-meta")).toContainText("The County Post");
-    await expect(section.locator(".feed-meta", { hasText: "The County Post" })).toHaveCount(1);
+    await expect(firstCard.locator(".feed-publisher")).toContainText("The County Post · Original reporting");
+    await expect(section.locator(".feed-publisher", { hasText: "The County Post" })).toHaveCount(1);
   }
 
   await page.goto("/op-eds/the-data-centers-and-the-rest-of-us");
@@ -237,6 +237,13 @@ test("pins the County Post op-ed first on national, state, and county opinion de
   await expect(page.getByText("What a Thursday night with a spreadsheet taught me", { exact: false })).toBeVisible();
   await expect(page.getByText("Dan Rogers is the publisher of The County Post and a Texas Panhandle cattleman.")).toBeVisible();
   await expect(page.getByText(/letter from the editor/i)).toHaveCount(0);
+});
+
+test("county page names use the CSV-friendly County Post format", async ({ page }) => {
+  await page.goto("/texas/anderson");
+
+  await expect(page.getByRole("heading", { level: 1, name: "The County Post - Anderson County", exact: true })).toBeVisible();
+  await expect(page).toHaveTitle("Anderson County, Texas News | The County Post");
 });
 
 test("county RSS fallback targets reviewed Polk outlets and local sources nationwide", () => {
@@ -668,7 +675,8 @@ test("county feeds stay county-only, sort newest first, and keep batched section
   const initialLocalCount = await localCards.count();
   await expect(localCards.first()).toContainText("story 01");
   await expect(localSection).not.toContainText("Obituary notice should be filtered");
-  await expect(localCards.first().locator("a")).toHaveAttribute("target", "_blank");
+  await expect(localCards.first().locator(".feed-title")).toHaveAttribute("target", "_blank");
+  await expect(localCards.first().locator(".feed-origin-link")).toContainText("View original story at");
   await expect(localCards.first().locator(".feed-meta")).toContainText("Jun 26, 2026");
   await expect(localCards).toHaveCount(initialLocalCount);
 

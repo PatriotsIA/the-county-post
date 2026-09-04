@@ -303,20 +303,7 @@ export function NewsFeedSection({
                   <span className="feed-ad-label">Advertisement</span>
                 </a>
               ) : (
-                <article key={entry.item.id} className="feed-card">
-                  <ArticleMedia item={entry.item} locality={locality} />
-                  <div className="feed-card-body">
-                    <a href={entry.item.link} target="_blank" rel="noreferrer" className="feed-title">
-                      {entry.item.title}
-                    </a>
-                    <p className="feed-meta">
-                      {[
-                        entry.item.imageUrl || entry.item.source === "The County Post" ? entry.item.source : undefined,
-                        formatDate(entry.item.publishedAt),
-                      ].filter(Boolean).join(" • ")}
-                    </p>
-                  </div>
-                </article>
+                <ArticleCard key={entry.item.id} item={entry.item} />
               ),
             )}
           </div>
@@ -333,6 +320,75 @@ export function NewsFeedSection({
       </div>
     </section>
   );
+}
+
+/**
+ * One story card.
+ *
+ * The publisher is stated first, on its own line, and the outbound link names
+ * the destination — The County Post aggregates most of what it shows, and a card
+ * that buries the source reads as though this paper wrote the story. Google News
+ * weighs clear dates, bylines, and publisher information, and readers deserve
+ * the same clarity, so attribution is unconditional rather than shown only when
+ * some other field happens to be populated.
+ *
+ * The County Post's own reporting is labelled as such and links internally.
+ * Aggregated stories deliberately carry no Article structured data: claiming
+ * authorship of another publisher's work in machine-readable form would be the
+ * same misrepresentation as hiding the byline.
+ */
+function ArticleCard({ item }: { item: NewsFeedItem }) {
+  const isOriginal = item.source === "The County Post";
+  const publisher = publisherName(item);
+  const published = formatDate(item.publishedAt);
+  const isInternal = item.link.startsWith("/");
+
+  return (
+    <article className="feed-card">
+      <ArticleMedia item={item} />
+      <div className="feed-card-body">
+        <p className={isOriginal ? "feed-publisher feed-publisher-original" : "feed-publisher"}>
+          {isOriginal ? "The County Post · Original reporting" : publisher}
+        </p>
+
+        {isInternal ? (
+          <Link to={item.link} className="feed-title">
+            {item.title}
+          </Link>
+        ) : (
+          <a href={item.link} target="_blank" rel="noreferrer" className="feed-title">
+            {item.title}
+          </a>
+        )}
+
+        {item.publishedAt ? (
+          <p className="feed-meta">
+            Published <time dateTime={item.publishedAt}>{published}</time>
+          </p>
+        ) : null}
+
+        {isInternal ? (
+          <Link to={item.link} className="feed-origin-link">
+            Read the full story on The County Post <span aria-hidden="true">→</span>
+          </Link>
+        ) : (
+          <a href={item.link} target="_blank" rel="noreferrer" className="feed-origin-link">
+            View original story at {publisher} <span aria-hidden="true">→</span>
+          </a>
+        )}
+      </div>
+    </article>
+  );
+}
+
+/** Falls back to the link's host so a card is never left without a source. */
+function publisherName(item: NewsFeedItem) {
+  if (item.source) return item.source;
+  try {
+    return new URL(item.link).hostname.replace(/^www\./, "");
+  } catch {
+    return "the original publisher";
+  }
 }
 
 type FeedEntry = { type: "article"; item: NewsFeedItem } | { type: "ad"; ad: (typeof ads)[number]; position: number };
@@ -395,7 +451,7 @@ function FeedSponsor({ kind, sponsorId }: { kind: FeedKind; sponsorId?: string }
   );
 }
 
-function ArticleMedia({ item, locality }: { item: NewsFeedItem; locality?: LocalityScope }) {
+function ArticleMedia({ item }: { item: NewsFeedItem }) {
   const [imageAvailable, setImageAvailable] = useState(Boolean(item.imageUrl));
 
   useEffect(() => {
@@ -403,9 +459,14 @@ function ArticleMedia({ item, locality }: { item: NewsFeedItem; locality?: Local
   }, [item.imageUrl]);
 
   if (!imageAvailable || !item.imageUrl) {
-    const label = item.source === "The County Post" ? "The County Post" : fallbackThumbnailLabel(locality);
+    // The placeholder names the story's own publisher. It used to fall back to
+    // "County Post News" or the county desk's name, which put this paper's
+    // branding on top of another outlet's reporting — the same
+    // misattribution the card body is careful to avoid.
+    const isOriginal = item.source === "The County Post";
+    const label = isOriginal ? "The County Post" : publisherName(item);
     return (
-      <div className="feed-source-mark" aria-label={label}>
+      <div className={isOriginal ? "feed-source-mark feed-source-mark-original" : "feed-source-mark"} aria-label={label}>
         {label}
       </div>
     );
@@ -422,12 +483,6 @@ function ArticleMedia({ item, locality }: { item: NewsFeedItem; locality?: Local
       />
     </a>
   );
-}
-
-function fallbackThumbnailLabel(locality?: LocalityScope) {
-  if (locality?.countyName) return `${locality.countyName} County News`;
-  if (locality?.stateName) return `${locality.stateName} News`;
-  return "County Post News";
 }
 
 async function loadFallbackItems(
