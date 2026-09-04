@@ -28,6 +28,8 @@ EmailJS powers the submission form. `VITE_NEWS_API_URL` is the single base URL f
 
 - Comprehensive overview: `docs/architecture.md`
 - SEO, crawlability, and analytics: `docs/seo.md`
+- County feeds client side — the scope contract with the API, the prefetch
+  prop trap, infinite scroll: `docs/feeds.md`
 - Visual dashboard canvas (open in Cursor): `/home/telephone/.cursor/projects/home-telephone-PIA-the-county-post/canvases/county-post-overview.canvas.tsx`
 
 ## News Loading
