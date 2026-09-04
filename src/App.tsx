@@ -2012,7 +2012,60 @@ function PrivacyPage() {
       <section className="hero-card">
         <p className="kicker">Privacy</p>
         <h1>Privacy Policy</h1>
-        <p className="lead">We use the County Post News API for news aggregation. No behavioral tracking or ad tech.</p>
+        <p className="lead">
+          The County Post collects the minimum information needed to operate a county news desk and to understand how
+          readers use it. By continuing to use this site, you consent to the practices described below.
+        </p>
+      </section>
+
+      <section className="card legal-copy">
+        <h2>Analytics</h2>
+        <p>
+          We use Google Analytics to measure how the site is used. Google Analytics sets cookies and collects usage
+          information including the pages you view, the approximate geographic region derived from your IP address, your
+          device and browser type, and the site that referred you. We use this information in aggregate to understand
+          which county desks readers rely on and where coverage should improve. By using this site, you consent to this
+          collection.
+        </p>
+        <p>
+          You may opt out at any time by installing the{" "}
+          <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noreferrer">
+            Google Analytics Opt-out Browser Add-on
+          </a>
+          , by blocking cookies in your browser, or by using a browser or extension that blocks analytics scripts. The
+          site remains fully functional if you do.
+        </p>
+
+        <h2>Reader submissions</h2>
+        <p>
+          When you send a story, op-ed, obituary, public notice, or classified listing, the information you enter in the
+          form — including your name, email address, and the details of your submission — is transmitted to our editors
+          through EmailJS, a third-party delivery service. We use it to review your submission and to contact you about
+          it. We do not add submitters to a mailing list without their request, and we do not sell reader information to
+          anyone.
+        </p>
+
+        <h2>Third-party content</h2>
+        <p>
+          Some pages embed content served by other companies, which may set their own cookies and receive your IP
+          address when that content loads. These are the market tickers supplied by TradingView and LiveCoinWatch,
+          video embedded from YouTube using its privacy-enhanced no-cookie domain, and, when our own news service is
+          unavailable, a fallback article loader operated by rss2json. Headlines throughout the site link to the
+          publishers who reported them; once you follow a link, that publisher&rsquo;s own privacy policy governs.
+        </p>
+
+        <h2>What we do not do</h2>
+        <p>
+          We do not sell or rent reader data. We do not run behavioral advertising or third-party ad networks;
+          the sponsorships on this site are served directly by us and do not track you across other websites. We do not
+          attempt to identify individual readers from analytics data.
+        </p>
+
+        <h2>Questions</h2>
+        <p>
+          Write to <a href={`mailto:${site.contact.email}`}>{site.contact.email}</a> with any question about this policy
+          or any request regarding information you have sent us.
+        </p>
       </section>
     </div>
   );

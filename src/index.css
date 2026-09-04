@@ -4720,3 +4720,24 @@ main,
 .feed-source-mark-original {
   border: 1px solid var(--news-red, #9b1c1c);
 }
+
+/* Long-form legal pages: readable measure, clear section rhythm. */
+.legal-copy h2 {
+  margin: 22px 0 8px;
+  font-size: 18px;
+  letter-spacing: 0.02em;
+}
+
+.legal-copy h2:first-of-type {
+  margin-top: 0;
+}
+
+.legal-copy p {
+  max-width: 68ch;
+  margin: 0 0 12px;
+  line-height: 1.6;
+}
+
+.legal-copy a {
+  color: var(--ink);
+}
