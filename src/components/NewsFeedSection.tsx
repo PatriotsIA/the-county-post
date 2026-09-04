@@ -24,6 +24,8 @@ type Props = {
   initialItems?: NewsFeedItem[];
   initialStatus?: "idle" | "loading" | "loaded" | "error";
   initialSource?: FeedSource;
+  /** Towns the API scoped a prefetched page to, mirroring the feed response. */
+  initialPlaces?: string[];
   kicker?: string;
   pageSize?: number;
   pageStep?: number;
@@ -54,6 +56,7 @@ export function NewsFeedSection({
   initialItems,
   initialStatus = "idle",
   initialSource,
+  initialPlaces,
   kicker,
   pageSize = 12,
   pageStep = 16,
@@ -68,6 +71,9 @@ export function NewsFeedSection({
   const [status, setStatus] = useState<"idle" | "loading" | "loaded" | "error">("idle");
   const [error, setError] = useState<string>("");
   const [source, setSource] = useState<FeedSource | undefined>(initialSource);
+  // Towns the API scoped this feed to. Empty until a response arrives, and
+  // empty for the RSS fallback, which has no server-side scoping.
+  const [scopedPlaces, setScopedPlaces] = useState<string[]>(initialPlaces ?? []);
   const [requestedCount, setRequestedCount] = useState(pageSize);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -80,9 +86,9 @@ export function NewsFeedSection({
   const stableFallbackFeedUrls = useMemo(() => fallbackFeedUrlsKey.split("\n").filter(Boolean), [fallbackFeedUrlsKey]);
   const hasInitialPageData = initialItems !== undefined || initialStatus === "loading" || initialStatus === "error";
   const filteredItems = useMemo(() => {
-    const scopedItems = source === "api" ? filterApiItemsByLocality(items, locality) : filterFeedItems(items, kind, locality);
+    const scopedItems = source === "api" ? filterApiItemsByLocality(items, locality, scopedPlaces) : filterFeedItems(items, kind, locality);
     return dedupeTitles(kind === "opinion" ? prependFeaturedCountyPostOpEd(scopedItems) : scopedItems);
-  }, [items, kind, locality, source]);
+  }, [items, kind, locality, scopedPlaces, source]);
   const feedEntries = useMemo(
     () => createFeedEntries(filteredItems, `${title}-${kind}-${locality?.countyName || locality?.stateName || ""}`, gridColumns),
     [filteredItems, gridColumns, kind, locality?.countyName, locality?.stateName, title],
@@ -138,8 +144,9 @@ export function NewsFeedSection({
 
         if (apiPath && isNewsApiConfigured()) {
           try {
-            const apiItems = await fetchNewsApiFeed(apiPath, requestedCount);
+            const { items: apiItems, places: apiPlaces } = await fetchNewsApiFeed(apiPath, requestedCount);
             if (!cancelled) {
+              setScopedPlaces(apiPlaces);
               setItems(apiItems);
               setSource("api");
               setStatus("loaded");
@@ -688,12 +695,23 @@ function filterFeedItems(items: NewsFeedItem[], kind: FeedKind, locality?: Local
   });
 }
 
-function filterApiItemsByLocality(items: NewsFeedItem[], locality?: LocalityScope) {
+/**
+ * A second pass over items the News API already scoped.
+ *
+ * The API filters county feeds against the county's real towns, taken from the
+ * Census subcounty file. The browser has no such list, so re-applying the old
+ * rule here — the text must contain "briscoe county" — threw away precisely the
+ * local stories the API had just found: a Silverton city council report rarely
+ * names the county at all. The county-name requirement is therefore dropped for
+ * API items, and the wrong-state guard, which needs no place data, is kept.
+ */
+function filterApiItemsByLocality(items: NewsFeedItem[], locality?: LocalityScope, places: string[] = []) {
   if (!locality?.countyName) return items;
+  const scoped: LocalityScope = { ...locality, cities: places };
   return items.filter((item) => {
     const contentHaystack = `${item.title} ${item.description || ""} ${(item.categories || []).join(" ")}`.toLowerCase();
     const fullHaystack = `${contentHaystack} ${item.source || ""}`.toLowerCase();
-    return matchesLocality(item, contentHaystack, fullHaystack, locality);
+    return matchesLocality(item, contentHaystack, fullHaystack, scoped);
   });
 }
 
@@ -715,7 +733,10 @@ function matchesLocality(
     const explicitlyInState = Boolean(allowedStateName && includesTerm(fullHaystack, allowedStateName));
     if (!explicitlyInState) return false;
 
-    return includesTerm(fullHaystack, `${locality.countyName.toLowerCase()} county`);
+    // The county's name, or one of its towns. Local reporting names the town:
+    // a Silverton council story rarely contains the words "Briscoe County".
+    if (includesTerm(fullHaystack, `${locality.countyName.toLowerCase()} county`)) return true;
+    return (locality.cities || []).some((city) => includesTerm(fullHaystack, city.toLowerCase()));
   }
 
   const localityTerms = [locality.stateName, locality.stateAbbr, ...(locality.cities || [])];

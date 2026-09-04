@@ -61,12 +61,22 @@ export function isNewsApiConfigured() {
   return Boolean(newsApiBaseUrl()) && Date.now() >= apiDisabledUntil;
 }
 
+/**
+ * Returns the feed's items along with the towns the API scoped it to, so the
+ * browser can apply the same locality rule the server did instead of falling
+ * back to "the text must contain the county's name".
+ */
 export async function fetchNewsApiFeed(path: string, limit: number) {
   const url = newsApiUrl(path);
   url.searchParams.set("limit", String(limit));
 
   const json = await fetchNewsApiJson<FeedResponse>(url);
-  return json.items || [];
+  return { items: json.items || [], places: scopePlaces(json.scope) };
+}
+
+export function scopePlaces(scope: unknown): string[] {
+  const places = (scope as { places?: unknown } | undefined)?.places;
+  return Array.isArray(places) ? places.filter((place): place is string => typeof place === "string") : [];
 }
 
 export async function fetchNewsApiPage(path: string, sections: string[], limit: number) {
