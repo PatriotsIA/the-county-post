@@ -1,8 +1,13 @@
 # Amplify Hosting response headers.
 #
-# Picked up automatically at deploy time. Hashed assets are safe to cache
-# forever; index.html must never be, or a deploy will not reach returning
-# visitors. See ~/.claude/skills/county-post-seo/references/amplify.md.
+# Read from the repository root at deploy time. Only override what Amplify's
+# defaults get wrong: Amplify already serves `public, max-age=0,
+# s-maxage=31536000` everywhere and invalidates CloudFront on every deploy, so
+# HTML and sitemaps are correctly cached at the edge and revalidated in the
+# browser. Do not add a Cache-Control rule for /index.html — replacing that
+# default drops s-maxage and sends every request to the origin.
+#
+# See ~/.claude/skills/county-post-seo/references/amplify.md.
 customHeaders:
   - pattern: "**"
     headers:
@@ -10,27 +15,17 @@ customHeaders:
         value: nosniff
       - key: Referrer-Policy
         value: strict-origin-when-cross-origin
+  # Vite fingerprints these filenames, so the browser can hold them forever.
+  # This is the one place Amplify's max-age=0 default leaves performance behind.
   - pattern: "/assets/**"
     headers:
       - key: Cache-Control
         value: "public, max-age=31536000, immutable"
-  - pattern: "/index.html"
-    headers:
-      - key: Cache-Control
-        value: "public, max-age=0, must-revalidate"
   - pattern: "/*.xml"
     headers:
       - key: Content-Type
         value: "application/xml; charset=utf-8"
-      - key: Cache-Control
-        value: "public, max-age=3600"
-  - pattern: "/robots.txt"
-    headers:
-      - key: Cache-Control
-        value: "public, max-age=3600"
   - pattern: "/llms.txt"
     headers:
       - key: Content-Type
         value: "text/plain; charset=utf-8"
-      - key: Cache-Control
-        value: "public, max-age=3600"
