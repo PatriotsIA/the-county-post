@@ -303,7 +303,7 @@ export function NewsFeedSection({
                   <span className="feed-ad-label">Advertisement</span>
                 </a>
               ) : (
-                <ArticleCard key={entry.item.id} item={entry.item} />
+                <ArticleCard key={entry.item.id} item={entry.item} locality={locality} />
               ),
             )}
           </div>
@@ -337,7 +337,7 @@ export function NewsFeedSection({
  * authorship of another publisher's work in machine-readable form would be the
  * same misrepresentation as hiding the byline.
  */
-function ArticleCard({ item }: { item: NewsFeedItem }) {
+function ArticleCard({ item, locality }: { item: NewsFeedItem; locality?: LocalityScope }) {
   const isOriginal = item.source === "The County Post";
   const publisher = publisherName(item);
   const published = formatDate(item.publishedAt);
@@ -345,11 +345,13 @@ function ArticleCard({ item }: { item: NewsFeedItem }) {
 
   return (
     <article className="feed-card">
-      <ArticleMedia item={item} />
+      <ArticleMedia item={item} locality={locality} />
       <div className="feed-card-body">
-        <p className={isOriginal ? "feed-publisher feed-publisher-original" : "feed-publisher"}>
-          {isOriginal ? "The County Post · Original reporting" : publisher}
-        </p>
+        {isOriginal || publisher ? (
+          <p className={isOriginal ? "feed-publisher feed-publisher-original" : "feed-publisher"}>
+            {isOriginal ? "The County Post · Original reporting" : publisher}
+          </p>
+        ) : null}
 
         {isInternal ? (
           <Link to={item.link} className="feed-title">
@@ -373,7 +375,7 @@ function ArticleCard({ item }: { item: NewsFeedItem }) {
           </Link>
         ) : (
           <a href={item.link} target="_blank" rel="noreferrer" className="feed-origin-link">
-            View original story at {publisher} <span aria-hidden="true">→</span>
+            {publisher ? `View original story at ${publisher}` : "View the original story"} <span aria-hidden="true">→</span>
           </a>
         )}
       </div>
@@ -381,14 +383,41 @@ function ArticleCard({ item }: { item: NewsFeedItem }) {
   );
 }
 
-/** Falls back to the link's host so a card is never left without a source. */
-function publisherName(item: NewsFeedItem) {
-  if (item.source) return item.source;
+/**
+ * The story's publisher, or undefined when the feed gave us nothing usable.
+ *
+ * Aggregator feeds sometimes report the query that produced them — literally
+ * `("Potter County" "Texas") (local news OR community news) - BingNews` — in
+ * the source field. Printing that where the byline goes is worse than printing
+ * nothing, so implausible values are rejected in favour of the article's own
+ * hostname, which is at least true.
+ */
+function publisherName(item: NewsFeedItem): string | undefined {
+  const source = item.source?.trim();
+  if (source && isPlausiblePublisher(source)) return source;
   try {
     return new URL(item.link).hostname.replace(/^www\./, "");
   } catch {
-    return "the original publisher";
+    return undefined;
   }
+}
+
+/** Real mastheads have no quotes, parentheses, or boolean operators in them. */
+function isPlausiblePublisher(value: string) {
+  if (value.length > 48) return false;
+  if (/["\u201c\u201d()]/.test(value)) return false;
+  if (/\s(?:OR|AND)\s/.test(value)) return false;
+  return !/^https?:/i.test(value);
+}
+
+/**
+ * Thumbnail text when no publisher is known. Deliberately generic — it labels
+ * the desk the story appears on, and never implies The County Post wrote it.
+ */
+function genericNewsLabel(locality?: LocalityScope) {
+  if (locality?.countyName) return `${locality.countyName} County News`;
+  if (locality?.stateName) return `${locality.stateName} News`;
+  return "News";
 }
 
 type FeedEntry = { type: "article"; item: NewsFeedItem } | { type: "ad"; ad: (typeof ads)[number]; position: number };
@@ -451,7 +480,7 @@ function FeedSponsor({ kind, sponsorId }: { kind: FeedKind; sponsorId?: string }
   );
 }
 
-function ArticleMedia({ item }: { item: NewsFeedItem }) {
+function ArticleMedia({ item, locality }: { item: NewsFeedItem; locality?: LocalityScope }) {
   const [imageAvailable, setImageAvailable] = useState(Boolean(item.imageUrl));
 
   useEffect(() => {
@@ -464,7 +493,7 @@ function ArticleMedia({ item }: { item: NewsFeedItem }) {
     // branding on top of another outlet's reporting — the same
     // misattribution the card body is careful to avoid.
     const isOriginal = item.source === "The County Post";
-    const label = isOriginal ? "The County Post" : publisherName(item);
+    const label = isOriginal ? "The County Post" : (publisherName(item) ?? genericNewsLabel(locality));
     return (
       <div className={isOriginal ? "feed-source-mark feed-source-mark-original" : "feed-source-mark"} aria-label={label}>
         {label}

@@ -108,7 +108,7 @@ async function tryProvider(feedUrl: string) {
       return {
         id: item.guid || item.link || `${item.title || "item"}-${index}`,
         title,
-        link: item.link || "#",
+        link: unwrapRedirect(item.link || "") || "#",
         source: publicationSource(item.author || json.feed?.title, title),
         publishedAt: item.pubDate,
         description: decodeEntities(stripHtml(item.description || "")).slice(0, 200),
@@ -144,7 +144,7 @@ function parseRssXml(xml: string) {
     return {
       id: text(item, "guid") || text(item, "link") || `${text(item, "title") || "item"}-${index}`,
       title,
-      link: text(item, "link") || "#",
+      link: unwrapRedirect(text(item, "link")) || "#",
       source: publicationSource(text(item, "source"), title),
       publishedAt: text(item, "pubDate"),
       description: decodeEntities(stripHtml(description)).slice(0, 200),
@@ -161,7 +161,7 @@ function parseRssXml(xml: string) {
     return {
       id: text(entry, "id") || link || `${text(entry, "title") || "entry"}-${index}`,
       title: decodeEntities(stripHtml(text(entry, "title") || "Untitled update")),
-      link: link || "#",
+      link: unwrapRedirect(link) || "#",
       source: text(entry, "source title") || text(entry, "author name"),
       publishedAt: text(entry, "published") || text(entry, "updated"),
       description: decodeEntities(stripHtml(description)).slice(0, 200),
@@ -207,17 +207,56 @@ function imageFromItem(item: { thumbnail?: string; content?: string; enclosure?:
   return item.content?.match(/<img[^>]+src=["']([^"']+)["']/i)?.[1] || "";
 }
 
+/**
+ * Bing wraps results in `bing.com/news/apiclick.aspx?...&url=<encoded>`.
+ * Unwrapping sends readers straight to the publisher and leaves a hostname the
+ * card can attribute, instead of "bing.com". Mirrors the same helper in the
+ * County Post News API so both feed paths behave alike.
+ */
+function unwrapRedirect(link: string) {
+  if (!link) return link;
+  try {
+    const url = new URL(link);
+    if (!/(^|\.)bing\.com$/i.test(url.hostname)) return link;
+    const target = url.searchParams.get("url");
+    if (!target) return link;
+    const resolved = new URL(target);
+    return resolved.protocol === "http:" || resolved.protocol === "https:" ? resolved.toString() : link;
+  } catch {
+    return link;
+  }
+}
+
 function publicationSource(source: string | undefined, title: string) {
   const normalizedSource = source?.trim() || "";
-  if (normalizedSource && !isAggregatorSource(normalizedSource)) return normalizedSource;
+  if (normalizedSource && !isAggregatorSource(normalizedSource) && !isSearchQuerySource(normalizedSource)) {
+    return normalizedSource;
+  }
 
   const titleParts = title.split(/\s[-–—]\s/).map((part) => part.trim()).filter(Boolean);
-  return titleParts.length > 1 ? titleParts.at(-1) || normalizedSource : normalizedSource;
+  const fromTitle = titleParts.length > 1 ? titleParts.at(-1) || "" : "";
+  if (fromTitle && !isAggregatorSource(fromTitle) && !isSearchQuerySource(fromTitle)) return fromTitle;
+
+  // Nothing usable. Better to report no publisher than to print a search query
+  // where the byline goes; the UI falls back to the article's own hostname.
+  return "";
 }
 
 function isAggregatorSource(source: string) {
-  const normalized = source.toLowerCase();
-  return normalized.includes("google news") || normalized.includes("bing news") || normalized.includes("news.google.com");
+  // Compared with separators stripped: the feeds spell these inconsistently
+  // ("Bing News", "BingNews", "news.google.com"), and a spaced-only check let
+  // "BingNews" through, which put whole search queries on the card as bylines.
+  const normalized = source.toLowerCase().replace(/[^a-z]/g, "");
+  return normalized.includes("googlenews") || normalized.includes("bingnews") || normalized.includes("newsgoogle");
+}
+
+/**
+ * True when a "source" is really the query that produced the feed, e.g.
+ * `("Potter County" "Texas") (local news OR community news) - BingNews`.
+ * Real mastheads do not contain quotes, parentheses, or boolean operators.
+ */
+function isSearchQuerySource(source: string) {
+  return /["“”()]/.test(source) || /\s(?:OR|AND)\s/.test(source) || source.length > 64;
 }
 
 function newest(items: NewsFeedItem[], maxItems: number) {

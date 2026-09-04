@@ -167,3 +167,46 @@ test("aggregated stories credit the original publisher, not The County Post", as
   await expect(wire.locator(".feed-source-mark")).toHaveText("Reuters");
   await expect(wire.locator(".feed-publisher")).not.toContainText("County Post");
 });
+
+test("a search-query 'source' never reaches the card as a byline", async ({ page }) => {
+  // Aggregator feeds sometimes report the query that produced them in the
+  // source field. It used to slip through because isAggregatorSource looked for
+  // "bing news" while the feed says "BingNews", and the whole query was printed
+  // where the publisher belongs.
+  await page.route("http://localhost:8787/v1/feeds/**", async (route) => {
+    const items = [
+      {
+        id: "garbled-1",
+        title: "Potter County sheriff: threat to Bushland ISD was a TikTok trend",
+        link: "https://www.newschannel10.com/2026/09/03/potter-county-sheriff/",
+        source: '("Potter County" "Texas") (local news OR community news) - BingNews',
+        publishedAt: "2026-09-03T12:00:00Z",
+        description: "Deputies traced the threat to a viral video.",
+        categories: ["Local News"],
+      },
+    ];
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        scope: {},
+        topic: "opinion",
+        items,
+        meta: { count: items.length, sourcesUsed: ["test"], fetchedAt: new Date().toISOString(), cacheTtlSeconds: 300 },
+      }),
+    });
+  });
+
+  await page.goto("/op-eds");
+  const card = page.locator(".feed-card", { hasText: "Potter County sheriff" }).first();
+  await expect(card).toBeVisible();
+
+  // Falls back to the article's own host rather than the query.
+  await expect(card.locator(".feed-publisher")).toHaveText("newschannel10.com");
+  await expect(card.locator(".feed-source-mark")).toHaveText("newschannel10.com");
+  await expect(card.locator(".feed-origin-link")).toHaveText(/View original story at newschannel10\.com/);
+
+  const rendered = (await card.textContent()) ?? "";
+  expect(rendered).not.toContain("BingNews");
+  expect(rendered).not.toContain("local news OR community news");
+});
