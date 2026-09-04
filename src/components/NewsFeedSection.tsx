@@ -517,6 +517,7 @@ const feedSponsorIds: Partial<Record<FeedKind, string>> = {
   obituaries: "patriot-trailer-inline",
   opinion: "cbt-inline",
   "monetary-policy": "brown-gmc-inline",
+  "jobs-business": "plains-bank-inline",
   "property-taxes": "dyers-inline",
   "municipal-bonds": "hoffbrau-inline",
   "budgets-levies": "lawyers-title-inline",
