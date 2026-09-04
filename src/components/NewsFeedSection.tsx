@@ -806,24 +806,32 @@ function matchesLocality(
     // neither "Angelina County" nor "Texas", and whole desks came back empty.
     // "Angelina County" in a headline is the clearest county-local signal there
     // is, and most such headlines never repeat the state. Shared names — Polk,
-    // Franklin, Washington — still need it.
-    if (
-      (explicitlyInState || locality.countyNameDistinctive) &&
-      includesTerm(fullHaystack, `${locality.countyName.toLowerCase()} county`)
-    ) {
-      return true;
-    }
+    // Franklin, Washington — still need it, or corroboration below.
+    const mentionsCountyName = includesTerm(fullHaystack, `${locality.countyName.toLowerCase()} county`);
+    if (mentionsCountyName && (explicitlyInState || locality.countyNameDistinctive)) return true;
 
     // A distinctive town name is its own state qualifier.
     if ((locality.cities || []).some((city) => includesTerm(fullHaystack, city.toLowerCase()))) return true;
 
-    // Shared names need the dateline, which supplies the state itself.
+    // Shared names need the dateline, which supplies the state itself — or,
+    // failing that, they can corroborate one another. Hall County, Texas is the
+    // motivating case: "Hall" is a county in three states and its towns are
+    // Memphis, Turkey and Lakeview, so almost no genuine headline about it
+    // passes on any single name. "Hall County set to receive data center near
+    // Turkey" is unambiguous taken together. Mirrors the API exactly.
     const stateAbbr = locality.stateAbbr?.toLowerCase();
-    return (locality.datelineCities || []).some(
-      (city) =>
-        (allowedStateName && includesTerm(fullHaystack, `${city.toLowerCase()}, ${allowedStateName}`)) ||
-        (stateAbbr && includesTerm(fullHaystack, `${city.toLowerCase()}, ${stateAbbr}`)),
-    );
+    let ambiguousMentions = 0;
+    for (const city of locality.datelineCities || []) {
+      const name = city.toLowerCase();
+      if (
+        (allowedStateName && includesTerm(fullHaystack, `${name}, ${allowedStateName}`)) ||
+        (stateAbbr && includesTerm(fullHaystack, `${name}, ${stateAbbr}`))
+      ) {
+        return true;
+      }
+      if (includesTerm(fullHaystack, name)) ambiguousMentions += 1;
+    }
+    return (mentionsCountyName && ambiguousMentions >= 1) || ambiguousMentions >= 2;
   }
 
   const localityTerms = [locality.stateName, locality.stateAbbr, ...(locality.cities || [])];
