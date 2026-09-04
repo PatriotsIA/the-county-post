@@ -86,6 +86,14 @@ export function NewsFeedSection({
   const [scopedPlaces, setScopedPlaces] = useState<string[]>(initialPlaces ?? []);
   const [scopedDatelinePlaces, setScopedDatelinePlaces] = useState<string[]>(initialDatelinePlaces ?? []);
   const [scopedTrustedHosts, setScopedTrustedHosts] = useState<string[]>(initialTrustedHosts ?? []);
+
+  // useState only reads its initial value on the first render, and the county
+  // page's prefetch resolves after that — so a section fed by the prefetch kept
+  // the empty arrays it started with and filtered nearly everything out. The
+  // props win whenever this component has not fetched its own scope yet.
+  const effectivePlaces = scopedPlaces.length ? scopedPlaces : (initialPlaces ?? []);
+  const effectiveDatelinePlaces = scopedDatelinePlaces.length ? scopedDatelinePlaces : (initialDatelinePlaces ?? []);
+  const effectiveTrustedHosts = scopedTrustedHosts.length ? scopedTrustedHosts : (initialTrustedHosts ?? []);
   // What the API says about whether more pages exist, which is more reliable
   // than inferring it from how many items survived the client-side filter.
   const [apiHasMore, setApiHasMore] = useState(false);
@@ -103,10 +111,10 @@ export function NewsFeedSection({
   const filteredItems = useMemo(() => {
     const scopedItems =
       source === "api"
-        ? filterApiItemsByLocality(items, locality, scopedPlaces, scopedDatelinePlaces, scopedTrustedHosts)
+        ? filterApiItemsByLocality(items, locality, effectivePlaces, effectiveDatelinePlaces, effectiveTrustedHosts)
         : filterFeedItems(items, kind, locality);
     return dedupeTitles(kind === "opinion" ? prependFeaturedCountyPostOpEd(scopedItems) : scopedItems);
-  }, [items, kind, locality, scopedDatelinePlaces, scopedPlaces, scopedTrustedHosts, source]);
+  }, [effectiveDatelinePlaces, effectivePlaces, effectiveTrustedHosts, items, kind, locality, source]);
   const feedEntries = useMemo(
     () => createFeedEntries(filteredItems, `${title}-${kind}-${locality?.countyName || locality?.stateName || ""}`, gridColumns),
     [filteredItems, gridColumns, kind, locality?.countyName, locality?.stateName, title],
