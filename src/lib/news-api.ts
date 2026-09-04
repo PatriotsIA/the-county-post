@@ -71,12 +71,31 @@ export async function fetchNewsApiFeed(path: string, limit: number) {
   url.searchParams.set("limit", String(limit));
 
   const json = await fetchNewsApiJson<FeedResponse>(url);
-  return { items: json.items || [], places: scopePlaces(json.scope) };
+  return {
+    items: json.items || [],
+    places: scopePlaces(json.scope),
+    datelinePlaces: scopeDatelinePlaces(json.scope),
+    hasMore: Boolean((json.meta as { hasMore?: unknown } | undefined)?.hasMore),
+  };
 }
 
+/** Towns distinctive enough to identify the county on their own. */
 export function scopePlaces(scope: unknown): string[] {
-  const places = (scope as { places?: unknown } | undefined)?.places;
-  return Array.isArray(places) ? places.filter((place): place is string => typeof place === "string") : [];
+  return stringList(scope, "places");
+}
+
+/**
+ * Towns whose names are shared across states — Palestine, Hudson, Miami — which
+ * only count when written as a dateline. The API classifies them because the
+ * browser has no copy of the national place corpus the split comes from.
+ */
+export function scopeDatelinePlaces(scope: unknown): string[] {
+  return stringList(scope, "datelinePlaces");
+}
+
+function stringList(scope: unknown, key: string): string[] {
+  const value = (scope as Record<string, unknown> | undefined)?.[key];
+  return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === "string") : [];
 }
 
 export async function fetchNewsApiPage(path: string, sections: string[], limit: number) {

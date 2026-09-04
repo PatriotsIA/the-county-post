@@ -61,7 +61,7 @@ import {
 import { getStateBySlug, searchStates, states, type StateSite } from "./data/states";
 import { buildCountyFallbackFeedUrls, buildNationalFallbackFeedUrls, buildStateFallbackFeedUrls } from "./lib/fallback-feed-urls";
 import { countyAtlasDomains, type CountyAtlasDomain } from "./lib/county-atlas-api";
-import { fetchNewsApiPage, isNewsApiConfigured, scopePlaces, type NewsFeedItem } from "./lib/news-api";
+import { fetchNewsApiPage, isNewsApiConfigured, scopeDatelinePlaces, scopePlaces, type NewsFeedItem } from "./lib/news-api";
 import countyPostLogo from "./assets/county-post-logo.png";
 import "./index.css";
 
@@ -86,6 +86,7 @@ type NewsPageState = {
   sections: Record<string, NewsFeedItem[]>;
   /** Towns the API scoped this county page to, passed on to each feed section. */
   places: string[];
+  datelinePlaces: string[];
 };
 
 function nationalApiPath(kind: TopicFeedKind) {
@@ -114,27 +115,27 @@ function countyPageApiPath(stateSlug: string, countySlug: string) {
 
 function useNewsPage(apiPath: string | undefined, sections: readonly string[], limit = PAGE_PREFETCH_LIMIT): NewsPageState {
   const sectionsKey = sections.join(",");
-  const [state, setState] = useState<NewsPageState>({ status: apiPath ? "loading" : "idle", error: "", sections: {}, places: [] });
+  const [state, setState] = useState<NewsPageState>({ status: apiPath ? "loading" : "idle", error: "", sections: {}, places: [], datelinePlaces: [] });
 
   useEffect(() => {
     let cancelled = false;
     if (!apiPath) {
-      setState({ status: "idle", error: "", sections: {}, places: [] });
+      setState({ status: "idle", error: "", sections: {}, places: [], datelinePlaces: [] });
       return;
     }
     if (!isNewsApiConfigured()) {
-      setState({ status: "error", error: "News API is not configured. Set VITE_NEWS_API_URL.", sections: {}, places: [] });
+      setState({ status: "error", error: "News API is not configured. Set VITE_NEWS_API_URL.", sections: {}, places: [], datelinePlaces: [] });
       return;
     }
 
-    setState({ status: "loading", error: "", sections: {}, places: [] });
+    setState({ status: "loading", error: "", sections: {}, places: [], datelinePlaces: [] });
     fetchNewsApiPage(apiPath, sectionsKey.split(",").filter(Boolean), limit)
       .then((page) => {
         if (cancelled) return;
         const nextSections = Object.fromEntries(
           Object.entries(page.sections || {}).map(([key, section]) => [key, section.items || []]),
         );
-        setState({ status: "loaded", error: "", sections: nextSections, places: scopePlaces(page.scope) });
+        setState({ status: "loaded", error: "", sections: nextSections, places: scopePlaces(page.scope), datelinePlaces: scopeDatelinePlaces(page.scope) });
       })
       .catch((error) => {
         if (cancelled) return;
@@ -143,6 +144,7 @@ function useNewsPage(apiPath: string | undefined, sections: readonly string[], l
           error: error instanceof Error ? error.message : "Unable to load news from the API.",
           sections: {},
           places: [],
+          datelinePlaces: [],
         });
       });
 
@@ -161,6 +163,7 @@ function pageSectionProps(page: NewsPageState, section: string) {
     initialStatus: page.status,
     initialSource: page.status === "loaded" ? ("api" as const) : undefined,
     initialPlaces: page.places,
+    initialDatelinePlaces: page.datelinePlaces,
   };
 }
 

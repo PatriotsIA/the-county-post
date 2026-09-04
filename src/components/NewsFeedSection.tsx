@@ -13,6 +13,8 @@ type LocalityScope = {
   stateName?: string;
   stateAbbr?: string;
   cities?: string[];
+  /** Town names that only count in dateline form; see scopeDatelinePlaces. */
+  datelineCities?: string[];
   strict?: boolean;
 };
 
@@ -26,6 +28,7 @@ type Props = {
   initialSource?: FeedSource;
   /** Towns the API scoped a prefetched page to, mirroring the feed response. */
   initialPlaces?: string[];
+  initialDatelinePlaces?: string[];
   kicker?: string;
   pageSize?: number;
   pageStep?: number;
@@ -40,7 +43,9 @@ type Props = {
   onLoadSettled?: () => void;
 };
 
-const MAX_REQUESTED_ITEMS = 200;
+// Matches the API's own ceiling. The old value of 200 quietly capped how much
+// of a county's coverage a reader could ever scroll to.
+const MAX_REQUESTED_ITEMS = 600;
 type FeedSource = "api" | "fallback";
 const inFeedAds = ads.filter((ad) => ad.slot === "inline" && !isCarouselOnlyAd(ad.id));
 const DEFAULT_IN_FEED_AD_WEIGHT = 3;
@@ -57,6 +62,7 @@ export function NewsFeedSection({
   initialStatus = "idle",
   initialSource,
   initialPlaces,
+  initialDatelinePlaces,
   kicker,
   pageSize = 12,
   pageStep = 16,
@@ -74,6 +80,10 @@ export function NewsFeedSection({
   // Towns the API scoped this feed to. Empty until a response arrives, and
   // empty for the RSS fallback, which has no server-side scoping.
   const [scopedPlaces, setScopedPlaces] = useState<string[]>(initialPlaces ?? []);
+  const [scopedDatelinePlaces, setScopedDatelinePlaces] = useState<string[]>(initialDatelinePlaces ?? []);
+  // What the API says about whether more pages exist, which is more reliable
+  // than inferring it from how many items survived the client-side filter.
+  const [apiHasMore, setApiHasMore] = useState(false);
   const [requestedCount, setRequestedCount] = useState(pageSize);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -86,19 +96,28 @@ export function NewsFeedSection({
   const stableFallbackFeedUrls = useMemo(() => fallbackFeedUrlsKey.split("\n").filter(Boolean), [fallbackFeedUrlsKey]);
   const hasInitialPageData = initialItems !== undefined || initialStatus === "loading" || initialStatus === "error";
   const filteredItems = useMemo(() => {
-    const scopedItems = source === "api" ? filterApiItemsByLocality(items, locality, scopedPlaces) : filterFeedItems(items, kind, locality);
+    const scopedItems =
+      source === "api"
+        ? filterApiItemsByLocality(items, locality, scopedPlaces, scopedDatelinePlaces)
+        : filterFeedItems(items, kind, locality);
     return dedupeTitles(kind === "opinion" ? prependFeaturedCountyPostOpEd(scopedItems) : scopedItems);
-  }, [items, kind, locality, scopedPlaces, source]);
+  }, [items, kind, locality, scopedDatelinePlaces, scopedPlaces, source]);
   const feedEntries = useMemo(
     () => createFeedEntries(filteredItems, `${title}-${kind}-${locality?.countyName || locality?.stateName || ""}`, gridColumns),
     [filteredItems, gridColumns, kind, locality?.countyName, locality?.stateName, title],
   );
+  // The API reports whether more pages exist. Falling back to comparing what
+  // survived the client filter against what was asked for meant a feed whose
+  // items were being over-filtered could never request the next page.
   const canRequestMore =
-    source === "fallback" &&
-    !hasInitialPageData &&
     requestedCount < MAX_REQUESTED_ITEMS &&
-    filteredItems.length >= requestedCount &&
-    filteredItems.length < MAX_REQUESTED_ITEMS;
+    filteredItems.length < MAX_REQUESTED_ITEMS &&
+    // Previously this required source === "fallback", so scrolling only ever
+    // loaded more on the RSS fallback path — never on an API-backed feed, which
+    // is every county desk. For API feeds the server says whether more exists;
+    // before the first direct fetch (sections arrive prefetched with the page)
+    // a full page of items stands in as the signal that there is more to get.
+    (source === "api" ? apiHasMore || filteredItems.length >= requestedCount : filteredItems.length >= requestedCount);
 
   useEffect(() => {
     onLoadSettledRef.current = onLoadSettled;
@@ -144,9 +163,12 @@ export function NewsFeedSection({
 
         if (apiPath && isNewsApiConfigured()) {
           try {
-            const { items: apiItems, places: apiPlaces } = await fetchNewsApiFeed(apiPath, requestedCount);
+            const feed = await fetchNewsApiFeed(apiPath, requestedCount);
+            const apiItems = feed.items;
             if (!cancelled) {
-              setScopedPlaces(apiPlaces);
+              setScopedPlaces(feed.places);
+              setScopedDatelinePlaces(feed.datelinePlaces);
+              setApiHasMore(feed.hasMore);
               setItems(apiItems);
               setSource("api");
               setStatus("loaded");
@@ -705,9 +727,14 @@ function filterFeedItems(items: NewsFeedItem[], kind: FeedKind, locality?: Local
  * names the county at all. The county-name requirement is therefore dropped for
  * API items, and the wrong-state guard, which needs no place data, is kept.
  */
-function filterApiItemsByLocality(items: NewsFeedItem[], locality?: LocalityScope, places: string[] = []) {
+function filterApiItemsByLocality(
+  items: NewsFeedItem[],
+  locality?: LocalityScope,
+  places: string[] = [],
+  datelinePlaces: string[] = [],
+) {
   if (!locality?.countyName) return items;
-  const scoped: LocalityScope = { ...locality, cities: places };
+  const scoped: LocalityScope = { ...locality, cities: places, datelineCities: datelinePlaces };
   return items.filter((item) => {
     const contentHaystack = `${item.title} ${item.description || ""} ${(item.categories || []).join(" ")}`.toLowerCase();
     const fullHaystack = `${contentHaystack} ${item.source || ""}`.toLowerCase();
@@ -731,12 +758,23 @@ function matchesLocality(
     if (isTrustedCountyNativeNewsItem(item, locality.stateName, locality.countyName)) return true;
 
     const explicitlyInState = Boolean(allowedStateName && includesTerm(fullHaystack, allowedStateName));
-    if (!explicitlyInState) return false;
 
-    // The county's name, or one of its towns. Local reporting names the town:
-    // a Silverton council story rarely contains the words "Briscoe County".
-    if (includesTerm(fullHaystack, `${locality.countyName.toLowerCase()} county`)) return true;
-    return (locality.cities || []).some((city) => includesTerm(fullHaystack, city.toLowerCase()));
+    // The county's name, or one of its towns. Mirrors the API exactly, because
+    // re-deciding this in the browser with a stricter rule threw away the very
+    // stories the API had just found: a Lufkin school board report names
+    // neither "Angelina County" nor "Texas", and whole desks came back empty.
+    if (explicitlyInState && includesTerm(fullHaystack, `${locality.countyName.toLowerCase()} county`)) return true;
+
+    // A distinctive town name is its own state qualifier.
+    if ((locality.cities || []).some((city) => includesTerm(fullHaystack, city.toLowerCase()))) return true;
+
+    // Shared names need the dateline, which supplies the state itself.
+    const stateAbbr = locality.stateAbbr?.toLowerCase();
+    return (locality.datelineCities || []).some(
+      (city) =>
+        (allowedStateName && includesTerm(fullHaystack, `${city.toLowerCase()}, ${allowedStateName}`)) ||
+        (stateAbbr && includesTerm(fullHaystack, `${city.toLowerCase()}, ${stateAbbr}`)),
+    );
   }
 
   const localityTerms = [locality.stateName, locality.stateAbbr, ...(locality.cities || [])];
