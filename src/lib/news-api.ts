@@ -76,6 +76,7 @@ export async function fetchNewsApiFeed(path: string, limit: number) {
     places: scopePlaces(json.scope),
     datelinePlaces: scopeDatelinePlaces(json.scope),
     trustedHosts: scopeTrustedHosts(json.scope),
+    countyNameDistinctive: scopeCountyNameDistinctive(json.scope),
     hasMore: Boolean((json.meta as { hasMore?: unknown } | undefined)?.hasMore),
   };
 }
@@ -101,6 +102,11 @@ export function scopeDatelinePlaces(scope: unknown): string[] {
  */
 export function scopeTrustedHosts(scope: unknown): string[] {
   return stringList(scope, "trustedHosts");
+}
+
+/** Whether the county's own name identifies it without the state alongside. */
+export function scopeCountyNameDistinctive(scope: unknown): boolean {
+  return (scope as { countyNameDistinctive?: unknown } | undefined)?.countyNameDistinctive === "true";
 }
 
 function stringList(scope: unknown, key: string): string[] {

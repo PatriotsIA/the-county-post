@@ -61,7 +61,7 @@ import {
 import { getStateBySlug, searchStates, states, type StateSite } from "./data/states";
 import { buildCountyFallbackFeedUrls, buildNationalFallbackFeedUrls, buildStateFallbackFeedUrls } from "./lib/fallback-feed-urls";
 import { countyAtlasDomains, type CountyAtlasDomain } from "./lib/county-atlas-api";
-import { fetchNewsApiPage, isNewsApiConfigured, scopeDatelinePlaces, scopePlaces, scopeTrustedHosts, type NewsFeedItem } from "./lib/news-api";
+import { fetchNewsApiPage, isNewsApiConfigured, scopeDatelinePlaces, scopePlaces, scopeCountyNameDistinctive, scopeTrustedHosts, type NewsFeedItem } from "./lib/news-api";
 import countyPostLogo from "./assets/county-post-logo.png";
 import "./index.css";
 
@@ -88,6 +88,7 @@ type NewsPageState = {
   places: string[];
   datelinePlaces: string[];
   trustedHosts: string[];
+  countyNameDistinctive: boolean;
 };
 
 function nationalApiPath(kind: TopicFeedKind) {
@@ -116,27 +117,27 @@ function countyPageApiPath(stateSlug: string, countySlug: string) {
 
 function useNewsPage(apiPath: string | undefined, sections: readonly string[], limit = PAGE_PREFETCH_LIMIT): NewsPageState {
   const sectionsKey = sections.join(",");
-  const [state, setState] = useState<NewsPageState>({ status: apiPath ? "loading" : "idle", error: "", sections: {}, places: [], datelinePlaces: [], trustedHosts: [] });
+  const [state, setState] = useState<NewsPageState>({ status: apiPath ? "loading" : "idle", error: "", sections: {}, places: [], datelinePlaces: [], trustedHosts: [], countyNameDistinctive: false });
 
   useEffect(() => {
     let cancelled = false;
     if (!apiPath) {
-      setState({ status: "idle", error: "", sections: {}, places: [], datelinePlaces: [], trustedHosts: [] });
+      setState({ status: "idle", error: "", sections: {}, places: [], datelinePlaces: [], trustedHosts: [], countyNameDistinctive: false });
       return;
     }
     if (!isNewsApiConfigured()) {
-      setState({ status: "error", error: "News API is not configured. Set VITE_NEWS_API_URL.", sections: {}, places: [], datelinePlaces: [], trustedHosts: [] });
+      setState({ status: "error", error: "News API is not configured. Set VITE_NEWS_API_URL.", sections: {}, places: [], datelinePlaces: [], trustedHosts: [], countyNameDistinctive: false });
       return;
     }
 
-    setState({ status: "loading", error: "", sections: {}, places: [], datelinePlaces: [], trustedHosts: [] });
+    setState({ status: "loading", error: "", sections: {}, places: [], datelinePlaces: [], trustedHosts: [], countyNameDistinctive: false });
     fetchNewsApiPage(apiPath, sectionsKey.split(",").filter(Boolean), limit)
       .then((page) => {
         if (cancelled) return;
         const nextSections = Object.fromEntries(
           Object.entries(page.sections || {}).map(([key, section]) => [key, section.items || []]),
         );
-        setState({ status: "loaded", error: "", sections: nextSections, places: scopePlaces(page.scope), datelinePlaces: scopeDatelinePlaces(page.scope), trustedHosts: scopeTrustedHosts(page.scope) });
+        setState({ status: "loaded", error: "", sections: nextSections, places: scopePlaces(page.scope), datelinePlaces: scopeDatelinePlaces(page.scope), trustedHosts: scopeTrustedHosts(page.scope), countyNameDistinctive: scopeCountyNameDistinctive(page.scope) });
       })
       .catch((error) => {
         if (cancelled) return;
@@ -147,6 +148,7 @@ function useNewsPage(apiPath: string | undefined, sections: readonly string[], l
           places: [],
           datelinePlaces: [],
           trustedHosts: [],
+          countyNameDistinctive: false,
         });
       });
 
@@ -167,6 +169,7 @@ function pageSectionProps(page: NewsPageState, section: string) {
     initialPlaces: page.places,
     initialDatelinePlaces: page.datelinePlaces,
     initialTrustedHosts: page.trustedHosts,
+    initialCountyNameDistinctive: page.countyNameDistinctive,
   };
 }
 

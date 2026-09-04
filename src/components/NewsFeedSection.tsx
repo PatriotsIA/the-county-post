@@ -17,6 +17,8 @@ type LocalityScope = {
   datelineCities?: string[];
   /** Outlets the API accepts as county-local without them naming the county. */
   trustedHosts?: string[];
+  /** Whether the county's name identifies it without the state alongside. */
+  countyNameDistinctive?: boolean;
   strict?: boolean;
 };
 
@@ -32,6 +34,7 @@ type Props = {
   initialPlaces?: string[];
   initialDatelinePlaces?: string[];
   initialTrustedHosts?: string[];
+  initialCountyNameDistinctive?: boolean;
   kicker?: string;
   pageSize?: number;
   pageStep?: number;
@@ -67,6 +70,7 @@ export function NewsFeedSection({
   initialPlaces,
   initialDatelinePlaces,
   initialTrustedHosts,
+  initialCountyNameDistinctive,
   kicker,
   pageSize = 12,
   pageStep = 16,
@@ -86,6 +90,7 @@ export function NewsFeedSection({
   const [scopedPlaces, setScopedPlaces] = useState<string[]>(initialPlaces ?? []);
   const [scopedDatelinePlaces, setScopedDatelinePlaces] = useState<string[]>(initialDatelinePlaces ?? []);
   const [scopedTrustedHosts, setScopedTrustedHosts] = useState<string[]>(initialTrustedHosts ?? []);
+  const [countyNameDistinctive, setCountyNameDistinctive] = useState(Boolean(initialCountyNameDistinctive));
 
   // useState only reads its initial value on the first render, and the county
   // page's prefetch resolves after that — so a section fed by the prefetch kept
@@ -94,6 +99,7 @@ export function NewsFeedSection({
   const effectivePlaces = scopedPlaces.length ? scopedPlaces : (initialPlaces ?? []);
   const effectiveDatelinePlaces = scopedDatelinePlaces.length ? scopedDatelinePlaces : (initialDatelinePlaces ?? []);
   const effectiveTrustedHosts = scopedTrustedHosts.length ? scopedTrustedHosts : (initialTrustedHosts ?? []);
+  const effectiveCountyDistinctive = countyNameDistinctive || Boolean(initialCountyNameDistinctive);
   // What the API says about whether more pages exist, which is more reliable
   // than inferring it from how many items survived the client-side filter.
   const [apiHasMore, setApiHasMore] = useState(false);
@@ -111,10 +117,17 @@ export function NewsFeedSection({
   const filteredItems = useMemo(() => {
     const scopedItems =
       source === "api"
-        ? filterApiItemsByLocality(items, locality, effectivePlaces, effectiveDatelinePlaces, effectiveTrustedHosts)
+        ? filterApiItemsByLocality(
+            items,
+            locality,
+            effectivePlaces,
+            effectiveDatelinePlaces,
+            effectiveTrustedHosts,
+            effectiveCountyDistinctive,
+          )
         : filterFeedItems(items, kind, locality);
     return dedupeTitles(kind === "opinion" ? prependFeaturedCountyPostOpEd(scopedItems) : scopedItems);
-  }, [effectiveDatelinePlaces, effectivePlaces, effectiveTrustedHosts, items, kind, locality, source]);
+  }, [effectiveCountyDistinctive, effectiveDatelinePlaces, effectivePlaces, effectiveTrustedHosts, items, kind, locality, source]);
   const feedEntries = useMemo(
     () => createFeedEntries(filteredItems, `${title}-${kind}-${locality?.countyName || locality?.stateName || ""}`, gridColumns),
     [filteredItems, gridColumns, kind, locality?.countyName, locality?.stateName, title],
@@ -182,6 +195,7 @@ export function NewsFeedSection({
               setScopedPlaces(feed.places);
               setScopedDatelinePlaces(feed.datelinePlaces);
               setScopedTrustedHosts(feed.trustedHosts);
+              setCountyNameDistinctive(feed.countyNameDistinctive);
               setApiHasMore(feed.hasMore);
               setItems(apiItems);
               setSource("api");
@@ -747,6 +761,7 @@ function filterApiItemsByLocality(
   places: string[] = [],
   datelinePlaces: string[] = [],
   trustedHosts: string[] = [],
+  countyNameDistinctive = false,
 ) {
   if (!locality?.countyName) return items;
   const scoped: LocalityScope = {
@@ -754,6 +769,7 @@ function filterApiItemsByLocality(
     cities: places,
     datelineCities: datelinePlaces,
     trustedHosts,
+    countyNameDistinctive,
   };
   return items.filter((item) => {
     const contentHaystack = `${item.title} ${item.description || ""} ${(item.categories || []).join(" ")}`.toLowerCase();
@@ -788,7 +804,15 @@ function matchesLocality(
     // re-deciding this in the browser with a stricter rule threw away the very
     // stories the API had just found: a Lufkin school board report names
     // neither "Angelina County" nor "Texas", and whole desks came back empty.
-    if (explicitlyInState && includesTerm(fullHaystack, `${locality.countyName.toLowerCase()} county`)) return true;
+    // "Angelina County" in a headline is the clearest county-local signal there
+    // is, and most such headlines never repeat the state. Shared names — Polk,
+    // Franklin, Washington — still need it.
+    if (
+      (explicitlyInState || locality.countyNameDistinctive) &&
+      includesTerm(fullHaystack, `${locality.countyName.toLowerCase()} county`)
+    ) {
+      return true;
+    }
 
     // A distinctive town name is its own state qualifier.
     if ((locality.cities || []).some((city) => includesTerm(fullHaystack, city.toLowerCase()))) return true;
