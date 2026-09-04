@@ -1,8 +1,10 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import type { CountySite } from "../data/counties";
-import { getCountyNativeNewsSources, type CountyNativeNewsSource } from "../lib/local-news-sources";
+import { getCountyNativeNewsSources } from "../lib/local-news-sources";
+import { fetchCountySources, isNewsApiConfigured, type ReviewedCountySource } from "../lib/news-api";
 
-const outletTypeLabels: Record<CountyNativeNewsSource["outletTypes"][number], string> = {
+const outletTypeLabels: Record<ReviewedCountySource["outletTypes"][number], string> = {
   newspaper: "Newspaper",
   radio: "Radio",
   television: "Television",
@@ -10,7 +12,30 @@ const outletTypeLabels: Record<CountyNativeNewsSource["outletTypes"][number], st
 };
 
 export function CountyLocalSourcesDirectory({ county }: { county: CountySite }) {
-  const sources = getCountyNativeNewsSources(county);
+  // The API's source registry is the single source of truth; the static list
+  // only bridges the gap while the request is in flight or the API is down.
+  const [sources, setSources] = useState<ReviewedCountySource[]>(() => getCountyNativeNewsSources(county));
+  const [loaded, setLoaded] = useState(!isNewsApiConfigured());
+
+  useEffect(() => {
+    let cancelled = false;
+    setSources(getCountyNativeNewsSources(county));
+    setLoaded(!isNewsApiConfigured());
+    if (!isNewsApiConfigured()) return;
+    fetchCountySources(county.state.slug, county.slug)
+      .then((reviewed) => {
+        if (cancelled) return;
+        setSources(reviewed);
+        setLoaded(true);
+      })
+      .catch(() => {
+        if (!cancelled) setLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [county]);
+
   const submitPath = `/${county.state.slug}/${county.slug}/submit`;
 
   return (
@@ -49,7 +74,7 @@ export function CountyLocalSourcesDirectory({ county }: { county: CountySite }) 
               ))}
             </div>
           </>
-        ) : (
+        ) : loaded ? (
           <div className="local-sources-empty">
             <h3>No reviewed local sources are listed yet</h3>
             <p>
@@ -58,6 +83,8 @@ export function CountyLocalSourcesDirectory({ county }: { county: CountySite }) 
             </p>
             <Link to={submitPath}>Submit a local source</Link>
           </div>
+        ) : (
+          <p className="muted">Loading reviewed sources…</p>
         )}
       </section>
     </div>

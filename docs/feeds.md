@@ -54,7 +54,7 @@ or not at all.
 
 ## Story cards
 
-Attribution is load-bearing: the publisher leads the card, the outbound link
+The Local Sources directory page fetches `/v1/sources/counties/<state>/<county>` — the API source registry is the single source of truth, and the static list in `src/lib/local-news-sources.ts` is only an in-flight/offline fallback (it drifted once and hid every promoted Texas outlet). Story-card attribution is load-bearing: the publisher leads the card, the outbound link
 names its destination, County Post originals are marked as original reporting,
 and placeholder thumbnails never carry this paper's branding over another
 outlet's work. Publisher strings are sanitised (aggregators leak their search

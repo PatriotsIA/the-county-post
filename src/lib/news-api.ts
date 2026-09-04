@@ -122,6 +122,30 @@ export async function fetchNewsApiPage(path: string, sections: string[], limit: 
   return fetchNewsApiJson<PageResponse>(url);
 }
 
+export type ReviewedCountySource = {
+  name: string;
+  websiteUrl: string;
+  outletTypes: Array<"newspaper" | "radio" | "television" | "digital">;
+  aliases?: string[];
+};
+
+/**
+ * The reviewed outlets for a county, straight from the API's source registry.
+ * The Local Sources directory renders this rather than a frontend copy of the
+ * registry — the copy drifted once and showed "no sources" on counties the
+ * API already trusted outlets for.
+ */
+export async function fetchCountySources(stateSlug: string, countySlug: string) {
+  // Deliberately not routed through fetchNewsApiJson: a failure here (say, a
+  // frontend deployed ahead of the API) must not trip the global API backoff
+  // and take the news feeds down with it.
+  const url = newsApiUrl(`v1/sources/counties/${stateSlug}/${countySlug}`);
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`County sources request failed ${response.status}`);
+  const body = (await response.json()) as { sources: ReviewedCountySource[] };
+  return body.sources;
+}
+
 function newsApiUrl(path: string) {
   const baseUrl = newsApiBaseUrl();
   if (!baseUrl) throw new Error("News API is not configured. Set VITE_NEWS_API_URL.");
