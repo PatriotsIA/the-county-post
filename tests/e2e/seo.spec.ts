@@ -38,7 +38,7 @@ test("every route carries exactly one title, description, and canonical", async 
     expect(meta.description.length, `${route} description length`).toBeGreaterThan(50);
     expect(meta.description.length, `${route} description length`).toBeLessThanOrEqual(160);
     expect(meta.canonical, `${route} canonical host`).toBe(`https://thecountypost.com${route === "/" ? "/" : route}`);
-    expect(meta.ogImage, `${route} og:image`).toBe("https://thecountypost.com/social-card.png");
+    expect(meta.ogImage, `${route} og:image`).toBe("https://thecountypost.com/social-card.jpg");
     // index.html ships default tags for crawlers that do not run JavaScript;
     // they must be stripped once React renders the real ones.
     expect(meta.staleDefaults, `${route} leftover static defaults`).toBe(0);
