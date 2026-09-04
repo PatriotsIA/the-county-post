@@ -15,6 +15,8 @@ type LocalityScope = {
   cities?: string[];
   /** Town names that only count in dateline form; see scopeDatelinePlaces. */
   datelineCities?: string[];
+  /** Outlets the API accepts as county-local without them naming the county. */
+  trustedHosts?: string[];
   strict?: boolean;
 };
 
@@ -29,6 +31,7 @@ type Props = {
   /** Towns the API scoped a prefetched page to, mirroring the feed response. */
   initialPlaces?: string[];
   initialDatelinePlaces?: string[];
+  initialTrustedHosts?: string[];
   kicker?: string;
   pageSize?: number;
   pageStep?: number;
@@ -63,6 +66,7 @@ export function NewsFeedSection({
   initialSource,
   initialPlaces,
   initialDatelinePlaces,
+  initialTrustedHosts,
   kicker,
   pageSize = 12,
   pageStep = 16,
@@ -81,6 +85,7 @@ export function NewsFeedSection({
   // empty for the RSS fallback, which has no server-side scoping.
   const [scopedPlaces, setScopedPlaces] = useState<string[]>(initialPlaces ?? []);
   const [scopedDatelinePlaces, setScopedDatelinePlaces] = useState<string[]>(initialDatelinePlaces ?? []);
+  const [scopedTrustedHosts, setScopedTrustedHosts] = useState<string[]>(initialTrustedHosts ?? []);
   // What the API says about whether more pages exist, which is more reliable
   // than inferring it from how many items survived the client-side filter.
   const [apiHasMore, setApiHasMore] = useState(false);
@@ -98,10 +103,10 @@ export function NewsFeedSection({
   const filteredItems = useMemo(() => {
     const scopedItems =
       source === "api"
-        ? filterApiItemsByLocality(items, locality, scopedPlaces, scopedDatelinePlaces)
+        ? filterApiItemsByLocality(items, locality, scopedPlaces, scopedDatelinePlaces, scopedTrustedHosts)
         : filterFeedItems(items, kind, locality);
     return dedupeTitles(kind === "opinion" ? prependFeaturedCountyPostOpEd(scopedItems) : scopedItems);
-  }, [items, kind, locality, scopedDatelinePlaces, scopedPlaces, source]);
+  }, [items, kind, locality, scopedDatelinePlaces, scopedPlaces, scopedTrustedHosts, source]);
   const feedEntries = useMemo(
     () => createFeedEntries(filteredItems, `${title}-${kind}-${locality?.countyName || locality?.stateName || ""}`, gridColumns),
     [filteredItems, gridColumns, kind, locality?.countyName, locality?.stateName, title],
@@ -168,6 +173,7 @@ export function NewsFeedSection({
             if (!cancelled) {
               setScopedPlaces(feed.places);
               setScopedDatelinePlaces(feed.datelinePlaces);
+              setScopedTrustedHosts(feed.trustedHosts);
               setApiHasMore(feed.hasMore);
               setItems(apiItems);
               setSource("api");
@@ -732,9 +738,15 @@ function filterApiItemsByLocality(
   locality?: LocalityScope,
   places: string[] = [],
   datelinePlaces: string[] = [],
+  trustedHosts: string[] = [],
 ) {
   if (!locality?.countyName) return items;
-  const scoped: LocalityScope = { ...locality, cities: places, datelineCities: datelinePlaces };
+  const scoped: LocalityScope = {
+    ...locality,
+    cities: places,
+    datelineCities: datelinePlaces,
+    trustedHosts,
+  };
   return items.filter((item) => {
     const contentHaystack = `${item.title} ${item.description || ""} ${(item.categories || []).join(" ")}`.toLowerCase();
     const fullHaystack = `${contentHaystack} ${item.source || ""}`.toLowerCase();
@@ -756,6 +768,11 @@ function matchesLocality(
 
   if (locality.countyName) {
     if (isTrustedCountyNativeNewsItem(item, locality.stateName, locality.countyName)) return true;
+
+    // Outlets the API already treats as this county's own. Most of a county's
+    // coverage arrives this way — its local paper and regional stations rarely
+    // repeat the county's name — and re-checking them here discarded it.
+    if (matchesTrustedHost(item, locality.trustedHosts)) return true;
 
     const explicitlyInState = Boolean(allowedStateName && includesTerm(fullHaystack, allowedStateName));
 
@@ -781,6 +798,16 @@ function matchesLocality(
   const normalizedLocalityTerms = localityTerms.filter(Boolean).map((term) => term!.toLowerCase());
 
   return normalizedLocalityTerms.length ? normalizedLocalityTerms.some((term) => includesTerm(fullHaystack, term)) : true;
+}
+
+function matchesTrustedHost(item: NewsFeedItem, trustedHosts?: string[]) {
+  if (!trustedHosts?.length) return false;
+  try {
+    const host = new URL(item.link).hostname.replace(/^www\./, "").toLowerCase();
+    return trustedHosts.some((trusted) => host === trusted || host.endsWith(`.${trusted}`));
+  } catch {
+    return false;
+  }
 }
 
 function dedupeTitles(items: NewsFeedItem[]) {

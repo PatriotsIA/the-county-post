@@ -75,6 +75,7 @@ export async function fetchNewsApiFeed(path: string, limit: number) {
     items: json.items || [],
     places: scopePlaces(json.scope),
     datelinePlaces: scopeDatelinePlaces(json.scope),
+    trustedHosts: scopeTrustedHosts(json.scope),
     hasMore: Boolean((json.meta as { hasMore?: unknown } | undefined)?.hasMore),
   };
 }
@@ -91,6 +92,15 @@ export function scopePlaces(scope: unknown): string[] {
  */
 export function scopeDatelinePlaces(scope: unknown): string[] {
   return stringList(scope, "datelinePlaces");
+}
+
+/**
+ * Outlets the API treats as county-local in their own right. The browser cannot
+ * derive this — the registry lives on the server — and re-checking their stories
+ * against place names threw most of a county's coverage away.
+ */
+export function scopeTrustedHosts(scope: unknown): string[] {
+  return stringList(scope, "trustedHosts");
 }
 
 function stringList(scope: unknown, key: string): string[] {
