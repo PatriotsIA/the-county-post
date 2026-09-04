@@ -14,7 +14,7 @@ export const site = {
     email: "submissions@thecountypost.com",
   },
   // 1200x630 social card. Regenerate with `npm run seo:images` if the logo changes.
-  ogImage: "/social-card.png",
+  ogImage: "/social-card.jpg",
   ogImageWidth: 1200,
   ogImageHeight: 630,
   logo: "/county-post-mark-512.png",

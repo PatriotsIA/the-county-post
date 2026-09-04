@@ -62,7 +62,7 @@ import { getStateBySlug, searchStates, states, type StateSite } from "./data/sta
 import { buildCountyFallbackFeedUrls, buildNationalFallbackFeedUrls, buildStateFallbackFeedUrls } from "./lib/fallback-feed-urls";
 import { countyAtlasDomains, type CountyAtlasDomain } from "./lib/county-atlas-api";
 import { fetchNewsApiPage, isNewsApiConfigured, scopeDatelinePlaces, scopePlaces, scopeCountyNameDistinctive, scopeTrustedHosts, type NewsFeedItem } from "./lib/news-api";
-import countyPostLogo from "./assets/county-post-logo.png";
+import countyPostLogo from "./assets/county-post-logo.webp";
 import "./index.css";
 
 const LazyCountyDataAtlasHub = lazy(() =>
