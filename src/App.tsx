@@ -1179,6 +1179,7 @@ function CountyPage() {
 
   const locality = {
     countyName: county.name,
+    countyDisplayName: county.displayName,
     stateName: county.state.name,
     stateAbbr: county.state.abbr,
     strict: true,
@@ -1724,6 +1725,7 @@ function CountySubjectPage() {
         kind={subject.kind}
         locality={{
           countyName: county.name,
+          countyDisplayName: county.displayName,
           stateName: county.state.name,
           stateAbbr: county.state.abbr,
           strict: true,
@@ -1781,6 +1783,7 @@ function CountySubjectGroupPage({ county, group }: { county: NonNullable<ReturnT
           kind={subject.kind}
           locality={{
             countyName: county.name,
+            countyDisplayName: county.displayName,
             stateName: county.state.name,
             stateAbbr: county.state.abbr,
             strict: true,
@@ -1866,6 +1869,7 @@ function CountyOpEdPage() {
         kind="opinion"
         locality={{
           countyName: county.name,
+          countyDisplayName: county.displayName,
           stateName: county.state.name,
           stateAbbr: county.state.abbr,
           strict: true,

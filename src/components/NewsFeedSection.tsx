@@ -10,6 +10,7 @@ type FeedKind = Topic;
 
 type LocalityScope = {
   countyName?: string;
+  countyDisplayName?: string;
   stateName?: string;
   stateAbbr?: string;
   cities?: string[];
@@ -807,7 +808,7 @@ function matchesLocality(
     // "Angelina County" in a headline is the clearest county-local signal there
     // is, and most such headlines never repeat the state. Shared names — Polk,
     // Franklin, Washington — still need it, or corroboration below.
-    const mentionsCountyName = includesTerm(fullHaystack, `${locality.countyName.toLowerCase()} county`);
+    const mentionsCountyName = includesTerm(fullHaystack, (locality.countyDisplayName || `${locality.countyName} County`).toLowerCase());
     if (mentionsCountyName && (explicitlyInState || locality.countyNameDistinctive)) return true;
 
     // A distinctive town name is its own state qualifier.

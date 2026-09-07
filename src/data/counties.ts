@@ -1,4 +1,5 @@
 import { getCountyByState } from "@nickgraffis/us-counties";
+import { countySlug, countyDisplayName } from "./county-geography";
 import { countyCentroidsByFips } from "./county-centroids";
 import { getStateBySlug, states, type StateSite } from "./states";
 
@@ -31,8 +32,8 @@ export function slugify(value: string) {
 }
 
 function createCountySite(county: UsCounty, state: StateSite): CountySite {
-  const slug = slugify(county.name);
-  const displayName = `${county.name} County`;
+  const slug = countySlug(county.name, county.FIPS);
+  const displayName = countyDisplayName(county.name, state.slug, county.FIPS);
   const pageName = `The County Post - ${displayName}`;
   const centroid = countyCentroidsByFips[county.FIPS];
 

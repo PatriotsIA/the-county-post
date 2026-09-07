@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { getCounty } from "../../src/data/counties";
+import { counties, getCounty } from "../../src/data/counties";
 import { buildCountyFallbackFeedUrls } from "../../src/lib/fallback-feed-urls";
 import { isTrustedCountyNativeNewsItem } from "../../src/lib/local-news-sources";
 import { balancePublisherItems } from "../../src/lib/rss";
@@ -237,6 +237,22 @@ test("pins the County Post op-ed first on national, state, and county opinion de
   await expect(page.getByText("What a Thursday night with a spreadsheet taught me", { exact: false })).toBeVisible();
   await expect(page.getByText("Dan Rogers is the publisher of The County Post and a Texas Panhandle cattleman.")).toBeVisible();
   await expect(page.getByText(/letter from the editor/i)).toHaveCount(0);
+});
+
+test("every county and independent city has its own route", () => {
+  expect(new Set(counties.map(county => `${county.state.slug}/${county.slug}`)).size).toBe(3143);
+  for (const county of counties) expect(getCounty(county.state.slug, county.slug)?.fips).toBe(county.fips);
+});
+
+test("parish headlines survive County Post's locality filter", async ({ page }) => {
+  const story = { id: "parish", title: "West Carroll Parish announces road repairs", link: "https://publisher.example/parish", source: "Parish Newsroom", publishedAt: new Date().toISOString() };
+  await page.route("http://localhost:8787/v1/pages/counties/louisiana/west-carroll**", async route => {
+    const scope = { level: "county", stateSlug: "louisiana", countySlug: "west-carroll", displayName: "West Carroll Parish", countyNameDistinctive: "true", places: [], datelinePlaces: [], trustedHosts: [] };
+    const sections = (new URL(route.request().url()).searchParams.get("sections") || "").split(",");
+    await route.fulfill({ json: { scope, sections: Object.fromEntries(sections.map(section => [section, { scope, topic: topicForSection(section), items: section === "localNews" ? [story] : [], meta: { count: 1, fetchedAt: new Date().toISOString(), cacheTtlSeconds: 300 } }])), meta: { fetchedAt: new Date().toISOString() } } });
+  });
+  await page.goto("/louisiana/west-carroll");
+  await expect(page.getByRole("link", { name: /West Carroll Parish announces road repairs/ }).first()).toBeVisible();
 });
 
 test("county page names use the CSV-friendly County Post format", async ({ page }) => {

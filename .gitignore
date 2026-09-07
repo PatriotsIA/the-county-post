@@ -34,3 +34,7 @@ texas-county-mapping.csv
 
 # Personal Claude Code settings (AWS profile, etc.)
 .claude/settings.local.json
+
+# Browser run artifacts
+test-results/
+playwright-report/

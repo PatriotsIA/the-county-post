@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const port = Number(process.env.PLAYWRIGHT_PORT || 5173);
+const port = Number(process.env.PLAYWRIGHT_PORT || 4182);
 const baseURL = `http://127.0.0.1:${port}`;
 
 export default defineConfig({
@@ -12,11 +12,12 @@ export default defineConfig({
   use: {
     baseURL,
     trace: "on-first-retry",
+    launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || "/usr/bin/chromium", args: ["--no-sandbox"] },
   },
   webServer: {
-    command: `VITE_NEWS_API_URL=http://localhost:8787 npm run dev -- --host 127.0.0.1 --port ${port}`,
+    command: `VITE_NEWS_API_URL=http://localhost:8787 npm run dev -- --host 127.0.0.1 --port ${port} --strictPort`,
     url: baseURL,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 60_000,
   },
   projects: [
