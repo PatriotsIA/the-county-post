@@ -8,7 +8,7 @@
 
 ## Architecture & Data Flow
 1) Browser loads sections (national/state/county/topic) through the News API when `VITE_NEWS_API_URL` is set and reachable.
-2) On API error or CORS failure, the client backs off API calls for 5 minutes and switches to RSS fallback feeds.
+2) On API errors, the client retries transient failures twice, then backs off only the affected URL for 30 seconds. It uses a prior response for at most 15 minutes, then RSS fallback.
 3) RSS feeds are fetched through rss2json (or a configured proxy) and cached on the client for 5 minutes per feed URL.
 4) The UI labels the active source per section: “County News API” or “Fallback RSS”.
 5) County atlas pages request a compact county overview or one domain document from the same News API. Atlas requests are cached and deduplicated in the browser; chart code is loaded only on detail pages.
@@ -54,7 +54,7 @@
 - Prefers API when configured; uses fallback RSS otherwise.
 - County sections enforce county-only locality for both API and RSS items. Sparse county feeds remain sparse instead of filling with nearby-market stories.
 - Client cache: 60s per API URL.
-- API failure backoff: 5 minutes before retrying the API.
+- API failure backoff: 30 seconds per URL, with two retries for transient errors.
 - RSS cache: 5 minutes per feed URL to limit rss2json calls during scroll/pagination.
 - Page-level prefetch: `useNewsPage` fetches page bundles when an API path is supplied.
 
@@ -72,7 +72,7 @@ The atlas and county weather experience introduce no browser credential or addit
 2) Trigger a new deployment (Redeploy/Run build).
 3) Verify after deploy:
    - Hard refresh the site.
-   - DevTools Network should show `/v1/feeds/...` requests hitting the Lambda base.
+   - DevTools Network should show `/v1/feeds/...` requests hitting the configured CloudFront API domain (or Lambda when the edge is disabled).
    - Health: `GET /health` returns `{"ok":true,"service":"county-post-news-api",...}`.
 4) CORS: Ensure the Lambda URL allows your frontend origin; otherwise the client will fall back to RSS.
 

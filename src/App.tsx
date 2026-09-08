@@ -84,6 +84,7 @@ type NewsPageState = {
   status: "idle" | "loading" | "loaded" | "error";
   error: string;
   sections: Record<string, NewsFeedItem[]>;
+  sectionHasMore?: Record<string, boolean | undefined>;
   /** Towns the API scoped this county page to, passed on to each feed section. */
   places: string[];
   datelinePlaces: string[];
@@ -137,7 +138,7 @@ function useNewsPage(apiPath: string | undefined, sections: readonly string[], l
         const nextSections = Object.fromEntries(
           Object.entries(page.sections || {}).map(([key, section]) => [key, section.items || []]),
         );
-        setState({ status: "loaded", error: "", sections: nextSections, places: scopePlaces(page.scope), datelinePlaces: scopeDatelinePlaces(page.scope), trustedHosts: scopeTrustedHosts(page.scope), countyNameDistinctive: scopeCountyNameDistinctive(page.scope) });
+        setState({ status: "loaded", error: "", sections: nextSections, sectionHasMore: Object.fromEntries(Object.entries(page.sections || {}).map(([key, feed]) => [key, feed.meta?.hasMore])), places: scopePlaces(page.scope), datelinePlaces: scopeDatelinePlaces(page.scope), trustedHosts: scopeTrustedHosts(page.scope), countyNameDistinctive: scopeCountyNameDistinctive(page.scope) });
       })
       .catch((error) => {
         if (cancelled) return;
@@ -163,6 +164,7 @@ function useNewsPage(apiPath: string | undefined, sections: readonly string[], l
 function pageSectionProps(page: NewsPageState, section: string) {
   return {
     initialError: page.error,
+    initialHasMore: page.sectionHasMore?.[section],
     initialItems: page.status === "loaded" ? page.sections[section] || [] : undefined,
     initialStatus: page.status,
     initialSource: page.status === "loaded" ? ("api" as const) : undefined,

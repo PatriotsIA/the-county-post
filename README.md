@@ -52,7 +52,7 @@ Fallback configuration:
 - `VITE_RSS_LOCAL_PROXY_URL`: optional local proxy path for development. Leave unset unless a proxy endpoint exists.
 - `VITE_RSS_RAW_PROXY_URL`: optional raw CORS proxy URL.
 
-When the News API fails, the browser backs off API requests for a few minutes before trying it again. Fallback RSS results are cached per feed URL to avoid repeated rss2json calls while users scroll or sections re-render.
+When a News API request fails, the browser retries transient errors twice and backs off only that URL for 30 seconds. A successful cached response can cover failures for up to 15 minutes; other desks keep loading. Fallback RSS results are cached per feed URL to avoid repeated rss2json calls while users scroll or sections re-render.
 
 This allows the frontend to deploy now without the localhost API. Once the API is deployed, set `VITE_NEWS_API_URL` in the deployment environment and the app will prefer the API while keeping fallback available.
 

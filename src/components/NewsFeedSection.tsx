@@ -29,6 +29,7 @@ type Props = {
   fallbackFeedUrls?: string[];
   initialError?: string;
   initialItems?: NewsFeedItem[];
+  initialHasMore?: boolean;
   initialStatus?: "idle" | "loading" | "loaded" | "error";
   initialSource?: FeedSource;
   /** Towns the API scoped a prefetched page to, mirroring the feed response. */
@@ -66,6 +67,7 @@ export function NewsFeedSection({
   fallbackFeedUrls = [],
   initialError,
   initialItems,
+  initialHasMore,
   initialStatus = "idle",
   initialSource,
   initialPlaces,
@@ -103,7 +105,7 @@ export function NewsFeedSection({
   const effectiveCountyDistinctive = countyNameDistinctive || Boolean(initialCountyNameDistinctive);
   // What the API says about whether more pages exist, which is more reliable
   // than inferring it from how many items survived the client-side filter.
-  const [apiHasMore, setApiHasMore] = useState(false);
+  const [apiHasMore, setApiHasMore] = useState<boolean | undefined>(initialHasMore);
   const [requestedCount, setRequestedCount] = useState(pageSize);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -144,7 +146,7 @@ export function NewsFeedSection({
     // is every county desk. For API feeds the server says whether more exists;
     // before the first direct fetch (sections arrive prefetched with the page)
     // a full page of items stands in as the signal that there is more to get.
-    (source === "api" ? apiHasMore || filteredItems.length >= requestedCount : filteredItems.length >= requestedCount);
+    (source === "api" ? (apiHasMore ?? (filteredItems.length >= requestedCount)) : filteredItems.length >= requestedCount);
 
   useEffect(() => {
     onLoadSettledRef.current = onLoadSettled;
@@ -249,13 +251,14 @@ export function NewsFeedSection({
 
   useEffect(() => {
     setItems(initialItems || []);
+    setApiHasMore(initialHasMore);
     setStatus(initialStatus === "loaded" || initialItems ? "loaded" : initialStatus);
     setSource(initialStatus === "loaded" || initialItems ? initialSource || "api" : undefined);
     setError(initialStatus === "error" ? initialError || "Unable to load this section from the News API." : "");
     setRequestedCount(Math.max(pageSize, initialItems?.length || 0));
     const container = containerRef.current;
     if (container) container.scrollTop = 0;
-  }, [apiPath, initialError, initialItems, initialSource, initialStatus, pageSize]);
+  }, [apiPath, initialError, initialItems, initialHasMore, initialSource, initialStatus, pageSize]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;

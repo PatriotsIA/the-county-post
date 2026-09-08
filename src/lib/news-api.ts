@@ -36,6 +36,7 @@ export type FeedResponse = {
   items?: NewsFeedItem[];
   meta?: {
     count: number;
+    hasMore?: boolean;
     sourcesUsed?: string[];
     fetchedAt: string;
     cacheTtlSeconds: number;
@@ -53,12 +54,14 @@ export type PageResponse = {
 };
 
 const CLIENT_CACHE_MS = 60_000;
-const API_FAILURE_BACKOFF_MS = 5 * 60_000;
-const responseCache = new Map<string, { expiresAt: number; promise: Promise<unknown> }>();
-let apiDisabledUntil = 0;
+const CLIENT_STALE_MS = 15 * 60_000;
+const API_FAILURE_BACKOFF_MS = 30_000;
+const responseCache = new Map<string, { storedAt: number; data: unknown }>();
+const inFlight = new Map<string, Promise<unknown>>();
+const retryAfter = new Map<string, number>();
 
 export function isNewsApiConfigured() {
-  return Boolean(newsApiBaseUrl()) && Date.now() >= apiDisabledUntil;
+  return Boolean(newsApiBaseUrl());
 }
 
 /**
@@ -152,28 +155,51 @@ function newsApiUrl(path: string) {
   return new URL(path.replace(/^\/+/, ""), ensureTrailingSlash(baseUrl));
 }
 
-async function fetchNewsApiJson<T>(url: URL) {
-  if (Date.now() < apiDisabledUntil) {
-    throw new Error("News API is temporarily unavailable; using fallback RSS.");
+async function fetchNewsApiJson<T>(url: URL): Promise<T> {
+  const key = url.toString();
+  const cached = responseCache.get(key);
+  if (cached && Date.now() - cached.storedAt < CLIENT_CACHE_MS) return cached.data as T;
+  const pending = inFlight.get(key);
+  if (pending) return pending as Promise<T>;
+  const stale = () => cached && Date.now() - cached.storedAt < CLIENT_STALE_MS;
+  if (Date.now() < (retryAfter.get(key) || 0)) {
+    if (stale()) return cached!.data as T;
+    throw new Error("This feed is temporarily unavailable; using fallback RSS.");
   }
 
-  const cacheKey = url.toString();
-  const cached = responseCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now()) return cached.promise as Promise<T>;
-
-  const promise = fetch(url).then(async (response) => {
-    if (!response.ok) throw new Error(`News API failed ${response.status}`);
-    return (await response.json()) as T;
-  });
-  responseCache.set(cacheKey, { expiresAt: Date.now() + CLIENT_CACHE_MS, promise });
-
-  try {
-    return await promise;
-  } catch (error) {
-    responseCache.delete(cacheKey);
-    apiDisabledUntil = Date.now() + API_FAILURE_BACKOFF_MS;
-    throw error;
-  }
+  const promise = (async () => {
+    try {
+      for (let attempt = 0; ; attempt++) {
+        try {
+          const response = await fetch(url, { signal: AbortSignal.timeout(45_000) });
+          if (!response.ok) {
+            const error = new Error(`News API failed ${response.status}`);
+            if (![429, 502, 503, 504].includes(response.status)) throw Object.assign(error, { permanent: true });
+            throw error;
+          }
+          const data = (await response.json()) as T;
+          responseCache.delete(key);
+          responseCache.set(key, { storedAt: Date.now(), data });
+          retryAfter.delete(key);
+          // Keep browsing many counties from retaining an unbounded article cache.
+          while (responseCache.size > 100) responseCache.delete(responseCache.keys().next().value!);
+          return data;
+        } catch (error) {
+          if (attempt >= 2 || (error as { permanent?: boolean }).permanent) throw error;
+          await new Promise(resolve => setTimeout(resolve, 300 * (attempt + 1)));
+        }
+      }
+    } catch (error) {
+      retryAfter.set(key, Date.now() + API_FAILURE_BACKOFF_MS);
+      while (retryAfter.size > 100) retryAfter.delete(retryAfter.keys().next().value!);
+      if (stale()) return cached!.data as T;
+      throw error;
+    } finally {
+      inFlight.delete(key);
+    }
+  })();
+  inFlight.set(key, promise);
+  return promise;
 }
 
 function newsApiBaseUrl() {

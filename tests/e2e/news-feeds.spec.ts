@@ -262,6 +262,23 @@ test("county page names use the CSV-friendly County Post format", async ({ page 
   await expect(page).toHaveTitle("Anderson County, Texas News | The County Post");
 });
 
+test("prefetched hasMore keeps county paging available after a short first page", async ({ page }) => {
+  let requestedMore = false;
+  const item = { id: "first", title: "Potter County Texas approves road repairs", link: "https://example.com/potter-first", source: "Local News", publishedAt: new Date().toISOString() };
+  await page.route("http://localhost:8787/v1/pages/counties/texas/potter*", route => route.fulfill({
+    contentType: "application/json", body: JSON.stringify({ scope: {}, sections: { localNews: { items: [item], meta: { count: 1, hasMore: true } } } }),
+  }));
+  await page.route("http://localhost:8787/v1/feeds/counties/texas/potter/general*", route => {
+    requestedMore = true;
+    return route.fulfill({ contentType: "application/json", body: JSON.stringify({ scope: {}, items: [item,
+      { ...item, id: "next", title: "Potter County Texas opens new library", source: "Library Journal", link: "https://library.example.org/potter-next" }], meta: { hasMore: false } }) });
+  });
+  await page.goto("/texas/potter");
+  await page.getByRole("heading", { name: "Local headlines", exact: true }).scrollIntoViewIfNeeded();
+  await expect.poll(() => requestedMore).toBe(true);
+  await expect(page.getByRole("link", { name: /Potter County Texas opens new library/ }).first()).toBeVisible();
+});
+
 test("county RSS fallback targets reviewed Polk outlets and local sources nationwide", () => {
   const polk = getCounty("arkansas", "polk");
   const harris = getCounty("texas", "harris");

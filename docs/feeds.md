@@ -71,3 +71,20 @@ waits — a cold county build can take seconds even with the API's shared cache
 in front of most of them). If they disagree, instrument the client filter's
 stages and count where items vanish; every empty-desk mystery so far has been
 one stage silently dropping items, not many things going slightly wrong.
+
+## Delivery and failure isolation (September 2026)
+
+`VITE_NEWS_API_URL` selects the deployed API edge URL when CloudFront is enabled.
+News requests retain a 60-second browser cache and share in-flight work. A
+transient network/429/502/503/504 failure retries twice; a failed URL backs off
+for 30 seconds without disabling other desks. A previously successful response
+can cover an outage for up to 15 minutes from its original receipt, after which
+RSS fallback remains available. Browsing retains at most 100 cached responses.
+
+Page prefetch forwards each section's `meta.hasMore`, so a short or locally
+filtered first page does not hide additional API articles. An explicit false
+stops paging; older responses lacking the field retain the size-based fallback.
+
+The API independently refreshes stale feeds through a bounded queue, including
+national, state, and county topics. CDN caching speeds delivery but does not add
+sources, change locality rules, or raise article limits.
