@@ -68,6 +68,10 @@
 The atlas and county weather experience introduce no browser credential or additional environment variable. NWS user-agent configuration, official-source keys, and ingestion credentials stay behind the News API; the browser uses only `VITE_NEWS_API_URL`.
 
 ## Deployment (Amplify)
+
+Production API edge: `https://d2vo13idhuovzg.cloudfront.net`, managed by the
+`county-news-api` stack in PIA account `426771918029`, `us-east-2`.
+
 1) Set the env vars above in Amplify. Vite inlines them at build time—rebuild is required after changes.
 2) Trigger a new deployment (Redeploy/Run build).
 3) Verify after deploy:
