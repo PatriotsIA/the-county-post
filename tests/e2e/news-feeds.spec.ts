@@ -784,6 +784,35 @@ async function expectNoPageOverflow(page: Page) {
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1)).toBe(true);
 }
 
+test("Local Sources filters publisher types and coverage on narrow screens", async ({ page }) => {
+  await page.route("**/v1/sources/counties/texas/loving", (route) => route.fulfill({
+    json: { county: { state: "texas", county: "loving" }, sources: [
+      { name: "County Weekly", websiteUrl: "https://weekly.example/", outletTypes: ["newspaper"], coverage: "local" },
+      { name: "Regional Radio", websiteUrl: "https://radio.example/", outletTypes: ["radio", "digital"], coverage: "regional" },
+      { name: "Regional Channel", websiteUrl: "https://tv.example/", outletTypes: ["television"], coverage: "regional" },
+      { name: "Texas Tribune", websiteUrl: "https://www.texastribune.org/", outletTypes: ["digital"], coverage: "statewide", coverageUrl: "https://www.texastribune.org/about/" },
+      { name: "Existing Reviewed Outlet", websiteUrl: "https://existing.example/", outletTypes: ["newspaper"] },
+    ] },
+  }));
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.goto("/texas/loving/local-sources");
+  await expect(page.getByRole("status").filter({ hasText: "sources shown" })).toHaveText("5 of 5 sources shown");
+  await expect(page.getByText("Local / regional coverage", { exact: true })).toBeVisible();
+  await expectNoPageOverflow(page);
+  await page.getByLabel("Publisher type", { exact: true }).selectOption("radio");
+  await expect(page.locator(".local-source-card")).toHaveCount(1);
+  await expect(page.getByRole("heading", { name: "Regional Radio" })).toBeVisible();
+  await page.getByLabel("Coverage", { exact: true }).selectOption("statewide");
+  await expect(page.getByText("No sources match these filters.", { exact: false })).toBeVisible();
+  await page.getByLabel("Publisher type", { exact: true }).selectOption("digital");
+  await expect(page.locator(".local-source-card")).toHaveCount(1);
+  await expect(page.getByText("Statewide coverage", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "About this source" })).toHaveAttribute("href", "https://www.texastribune.org/about/");
+  await page.getByLabel("Coverage", { exact: true }).selectOption("all");
+  await expect(page.locator(".local-source-card")).toHaveCount(2);
+  await expectNoPageOverflow(page);
+});
+
 async function expectElementWithinViewport(page: Page, selector: string) {
   await expect.poll(() => page.evaluate((target) => {
     const element = document.querySelector(target);

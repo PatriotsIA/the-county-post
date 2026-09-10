@@ -7,16 +7,20 @@ import { LoadingIndicator } from "./LoadingIndicator";
 
 const outletTypeLabels: Record<ReviewedCountySource["outletTypes"][number], string> = {
   newspaper: "Newspaper",
-  radio: "Radio",
-  television: "Television",
-  digital: "Digital newsroom",
+  radio: "Radio station",
+  television: "TV channel",
+  digital: "News website",
 };
+
+const coverageLabels = { local: "Local", regional: "Regional", statewide: "Statewide", "local-regional": "Local / regional" };
 
 export function CountyLocalSourcesDirectory({ county }: { county: CountySite }) {
   // The API's source registry is the single source of truth; the static list
   // only bridges the gap while the request is in flight or the API is down.
   const [sources, setSources] = useState<ReviewedCountySource[]>(() => getCountyNativeNewsSources(county));
   const [loaded, setLoaded] = useState(!isNewsApiConfigured());
+  const [publisherType, setPublisherType] = useState("all");
+  const [coverage, setCoverage] = useState("all");
 
   useEffect(() => {
     let cancelled = false;
@@ -38,6 +42,10 @@ export function CountyLocalSourcesDirectory({ county }: { county: CountySite }) 
   }, [county]);
 
   const submitPath = `/${county.state.slug}/${county.slug}/submit`;
+  const visibleSources = sources.filter((source) =>
+    (publisherType === "all" || source.outletTypes.includes(publisherType as ReviewedCountySource["outletTypes"][number]))
+    && (coverage === "all" || (source.coverage || "local-regional") === coverage),
+  );
 
   return (
     <div className="layout-grid">
@@ -45,8 +53,8 @@ export function CountyLocalSourcesDirectory({ county }: { county: CountySite }) 
         <p className="kicker">Local media directory</p>
         <h1>{county.displayName} Local Sources</h1>
         <p className="lead">
-          Reviewed local and regional newspapers, radio stations, television stations, and digital newsrooms serving{" "}
-          {county.displayName}, {county.state.name}.
+          Find newspapers, TV channels, radio stations, and news websites serving{" "}
+          {county.displayName}, {county.state.name}, with local, regional, and statewide coverage clearly labeled.
         </p>
       </section>
 
@@ -58,8 +66,23 @@ export function CountyLocalSourcesDirectory({ county }: { county: CountySite }) 
             <p className="muted">
               These outlets have been reviewed for this county edition. Inclusion is informational and does not imply endorsement.
             </p>
+            <div className="local-sources-filters">
+              <label>Publisher type
+                <select aria-label="Publisher type" value={publisherType} onChange={(event) => setPublisherType(event.target.value)}>
+                  <option value="all">All publishers</option>
+                  {Object.entries(outletTypeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                </select>
+              </label>
+              <label>Coverage
+                <select aria-label="Coverage" value={coverage} onChange={(event) => setCoverage(event.target.value)}>
+                  <option value="all">All coverage</option>
+                  {Object.entries(coverageLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                </select>
+              </label>
+            </div>
+            <p className="muted" role="status">{visibleSources.length} of {sources.length} sources shown</p>
             <div className="local-sources-grid">
-              {sources.map((source) => (
+              {visibleSources.map((source) => (
                 <article key={source.websiteUrl} className="local-source-card">
                   <div className="local-source-types" aria-label="Outlet types">
                     {source.outletTypes.map((type) => (
@@ -67,13 +90,16 @@ export function CountyLocalSourcesDirectory({ county }: { county: CountySite }) 
                     ))}
                   </div>
                   <h3>{source.name}</h3>
+                  <p className="local-source-coverage">{coverageLabels[source.coverage || "local-regional"]} coverage</p>
                   {source.aliases?.length ? <p>Also known as {source.aliases.join(", ")}</p> : null}
                   <a href={source.websiteUrl} target="_blank" rel="noreferrer">
                     Visit news outlet
                   </a>
+                  {source.coverageUrl ? <a className="local-source-coverage-link" href={source.coverageUrl} target="_blank" rel="noreferrer">About this source</a> : null}
                 </article>
               ))}
             </div>
+            {!visibleSources.length ? <p>No sources match these filters. Try another publisher type or coverage area.</p> : null}
           </>
         ) : loaded ? (
           <div className="local-sources-empty">

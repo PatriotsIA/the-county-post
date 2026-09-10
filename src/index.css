@@ -2495,6 +2495,39 @@ button:disabled {
   margin-top: 3px;
 }
 
+.local-sources-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 16px 0;
+}
+
+.local-sources-filters label {
+  display: grid;
+  gap: 6px;
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.local-sources-filters select {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  font: inherit;
+}
+
+.local-source-coverage {
+  font-weight: 700;
+}
+
+.local-source-coverage-link {
+  display: block;
+  margin-top: 8px;
+}
+
 .local-sources-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));

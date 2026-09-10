@@ -130,6 +130,8 @@ export type ReviewedCountySource = {
   websiteUrl: string;
   outletTypes: Array<"newspaper" | "radio" | "television" | "digital">;
   aliases?: string[];
+  coverage?: "local" | "regional" | "statewide";
+  coverageUrl?: string;
 };
 
 /**
