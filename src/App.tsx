@@ -15,6 +15,7 @@ import { DataCentersOpEdPage } from "./components/CountyPostOpEd";
 import { AtlasDomainNav } from "./components/AtlasDomainNav";
 import { atlasDomainLabels } from "./lib/atlas-domain-labels";
 import { EditionMap } from "./components/EditionMap";
+import { LoadingIndicator } from "./components/LoadingIndicator";
 import { TopTicker } from "./components/TopTicker";
 import { ads, countyAdKey, getSportsFeedSponsorId, isCarouselOnlyAd } from "./data/ads";
 import { getCounty, getCountiesForState, searchCounties } from "./data/counties";
@@ -1157,9 +1158,9 @@ function CountyDataAtlasDomainRoute() {
 
 function AtlasRouteLoading() {
   return (
-    <section className="card atlas-status" aria-live="polite">
+    <section className="card atlas-status">
       <p className="kicker">County Data Atlas</p>
-      <h1>Opening the county data desk…</h1>
+      <LoadingIndicator label="Opening the county data desk…" />
     </section>
   );
 }

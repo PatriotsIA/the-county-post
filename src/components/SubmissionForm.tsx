@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { CountySite } from "../data/counties";
 import type { StateSite } from "../data/states";
 import { sendStoryFormEmail, type SubmissionScope } from "../lib/email";
+import { LoadingIndicator } from "./LoadingIndicator";
 
 type Props = {
   county?: CountySite;
@@ -112,7 +113,7 @@ export function SubmissionForm({ county, state }: Props) {
           <span>Editors may contact me for verification</span>
         </label>
         <button type="submit" disabled={status === "sending"}>
-          {status === "sending" ? "Sending…" : "Submit A Story"}
+          {status === "sending" ? <LoadingIndicator label="Sending…" size="inline" /> : "Submit A Story"}
         </button>
         {status === "sent" ? <p className="success">Received. Thank you for sharing your reporting.</p> : null}
         {status === "error" ? <p className="error">{error}</p> : null}

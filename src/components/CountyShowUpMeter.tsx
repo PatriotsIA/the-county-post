@@ -2,6 +2,7 @@ import type { CountySite } from "../data/counties";
 import { countyAdKey } from "../data/ads";
 import { AdSlot } from "./AdSlot";
 import { useCountyTurnout } from "../lib/useCountyTurnout";
+import { LoadingIndicator } from "./LoadingIndicator";
 
 const numberFormatter = new Intl.NumberFormat("en-US");
 
@@ -16,7 +17,7 @@ export function CountyShowUpMeter({ county }: { county: CountySite }) {
         <p className="kicker">Operation Show Up</p>
         <h2>{county.displayName} Show Up Meter</h2>
         {turnout.loading ? (
-          <p className="muted">Loading latest turnout data…</p>
+          <LoadingIndicator label="Loading latest turnout data…" size="small" />
         ) : latest ? (
           <>
             <p>

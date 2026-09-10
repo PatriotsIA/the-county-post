@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import type { CountySite } from "../data/counties";
 import { site } from "../data/site";
 import { sendStoryFormEmailFromForm } from "../lib/email";
+import { LoadingIndicator } from "./LoadingIndicator";
 
 export function ClassifiedSubmissionForm({ county }: { county: CountySite }) {
   const [form, setForm] = useState({ name: "", email: "", title: "", price: "", contact: "", details: "" });
@@ -102,7 +103,7 @@ export function ClassifiedSubmissionForm({ county }: { county: CountySite }) {
           <input name="classified_image" type="file" accept="image/jpeg,image/png" />
         </label>
         <button type="submit" disabled={status === "sending"}>
-          {status === "sending" ? "Sending…" : "Submit classified"}
+          {status === "sending" ? <LoadingIndicator label="Sending…" size="inline" /> : "Submit classified"}
         </button>
         {status === "sent" ? <p className="success">Received. The county desk will review your listing.</p> : null}
         {status === "error" ? <p className="error">{error}</p> : null}

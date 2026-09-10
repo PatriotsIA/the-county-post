@@ -7,6 +7,7 @@ import {
 import { fetchCattleTicker, fetchMetalsTicker } from "../lib/markets-api";
 import { useCountyWeather } from "../lib/useCountyWeather";
 import itmTradingAd from "../../ad-assets/ad-itmtrading.JPG";
+import { LoadingIndicator } from "./LoadingIndicator";
 
 const itmTradingUrl = "https://www.itmtrading.com/";
 const mintedMetalUrl = "https://mintedmetal.com";
@@ -64,19 +65,24 @@ export function TopTicker({
 
 function TradingViewTicker() {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
     let active = true;
     container.textContent = "";
+    setStatus("loading");
 
     void loadTickerTape().then(() => {
       if (!active) return;
       const ticker = document.createElement("tv-ticker-tape");
       ticker.setAttribute("symbols", stockTickerSymbols);
       container.append(ticker);
-    }).catch(() => undefined);
+      setStatus("loaded");
+    }).catch(() => {
+      if (active) setStatus("error");
+    });
 
     return () => {
       active = false;
@@ -84,7 +90,13 @@ function TradingViewTicker() {
     };
   }, []);
 
-  return <div className="tradingview-widget-container market-ticker-widget" ref={containerRef} />;
+  return (
+    <div className="tradingview-widget-container market-ticker-widget">
+      {status === "loading" ? <LoadingIndicator label="Loading market prices…" size="inline" /> : null}
+      {status === "error" ? <span className="muted">Market prices unavailable.</span> : null}
+      <div className="market-ticker-widget-content" ref={containerRef} />
+    </div>
+  );
 }
 
 function loadTickerTape() {
@@ -141,24 +153,28 @@ function PreciousMetalsTicker() {
 
   return (
     <aside className="precious-metals-ticker" aria-label="Precious metals prices">
-      <div className="precious-metals-quotes">
-        {metals.map((quote) => {
-          return (
-            <a
-              key={quote.key}
-              className="precious-metal-quote"
-              href={itmTradingUrl}
-              target="_blank"
-              rel="noreferrer sponsored"
-              aria-label={`${quote.label} price, presented by ITM Trading`}
-            >
-              <span className={`metal-symbol metal-symbol-${quote.key}`}>{metalSymbols[quote.key]}</span>
-              <span className="precious-metal-label">{quote.label}</span>
-              <strong>{"price" in quote ? formatMetalPrice(quote.price) : status === "error" ? "Unavailable" : "Loading…"}</strong>
-            </a>
-          );
-        })}
-      </div>
+      {status === "loading" ? (
+        <LoadingIndicator label="Loading precious metal prices…" size="inline" />
+      ) : (
+        <div className="precious-metals-quotes">
+          {metals.map((quote) => {
+            return (
+              <a
+                key={quote.key}
+                className="precious-metal-quote"
+                href={itmTradingUrl}
+                target="_blank"
+                rel="noreferrer sponsored"
+                aria-label={`${quote.label} price, presented by ITM Trading`}
+              >
+                <span className={`metal-symbol metal-symbol-${quote.key}`}>{metalSymbols[quote.key]}</span>
+                <span className="precious-metal-label">{quote.label}</span>
+                <strong>{"price" in quote ? formatMetalPrice(quote.price) : "Unavailable"}</strong>
+              </a>
+            );
+          })}
+        </div>
+      )}
       <div className="precious-metals-attribution">
         <a href={ticker?.provider.url || mintedMetalUrl} target="_blank" rel="noreferrer">
           {ticker?.stale ? "Last verified LBMA benchmark" : `LBMA benchmark via ${ticker?.provider.name || "Minted Metal"}`}
@@ -205,17 +221,21 @@ function CattleTicker() {
 
   return (
     <aside className="cattle-ticker" aria-label="Cattle and agriculture prices">
-      <div className="cattle-ticker-summary">
-        <span className="cattle-ticker-label">Cattle &amp; agriculture</span>
-        <div className="cattle-ticker-items">
-          {cattle.map((quote) => (
-            <span key={quote.key}>
-              {quote.label}: {"price" in quote ? formatCattlePrice(quote.price, quote.unit) : status === "error" ? "Unavailable" : "Loading..."}
-            </span>
-          ))}
+      {status === "loading" ? (
+        <LoadingIndicator label="Loading cattle and agriculture prices…" size="inline" />
+      ) : (
+        <div className="cattle-ticker-summary">
+          <span className="cattle-ticker-label">Cattle &amp; agriculture</span>
+          <div className="cattle-ticker-items">
+            {cattle.map((quote) => (
+              <span key={quote.key}>
+                {quote.label}: {"price" in quote ? formatCattlePrice(quote.price, quote.unit) : "Unavailable"}
+              </span>
+            ))}
+          </div>
+          <span className="cattle-ticker-status">{ticker?.updatedAt ? `USDA MARS ${ticker.updatedAt}` : "USDA prices unavailable"}</span>
         </div>
-        <span className="cattle-ticker-status">{ticker?.updatedAt ? `USDA MARS ${ticker.updatedAt}` : status === "error" ? "USDA prices unavailable" : "USDA prices loading"}</span>
-      </div>
+      )}
       {feederBreakdown?.length ? (
         <div className="cattle-ticker-breakdown">
           <span className="cattle-ticker-breakdown-title">Feeder cattle</span>
@@ -255,7 +275,7 @@ function CountyWeather({ county }: { county: CountySite }) {
         >
           <span aria-hidden="true">{weatherIcon(condition)}</span>
           {weather.status === "loading" && !weather.data ? (
-            <span>{locationName} weather loading</span>
+            <LoadingIndicator label={`Loading ${locationName} weather…`} size="inline" />
           ) : weather.status === "error" ? (
             <span>{locationName} weather unavailable</span>
           ) : (

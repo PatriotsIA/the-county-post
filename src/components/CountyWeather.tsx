@@ -11,6 +11,7 @@ import {
   type WeatherMeasurement,
 } from "../lib/county-weather-api";
 import { useCountyWeather } from "../lib/useCountyWeather";
+import { LoadingIndicator } from "./LoadingIndicator";
 import { NewsFeedSection } from "./NewsFeedSection";
 
 export function CountyWeatherPage({ county }: { county: CountySite }) {
@@ -31,9 +32,9 @@ export function CountyWeatherPage({ county }: { county: CountySite }) {
       </p>
 
       {weather.status === "loading" && !weather.data ? (
-        <section className="card weather-status" role="status" aria-live="polite">
+        <section className="card weather-status">
           <p className="kicker">Local conditions</p>
-          <h2>Loading county weather…</h2>
+          <LoadingIndicator label="Loading county weather…" />
         </section>
       ) : null}
 

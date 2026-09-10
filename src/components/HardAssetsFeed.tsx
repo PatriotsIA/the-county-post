@@ -2,6 +2,7 @@ import { useEffect, useId, useState } from "react";
 import type { NewsFeedItem } from "../lib/news-api";
 import { fetchNewsFeed } from "../lib/rss";
 import itmTradingAd from "../../ad-assets/ad-itmtrading.JPG";
+import { LoadingIndicator } from "./LoadingIndicator";
 
 const itmTradingFeedUrl = "https://www.youtube.com/feeds/videos.xml?channel_id=UCom1i7_NVeSUNyJyuR_NbMQ";
 const rssToJsonUrl = "https://api.rss2json.com/v1/api.json";
@@ -74,7 +75,7 @@ export function HardAssetsFeed({ featuredVideoIds = evergreenVideoIds }: Props) 
         </div>
       ) : null}
 
-      {status === "loading" ? <p className="muted">Loading Hard Assets videos…</p> : null}
+      {status === "loading" ? <LoadingIndicator label="Loading Hard Assets videos…" size="small" /> : null}
       {status === "error" ? <p className="muted">Hard Assets videos are unavailable right now.</p> : null}
       {status === "loaded" && !videos.length ? <p className="muted">No Hard Assets videos are available yet.</p> : null}
 

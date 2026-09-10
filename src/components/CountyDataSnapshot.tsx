@@ -12,6 +12,7 @@ import {
   formatAtlasTimestamp,
 } from "../lib/county-atlas-format";
 import { CountyRainfallGlance } from "./CountyRainfallGlance";
+import { LoadingIndicator } from "./LoadingIndicator";
 
 type SnapshotState =
   | { status: "loading" }
@@ -40,7 +41,7 @@ export function CountyDataSnapshot({ county }: { county: CountySite }) {
       </header>
 
       {state.status === "loading" ? (
-        <p className="muted" aria-live="polite">Loading county indicators…</p>
+        <LoadingIndicator label="Loading county indicators…" size="small" />
       ) : null}
       {state.status === "error" ? (
         <p className="muted">County indicators are unavailable right now. {state.error}</p>

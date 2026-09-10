@@ -19,6 +19,7 @@ import {
   formatAtlasMetricValue,
   formatAtlasTimestamp,
 } from "../lib/county-atlas-format";
+import { LoadingIndicator } from "./LoadingIndicator";
 
 const LazyAtlasMetricChart = lazy(() =>
   import("./AtlasCharts").then((module) => ({ default: module.AtlasMetricChart })),
@@ -179,9 +180,15 @@ function AtlasHero({
     <section className="hero-card atlas-hero">
       <div className="atlas-freshness" aria-label="Atlas freshness and geography">
         <span>County FIPS: {county.fips}</span>
-        <span>Snapshot: {meta?.version || "Loading"}</span>
-        <span>Generated: {meta ? formatAtlasTimestamp(meta.generatedAt) : "Loading"}</span>
-        <span>Retrieved: {meta ? formatAtlasTimestamp(meta.retrievedAt) : "Loading"}</span>
+        {meta ? (
+          <>
+            <span>Snapshot: {meta.version}</span>
+            <span>Generated: {formatAtlasTimestamp(meta.generatedAt)}</span>
+            <span>Retrieved: {formatAtlasTimestamp(meta.retrievedAt)}</span>
+          </>
+        ) : (
+          <LoadingIndicator label="Loading atlas details…" size="inline" />
+        )}
         {meta?.partial ? <strong>Partial coverage</strong> : null}
       </div>
     </section>
@@ -230,7 +237,7 @@ function AtlasMetricDetail({ metric }: { metric: CountyAtlasMetric }) {
         </p>
       ) : null}
       {hasChartData ? (
-        <Suspense fallback={<p className="muted">Loading accessible chart and data table…</p>}>
+        <Suspense fallback={<LoadingIndicator label="Loading accessible chart and data table…" size="small" />}>
           <LazyAtlasMetricChart metric={metric} />
         </Suspense>
       ) : null}
@@ -335,9 +342,9 @@ function AtlasSourceCatalog({ sources }: { sources: CountyAtlasSource[] }) {
 
 function AtlasStatus({ title, detail }: { title: string; detail: string }) {
   return (
-    <section className="card atlas-status" aria-live="polite">
+    <section className="card atlas-status">
       <p className="kicker">County data</p>
-      <h2>{title}</h2>
+      <LoadingIndicator label={title} />
       <p className="muted">{detail}</p>
     </section>
   );

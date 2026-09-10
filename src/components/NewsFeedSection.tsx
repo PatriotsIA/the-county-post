@@ -5,6 +5,7 @@ import { prependFeaturedCountyPostOpEd } from "../data/county-post-op-eds";
 import { isTrustedCountyNativeNewsItem } from "../lib/local-news-sources";
 import { fetchNewsApiFeed, isNewsApiConfigured, type NewsFeedItem, type Topic } from "../lib/news-api";
 import { fetchNewsFeeds } from "../lib/rss";
+import { LoadingIndicator } from "./LoadingIndicator";
 
 type FeedKind = Topic;
 
@@ -338,14 +339,10 @@ export function NewsFeedSection({
       <div id={panelId} hidden={!isOpen}>
         {status === "error" ? <p className="muted">{error}</p> : null}
         {status === "loading" && !items.length ? (
-          <div className="feed-loading" role="status">
-            <p>Please Wait 20 Seconds As We Fetch The News</p>
-            <div className="press-loading-graphic" aria-hidden>
-              <span />
-              <span />
-              <span />
-            </div>
-          </div>
+          <LoadingIndicator
+            className="feed-loading"
+            label="Please Wait 20 Seconds As We Fetch The News"
+          />
         ) : null}
         {status === "loaded" && source ? <p className="feed-source">Fetching articles via {source === "api" ? "County News API" : "Fallback RSS"}</p> : null}
         <div className="feed-scroll" ref={containerRef}>
@@ -369,7 +366,9 @@ export function NewsFeedSection({
             )}
           </div>
           <div ref={sentinelRef} aria-hidden style={{ height: "48px" }} />
-          {status === "loading" && items.length ? <p className="muted">Loading more stories…</p> : null}
+          {status === "loading" && items.length ? (
+            <LoadingIndicator label="Loading more stories…" size="small" />
+          ) : null}
         </div>
         {!filteredItems.length && status === "loaded" ? (
           <p className="muted">

@@ -7,6 +7,7 @@ import {
   type CountyEconomicMetric,
   type FredObservation,
 } from "../lib/county-economy-api";
+import { LoadingIndicator } from "./LoadingIndicator";
 
 type LoadState = {
   status: "loading" | "loaded" | "error";
@@ -34,7 +35,9 @@ export function CountyEconomicSnapshot({ county }: { county: CountySite }) {
         </Link>
       </header>
 
-      {state.status === "loading" ? <p className="muted">Loading county economic indicators…</p> : null}
+      {state.status === "loading" ? (
+        <LoadingIndicator label="Loading county economic indicators…" size="small" />
+      ) : null}
       {state.status === "error" ? <p className="muted">{state.error}</p> : null}
       {featuredMetrics.length ? (
         <div className="economic-snapshot-grid">
@@ -75,7 +78,7 @@ export function CountyEconomicData({ county }: { county: CountySite }) {
       {state.status === "loading" ? (
         <section className="card economic-data-status">
           <p className="kicker">FRED county series</p>
-          <h2>Loading economic indicators…</h2>
+          <LoadingIndicator label="Loading economic indicators…" />
           <p className="muted">Retrieving the latest cached county observations.</p>
         </section>
       ) : null}

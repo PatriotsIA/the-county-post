@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import type { CountySite } from "../data/counties";
 import { getCountyNativeNewsSources } from "../lib/local-news-sources";
 import { fetchCountySources, isNewsApiConfigured, type ReviewedCountySource } from "../lib/news-api";
+import { LoadingIndicator } from "./LoadingIndicator";
 
 const outletTypeLabels: Record<ReviewedCountySource["outletTypes"][number], string> = {
   newspaper: "Newspaper",
@@ -84,7 +85,7 @@ export function CountyLocalSourcesDirectory({ county }: { county: CountySite }) 
             <Link to={submitPath}>Submit a local source</Link>
           </div>
         ) : (
-          <p className="muted">Loading reviewed sources…</p>
+          <LoadingIndicator label="Loading reviewed sources…" />
         )}
       </section>
     </div>

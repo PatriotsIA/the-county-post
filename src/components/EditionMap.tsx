@@ -8,6 +8,7 @@ import {
   unitedStatesMapViewBox,
   type CountyMapPath,
 } from "../lib/county-state-map";
+import { LoadingIndicator } from "./LoadingIndicator";
 
 type EditionMapProps = {
   county?: CountySite;
@@ -39,12 +40,16 @@ function CountyEditionMap({ county }: { county: CountySite }) {
     };
   }, [county.fips]);
 
-  if (!paths?.length) {
+  if (!paths) {
     return (
-      <div className="edition-map-shell" aria-hidden={Boolean(paths)}>
-        <p className="muted">{paths ? "County map unavailable." : "Loading county map…"}</p>
+      <div className="edition-map-shell">
+        <LoadingIndicator label="Loading county map…" size="small" />
       </div>
     );
+  }
+
+  if (!paths.length) {
+    return <div className="edition-map-shell" aria-hidden><p className="muted">County map unavailable.</p></div>;
   }
 
   return (
@@ -91,12 +96,16 @@ function UnitedStatesEditionMap({ state }: { state?: StateSite }) {
     };
   }, [state?.name]);
 
-  if (!paths?.length) {
+  if (!paths) {
     return (
-      <div className="edition-map-shell" aria-hidden={Boolean(paths)}>
-        <p className="muted">{paths ? "National map unavailable." : "Loading national map…"}</p>
+      <div className="edition-map-shell">
+        <LoadingIndicator label="Loading national map…" size="small" />
       </div>
     );
+  }
+
+  if (!paths.length) {
+    return <div className="edition-map-shell" aria-hidden><p className="muted">National map unavailable.</p></div>;
   }
 
   return (

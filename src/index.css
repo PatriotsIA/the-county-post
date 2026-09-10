@@ -755,9 +755,20 @@ body::before {
 }
 
 .market-ticker-widget {
+  display: grid;
+  place-items: center;
   min-width: 0;
   height: var(--tradingview-ticker-height);
   overflow: hidden;
+}
+
+.market-ticker-widget > * {
+  grid-area: 1 / 1;
+}
+
+.market-ticker-widget-content {
+  width: 100%;
+  height: var(--tradingview-ticker-height);
 }
 
 .market-ticker-widget tv-ticker-tape {
@@ -830,6 +841,10 @@ body::before {
 .weather-pill:hover {
   color: var(--news-blue);
   text-decoration: underline;
+}
+
+.weather-pill .loading-indicator {
+  color: inherit;
 }
 
 .weather-pill:focus-visible,
@@ -1594,6 +1609,14 @@ body::before {
   text-transform: uppercase;
 }
 
+.edition-map-shell .loading-indicator {
+  color: rgba(255, 255, 255, 0.78);
+  font-family: "Roboto Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .hero-card h1 {
   font-family: "Playfair Display", "Libre Baskerville", serif;
   font-size: 38px;
@@ -1821,60 +1844,61 @@ h2 {
   text-transform: uppercase;
 }
 
-.feed-loading {
-  display: grid;
-  justify-items: center;
+.loading-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 8px;
-  margin: 0 0 12px;
+  margin: 8px 0;
   color: var(--muted);
   text-align: center;
 }
 
-.feed-loading p {
+.loading-indicator-image {
+  display: block;
+  width: min(240px, 68vw);
+  height: auto;
+  object-fit: contain;
+}
+
+.loading-indicator-small .loading-indicator-image {
+  width: min(140px, 46vw);
+}
+
+.loading-indicator-inline {
+  display: inline-flex;
+  flex-direction: row;
+  gap: 6px;
   margin: 0;
+  vertical-align: middle;
 }
 
-.press-loading-graphic {
-  display: flex;
-  width: 96px;
-  height: 24px;
-  align-items: end;
-  justify-content: center;
-  gap: 5px;
-  border-bottom: 2px solid var(--ink);
+.loading-indicator-inline .loading-indicator-image {
+  width: 42px;
+  max-height: 32px;
 }
 
-.press-loading-graphic span {
-  width: 19px;
-  background: var(--ink);
-  animation: press-warm 900ms ease-in-out infinite alternate;
+.loading-indicator-label {
+  line-height: 1.35;
 }
 
-.press-loading-graphic span:nth-child(1) {
-  height: 11px;
+.precious-metals-ticker > .loading-indicator {
+  justify-self: center;
 }
 
-.press-loading-graphic span:nth-child(2) {
-  height: 20px;
-  animation-delay: 180ms;
+.cattle-ticker > .loading-indicator {
+  margin: 4px auto;
 }
 
-.press-loading-graphic span:nth-child(3) {
-  height: 14px;
-  animation-delay: 360ms;
+button .loading-indicator {
+  color: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
 }
 
-@keyframes press-warm {
-  to {
-    background: var(--news-red);
-    transform: translateY(-4px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .press-loading-graphic span {
-    animation: none;
-  }
+.feed-loading {
+  margin: 0 0 12px;
 }
 
 .feed-sponsor {
