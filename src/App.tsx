@@ -18,8 +18,9 @@ import { EditionMap } from "./components/EditionMap";
 import { LoadingIndicator } from "./components/LoadingIndicator";
 import { TopTicker } from "./components/TopTicker";
 import { ads, countyAdKey, getSportsFeedSponsorId, isCarouselOnlyAd } from "./data/ads";
-import { getCounty, getCountiesForState, searchCounties } from "./data/counties";
+import { getCounty, getCountiesForState } from "./data/counties";
 import { site } from "./data/site";
+import { getExactSearchState, searchCounties, searchStates } from "./data/place-search";
 import { Seo } from "./components/Seo";
 import {
   breadcrumbLd,
@@ -59,7 +60,7 @@ import {
   type SubjectGroup,
   type TopicFeedKind,
 } from "./data/subjects";
-import { getStateBySlug, searchStates, states, type StateSite } from "./data/states";
+import { getStateBySlug, states, type StateSite } from "./data/states";
 import { buildCountyFallbackFeedUrls, buildNationalFallbackFeedUrls, buildStateFallbackFeedUrls } from "./lib/fallback-feed-urls";
 import { countyAtlasDomains, type CountyAtlasDomain } from "./lib/county-atlas-api";
 import { fetchNewsApiPage, isNewsApiConfigured, scopeDatelinePlaces, scopePlaces, scopeCountyNameDistinctive, scopeTrustedHosts, type NewsFeedItem } from "./lib/news-api";
@@ -532,13 +533,13 @@ function CountyDirectorySearch({ id }: { id?: string }) {
   const navigate = useNavigate();
   const trimmedQuery = query.trim();
   const hasQuery = trimmedQuery.length > 0;
-  const countyMatches = useMemo(() => (hasQuery ? searchCounties(query, 24) : []), [hasQuery, query]);
-  const stateMatches = useMemo(() => (hasQuery ? searchStates(query, 15) : []), [hasQuery, query]);
+  const countyMatches = useMemo(() => (hasQuery ? searchCounties(query) : []), [hasQuery, query]);
+  const stateMatches = useMemo(() => (hasQuery ? searchStates(query) : []), [hasQuery, query]);
   const bestCounty = countyMatches[0];
-  const bestState = stateMatches[0];
+  const bestState = getExactSearchState(query) || stateMatches[0];
   const results = [
-    ...stateMatches.slice(0, 6).map((state) => ({ type: "state" as const, state })),
-    ...countyMatches.slice(0, 10).map((county) => ({ type: "county" as const, county })),
+    ...stateMatches.map((state) => ({ type: "state" as const, state })),
+    ...countyMatches.map((county) => ({ type: "county" as const, county })),
   ];
 
   return (
@@ -554,10 +555,10 @@ function CountyDirectorySearch({ id }: { id?: string }) {
         className="search-form"
         onSubmit={(event) => {
           event.preventDefault();
-          if (bestCounty) {
-            navigate(`/${bestCounty.state.slug}/${bestCounty.slug}`);
-          } else if (bestState) {
+          if (bestState) {
             navigate(stateHomePath(bestState));
+          } else if (bestCounty) {
+            navigate(`/${bestCounty.state.slug}/${bestCounty.slug}`);
           }
         }}
       >
@@ -567,12 +568,12 @@ function CountyDirectorySearch({ id }: { id?: string }) {
           placeholder="Search by county or state (e.g., Orange, TX)"
           aria-label="Search for a county or state"
         />
-        <button type="submit" disabled={!hasQuery}>
+        <button type="submit" disabled={!results.length}>
           Search
         </button>
       </form>
       {hasQuery ? (
-        <div className="results-list single">
+        <div key={query} className="results-list single county-search-results" role="region" aria-label="County and state search results" tabIndex={0}>
           {results.map((item) =>
             item.type === "state" ? (
               <Link key={item.state.slug} to={stateHomePath(item.state)} className="result-link">
@@ -736,23 +737,10 @@ function StateCountyIndex({ state }: { state: StateSite }) {
 function StatePage() {
   const { stateSlug } = useParams<{ stateSlug: string }>();
   const state = getStateBySlug(stateSlug);
-  const navigate = useNavigate();
-  const [countyQuery, setCountyQuery] = useState("");
   const stateLeadPage = useNewsPage(state ? statePageApiPath(state.slug) : undefined, pageLeadSections, LEAD_PREFETCH_LIMIT);
   const loadStateBackground = canLoadBackgroundPage(stateLeadPage);
   const stateBackgroundLoader = useSequentialFeedLoader(loadStateBackground, pageBackgroundSections.length + 1, state?.slug || "");
   const counties = useMemo(() => (state ? getCountiesForState(state.slug) : []), [state]);
-  const trimmedQuery = countyQuery.trim();
-  const countyMatches = useMemo(() => {
-    const normalized = trimmedQuery.toLowerCase();
-    if (!normalized) return [];
-    return counties.filter(
-      (county) =>
-        county.displayName.toLowerCase().includes(normalized) ||
-        county.slug.includes(normalized) ||
-        (county.primaryCity || "").toLowerCase().includes(normalized),
-    ).slice(0, 12);
-  }, [counties, trimmedQuery]);
 
   if (!state) {
     return <NotFound />;
@@ -779,44 +767,7 @@ function StatePage() {
           }),
         )}
       />
-      <section className="card county-finder">
-        <header className="section-heading">
-          <div className="section-heading-rule" aria-hidden />
-          <div>
-            <h2>Find A County</h2>
-          </div>
-          <div className="section-heading-rule" aria-hidden />
-        </header>
-        <form
-          className="search-form"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const match = countyMatches[0];
-            if (match) navigate(`/${match.state.slug}/${match.slug}`);
-          }}
-        >
-          <input
-            value={countyQuery}
-            onChange={(event) => setCountyQuery(event.target.value)}
-            placeholder={`Search ${state.name} counties`}
-            aria-label={`Search ${state.name} counties`}
-          />
-          <button type="submit" disabled={!trimmedQuery}>
-            Search
-          </button>
-        </form>
-        {trimmedQuery ? (
-          <div className="results-list single">
-            {countyMatches.map((county) => (
-              <Link key={county.fips} to={`/${county.state.slug}/${county.slug}`} className="result-link">
-                <span className="result-name">{county.displayName}</span>
-                <span className="result-meta">County • {state.name}</span>
-              </Link>
-            ))}
-            {!countyMatches.length ? <p className="muted">No {state.name} counties match that search.</p> : null}
-          </div>
-        ) : null}
-      </section>
+      <CountyDirectorySearch />
 
       <StateCountyIndex state={state} />
 

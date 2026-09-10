@@ -94,17 +94,3 @@ export function getCountiesForState(stateSlug?: string) {
   if (!state) return [];
   return counties.filter((county) => county.state.slug === state.slug);
 }
-
-export function searchCounties(query: string, limit = 25) {
-  const normalized = query.trim().toLowerCase();
-  if (!normalized) return counties.slice(0, limit);
-
-  return counties
-    .filter(
-      (county) =>
-        county.displayName.toLowerCase().includes(normalized) ||
-        county.state.name.toLowerCase().includes(normalized) ||
-        county.state.abbr.toLowerCase().includes(normalized),
-    )
-    .slice(0, limit);
-}

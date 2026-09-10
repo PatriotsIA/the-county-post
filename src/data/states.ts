@@ -72,21 +72,3 @@ const statesByAbbr = new Map(states.map((state) => [state.abbr, state]));
 export function stateFromAbbr(abbr: string) {
   return statesByAbbr.get(abbr);
 }
-
-export function searchStates(query: string, limit = 15) {
-  const normalized = query.trim().toLowerCase();
-  const source = states;
-
-  if (!normalized) {
-    return source.slice(0, limit);
-  }
-
-  return source
-    .filter(
-      (state) =>
-        state.name.toLowerCase().includes(normalized) ||
-        state.abbr.toLowerCase().includes(normalized) ||
-        state.slug.toLowerCase().includes(normalized),
-    )
-    .slice(0, limit);
-}

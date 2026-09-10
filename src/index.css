@@ -2106,6 +2106,21 @@ button:disabled {
   grid-template-columns: 1fr;
 }
 
+.county-search-results {
+  max-height: min(24rem, 50dvh);
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
+  padding: 3px;
+}
+
+.county-search-results .result-link {
+  min-height: 44px;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  overflow-wrap: anywhere;
+}
+
 .results-columns {
   display: grid;
   gap: 12px;
