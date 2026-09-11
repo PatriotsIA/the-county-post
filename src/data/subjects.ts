@@ -13,7 +13,7 @@ export type SubjectPage = SubjectPageBase & { categorySlug: string; categoryTitl
 
 export const topicSections: { kind: TopicFeedKind; title: string; kicker: string }[] = [
   { kind: "sports", title: "Sports", kicker: "Scores & highlights" },
-  { kind: "obituaries", title: "Obituaries & public notices", kicker: "Community records" },
+  { kind: "obituaries", title: "Obituaries", kicker: "Community records" },
   { kind: "politics", title: "Politics", kicker: "Civic desk" },
   { kind: "economy", title: "Economy & business", kicker: "Markets" },
   { kind: "crime", title: "Crime & courts", kicker: "Public safety" },

@@ -10,6 +10,7 @@ import { CountyWeatherPage } from "./components/CountyWeather";
 import { CountyDataSnapshot } from "./components/CountyDataSnapshot";
 import { CountyShowUpMeter } from "./components/CountyShowUpMeter";
 import { CountyPartnerDirectory, GlobalPartnerDirectory } from "./components/PartnerDirectory";
+import { CountyPublicNotices } from "./components/CountyPublicNotices";
 import { CountyLocalSourcesDirectory } from "./components/LocalSourcesDirectory";
 import { DataCentersOpEdPage } from "./components/CountyPostOpEd";
 import { AtlasDomainNav } from "./components/AtlasDomainNav";
@@ -32,6 +33,7 @@ import {
   countyEconomicSeo,
   countyLabel,
   countyLocalSourcesSeo,
+  countyPublicNoticesSeo,
   countyOpEdsSeo,
   countyPartnersSeo,
   countyPlaceLd,
@@ -339,6 +341,7 @@ function App() {
           <Route path="/:stateSlug/:countySlug/economic-data" element={<CountyEconomicDataPage />} />
           <Route path="/:stateSlug/:countySlug/op-eds" element={<CountyOpEdPage />} />
           <Route path="/:stateSlug/:countySlug/partners" element={<CountyPartnersPage />} />
+          <Route path="/:stateSlug/:countySlug/public-notices" element={<CountyPublicNoticesPage />} />
           <Route path="/:stateSlug/:countySlug/local-sources" element={<CountyLocalSourcesPage />} />
           <Route path="/:stateSlug/:countySlug/submit" element={<CountySubmitPage />} />
           <Route path="/:stateSlug/:countySlug/classifieds" element={<CountyClassifiedsPage />} />
@@ -462,6 +465,7 @@ function contextLinks(county?: NonNullable<ReturnType<typeof getCounty>>, state?
       { to: `${base}/economic-data`, label: "Economic Data" },
       ...subjectGroups.map((group) => ({ to: `${base}/${group.slug}`, label: group.title })),
       { to: `${base}/op-eds`, label: "County Op-Eds" },
+      { to: `${base}/public-notices`, label: "Public Notices" },
       { to: `${base}/local-sources`, label: "Local Sources" },
       { to: `${base}/partners`, label: "Partners" },
       { to: `${base}/classifieds`, label: "Classifieds" },
@@ -1184,7 +1188,7 @@ function CountyPage() {
         onLoadSettled={() => countyBackgroundLoader.markSettled(0)}
       />
       <NewsFeedSection
-        title="Obituaries & public notices"
+        title="Obituaries"
         kicker="Community records"
         apiPath={countyApiPath(county.state.slug, county.slug, "obituaries")}
         fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "obituaries")}
@@ -1194,6 +1198,7 @@ function CountyPage() {
         loadEnabled={countyBackgroundLoader.isEnabled(1)}
         onLoadSettled={() => countyBackgroundLoader.markSettled(1)}
       />
+      <CountyPublicNotices key={county.fips} county={county} compact />
       <CountyShowUpMeter county={county} />
       <NewsFeedSection
         title="Politics"
@@ -1429,6 +1434,10 @@ function MastheadHeroCopy({
           lead="Local and sitewide partners supporting The County Post in this community."
         />
       );
+    }
+
+    if (rest === "public-notices") {
+      return <MastheadHeroText kicker="Official notices" title={`${county.displayName} Public Notices (${county.state.abbr})`} lead="County and regional public meetings, hearings, and government notices." />;
     }
 
     if (rest === "local-sources") {
@@ -1768,6 +1777,18 @@ function CountyPartnersPage() {
       <CountyPartnerDirectory county={county} />
     </>
   );
+}
+
+function CountyPublicNoticesPage() {
+  const { stateSlug, countySlug } = useParams<{ stateSlug: string; countySlug: string }>();
+  const county = getCounty(stateSlug, countySlug);
+  if (!county) return <NotFound />;
+  const seo = countyPublicNoticesSeo(county);
+  return <>
+    <Seo title={seo.title} description={seo.description} policy="countyPublicNotices" noindex={county.state.slug !== "texas"}
+      jsonLd={jsonLdGraph(collectionPageLd({ path: `/${county.state.slug}/${county.slug}/public-notices`, name: seo.title, description: seo.description, crumbs: countyCrumbs(county, { name: "Public Notices", slug: "public-notices" }) }))} />
+    <CountyPublicNotices key={county.fips} county={county} />
+  </>;
 }
 
 function CountyLocalSourcesPage() {

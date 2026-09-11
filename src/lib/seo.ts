@@ -71,6 +71,7 @@ export const indexPolicy = {
   countyWeather: "sitemap",
   countyEconomicData: "sitemap",
   countyLocalSources: "sitemap",
+  countyPublicNotices: "sitemap",
   editorial: "sitemap",
   legal: "sitemap",
 
@@ -164,6 +165,11 @@ export const countyEconomicSeo = (county: CountySite): SeoCopy => ({
   description: clampDescription(
     `Unemployment rate, per-capita personal income, and GDP history for ${countyLabel(county)}, sourced from Federal Reserve Economic Data (FRED).`,
   ),
+});
+
+export const countyPublicNoticesSeo = (county: CountySite): SeoCopy => ({
+  title: `${countyLabel(county)} Public Notices`,
+  description: clampDescription(`Official public meetings, hearings, and notices for ${countyLabel(county)}, with county and regional coverage and original source links.`),
 });
 
 export const countyLocalSourcesSeo = (county: CountySite): SeoCopy => ({

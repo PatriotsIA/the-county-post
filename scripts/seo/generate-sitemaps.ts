@@ -106,7 +106,7 @@ const statePaths = states.map((state) => `/${state.slug}`);
 const countyPaths = counties.map((county) => `/${county.state.slug}/${county.slug}`);
 
 const countyDataPaths = counties.flatMap((county) =>
-  COUNTY_DATA_SECTIONS.map((section) => `/${county.state.slug}/${county.slug}/${section}`),
+  [...COUNTY_DATA_SECTIONS, ...(county.state.slug === "texas" ? ["public-notices"] : [])].map((section) => `/${county.state.slug}/${county.slug}/${section}`),
 );
 
 mkdirSync(OUT_DIR, { recursive: true });

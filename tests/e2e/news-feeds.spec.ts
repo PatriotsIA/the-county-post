@@ -696,7 +696,7 @@ test("market navigation and county layouts remain usable at 320px and desktop wi
 });
 
 test("county feeds stay county-only, sort newest first, and keep batched sections stable", async ({ page }) => {
-  await page.goto("/texas/randall");
+  await page.goto("/texas/randall", { waitUntil: "domcontentloaded" });
 
   await expect(page.getByRole("heading", { level: 1, name: /Randall County/i })).toBeVisible();
   await expect(page.getByText("County stories only")).toBeVisible();
@@ -713,7 +713,7 @@ test("county feeds stay county-only, sort newest first, and keep batched section
   await expect(localCards.first().locator(".feed-meta")).toContainText("Jun 26, 2026");
   await expect(localCards).toHaveCount(initialLocalCount);
 
-  const obituarySection = page.locator("section", { has: page.getByRole("heading", { name: "Obituaries & public notices" }) });
+  const obituarySection = page.locator("section", { has: page.getByRole("heading", { name: "Obituaries", exact: true }) });
   await expect(obituarySection.locator(".feed-card").first()).toContainText("Obituary story 01");
 
   const opinionSection = page.locator("section", { has: page.getByRole("heading", { name: "Opinion & op-eds" }) });

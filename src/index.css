@@ -4813,3 +4813,17 @@ main,
 .legal-copy a {
   color: var(--ink);
 }
+
+.public-notices { min-width: 0; }
+.notice-filters { display: flex; flex-wrap: wrap; gap: 12px; margin: 16px 0; }
+.notice-filters label { display: grid; gap: 5px; flex: 1 1 180px; min-width: 0; }
+.notice-filters select { min-height: 44px; max-width: 100%; }
+.notice-list { display: grid; gap: 12px; margin-block: 16px; }
+.notice-card { border: 1px solid var(--border); padding: 14px; overflow-wrap: anywhere; }
+.notice-card h3 { margin-block: 6px; }
+.notice-card p { margin-block: 5px; }
+.notice-meta, .notice-date, .notice-sources { font-size: 0.875rem; }
+.notice-sources { margin-block: 16px; overflow-wrap: anywhere; }
+.notice-sources summary { cursor: pointer; padding-block: 10px; }
+.notice-sources li { margin-block: 10px; }
+.notice-sources small { display: block; }
