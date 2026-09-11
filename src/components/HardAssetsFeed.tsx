@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import type { NewsFeedItem } from "../lib/news-api";
 import { fetchNewsFeed } from "../lib/rss";
-import itmTradingAd from "../../ad-assets/ad-itmtrading.JPG";
+import itmTradingAd from "../../ad-assets/itm-trading-logo.jpg";
 import { LoadingIndicator } from "./LoadingIndicator";
 
 const itmTradingFeedUrl = "https://www.youtube.com/feeds/videos.xml?channel_id=UCom1i7_NVeSUNyJyuR_NbMQ";

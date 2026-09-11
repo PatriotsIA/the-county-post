@@ -111,3 +111,78 @@ test("every Texas county has a unique canonical public-notices route", () => {
   expect(routes.size).toBe(254);
   for (const county of texas) expect(getCounty("texas", county.slug)?.fips).toBe(county.fips);
 });
+
+test("Market Desk shows the complete count and preview beneath alerts, retaining the section above Politics", async ({ page }) => {
+  let noticeRequests = 0;
+  const body = response("harris", 2);
+  body.meta.totalAvailable = 240;
+  body.meta.hasMore = true;
+  await page.route("**/public-notices?*", route => { noticeRequests++; return route.fulfill({ json: body }); });
+  await page.route("**/v1/counties/texas/harris/weather*", route => route.fulfill({ json: {
+    county: { slug: "harris", stateSlug: "texas", fips: "48201" }, location: { city: "Houston" }, zones: {}, forecast: [], hourly: [], warnings: [], meta: { cacheTtlSeconds: 180, alertsCacheTtlSeconds: 180 }, alerts: [{ id: "notice-test-alert", event: "Flood Watch", severity: "Moderate", headline: "Harris County Flood Watch" }],
+    droughtCondition: { category: "D1", label: "Moderate Drought", areaPercent: 40, mapDate: "2026-09-08" },
+  } }));
+  await page.goto("/texas/harris", { waitUntil: "domcontentloaded" });
+  const ticker = page.locator(".county-notice-ticker");
+  await expect(ticker).toBeVisible();
+  await expect(ticker).toContainText("240 public notices");
+  await expect(ticker.getByRole("link", { name: /Most recent:/ })).toHaveAttribute("href", body.items[0].url);
+  await expect(ticker.locator("time")).toHaveText("Sep 14, 2026");
+  await expect(page.locator(".county-weather-alert")).toHaveCount(2);
+  expect(await page.evaluate(() => {
+    const alerts = [...document.querySelectorAll(".county-weather-alert")];
+    const ticker = document.querySelector(".county-notice-ticker")!;
+    return alerts.every(alert => Boolean(alert.compareDocumentPosition(ticker) & Node.DOCUMENT_POSITION_FOLLOWING));
+  })).toBe(true);
+  const bounds = await ticker.boundingBox();
+  const cta = ticker.getByRole("link", { name: "See All Harris County Public Notices" });
+  const buttonBounds = await cta.boundingBox();
+  expect(buttonBounds!.x + buttonBounds!.width).toBeGreaterThan(bounds!.x + bounds!.width - 20);
+  expect(bounds!.height).toBeLessThanOrEqual(60);
+  await page.locator(".market-weather-stack").screenshot({ path: "coverage/public-notices/market-desk-desktop.png" });
+  const section = page.getByRole("region", { name: "Harris County public notices", exact: true });
+  await section.scrollIntoViewIfNeeded();
+  await expect(section.locator(".notice-card")).toHaveCount(2);
+  expect(await section.evaluate(section => {
+    const politics = [...document.querySelectorAll("h2")].find(heading => heading.textContent === "Politics");
+    return Boolean(politics && section.compareDocumentPosition(politics) & Node.DOCUMENT_POSITION_FOLLOWING);
+  })).toBe(true);
+  expect(noticeRequests).toBe(1);
+  await cta.click();
+  await expect(page).toHaveURL("/texas/harris/public-notices");
+});
+
+test("Market Desk count distinguishes empty, unavailable and unconnected county sources", async ({ page }) => {
+  const empty = response("harris", 0);
+  await page.route("**/public-notices?*", route => route.fulfill({ json: empty }));
+  await page.goto("/texas/harris", { waitUntil: "domcontentloaded" });
+  await expect(page.locator(".county-notice-ticker")).toContainText("0 public notices");
+  await expect(page.locator(".county-notice-ticker")).toContainText("No recent notices in connected sources");
+  const unavailable = response("bell", 0); unavailable.meta.status = "unavailable";
+  await page.route("**/public-notices?*", route => route.fulfill({ json: unavailable }));
+  await page.goto("/texas/bell", { waitUntil: "domcontentloaded" });
+  await expect(page.locator(".county-notice-ticker")).toContainText("Notices unavailable");
+  await expect(page.locator(".county-notice-ticker")).not.toContainText("0 public notices");
+  await page.goto("/florida/jefferson", { waitUntil: "domcontentloaded" });
+  await expect(page.locator(".county-notice-ticker")).toContainText("County sources are not connected yet");
+});
+
+test("the mobile notice row and ITM logo fit without overflow", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 740 });
+  // Amplify's SPA rule sends HTML for uppercase .JPG requests. The logo must
+  // be a lowercase asset that actually decodes, not merely an attached <img>.
+  await page.route(/\.JPG(?:\?|$)/, route => route.fulfill({ contentType: "text/html", body: "<!doctype html><html></html>" }));
+  await page.goto("/texas/harris", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: /Market desk/ }).click();
+  const ticker = page.locator(".county-notice-ticker");
+  await expect(ticker).toContainText("2 public notices");
+  await ticker.scrollIntoViewIfNeeded();
+  const cta = ticker.getByRole("link", { name: "See All Harris County Public Notices" });
+  await expect(cta).toBeVisible();
+  expect((await cta.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  const logo = page.locator(".precious-metals-sponsor img");
+  await expect(logo).toHaveAttribute("src", /itm-trading-logo\.jpg/);
+  expect(await logo.evaluate(async (img: HTMLImageElement) => { await img.decode(); return img.naturalWidth > 0 && img.naturalHeight > 0; })).toBe(true);
+  await page.locator(".market-weather-stack").screenshot({ path: "coverage/public-notices/market-desk-mobile.png" });
+});

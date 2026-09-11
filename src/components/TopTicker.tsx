@@ -6,8 +6,9 @@ import {
 } from "../lib/county-weather-api";
 import { fetchCattleTicker, fetchMetalsTicker } from "../lib/markets-api";
 import { useCountyWeather } from "../lib/useCountyWeather";
-import itmTradingAd from "../../ad-assets/ad-itmtrading.JPG";
+import itmTradingAd from "../../ad-assets/itm-trading-logo.jpg";
 import { LoadingIndicator } from "./LoadingIndicator";
+import { CountyNoticeTicker } from "./CountyNoticeTicker";
 
 const itmTradingUrl = "https://www.itmtrading.com/";
 const mintedMetalUrl = "https://mintedmetal.com";
@@ -57,6 +58,7 @@ export function TopTicker({
           <PreciousMetalsTicker />
           <CattleTicker />
           {county ? <CountyWeather county={county} /> : null}
+          {county ? <CountyNoticeTicker key={county.fips} county={county} active={isOpen} /> : null}
         </div>
       </div>
     </section>
@@ -181,7 +183,7 @@ function PreciousMetalsTicker() {
         </a>
         <a className="precious-metals-sponsor" href={itmTradingUrl} target="_blank" rel="noreferrer sponsored">
           <span>Presented by ITM Trading</span>
-          <img src={itmTradingAd} alt="ITM Trading" />
+          <img src={itmTradingAd} alt="ITM Trading" width="56" height="35" />
         </a>
       </div>
     </aside>
