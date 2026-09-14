@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { canSponsorFeed, getAdsForSlot, isCarouselOnlyAd, type AdCreative } from "../data/ads";
+import { canSponsorFeed, getAdsForSlot, getInFeedAdRotation, type AdCreative } from "../data/ads";
 import { useAdEditionKey } from "../lib/useAdEditionKey";
 import { VideoAd } from "./VideoAd";
 import { prependFeaturedCountyPostOpEd } from "../data/county-post-op-eds";
@@ -58,21 +58,6 @@ type Props = {
 // of a county's coverage a reader could ever scroll to.
 const MAX_REQUESTED_ITEMS = 600;
 type FeedSource = "api" | "fallback";
-const DEFAULT_IN_FEED_AD_WEIGHT = 3;
-
-function getInFeedAdRotation(editionKey?: string) {
-  const inFeedAds = getAdsForSlot("inline", editionKey).filter((ad) => !isCarouselOnlyAd(ad.id));
-  const videoAds = inFeedAds.filter((ad) => ad.video);
-  const imageRotation = Array.from({ length: DEFAULT_IN_FEED_AD_WEIGHT }, (_, round) =>
-    inFeedAds.filter((ad) => !ad.video && (ad.inFeedWeight ?? DEFAULT_IN_FEED_AD_WEIGHT) > round),
-  ).flat();
-  if (!videoAds.length) return imageRotation;
-  // Use one of the existing ad positions for video after four image ads.
-  // Each feed starts at a different point, and the overall ad density is unchanged.
-  return imageRotation.flatMap((ad, index) => index % 4 === 3
-    ? [ad, videoAds[Math.floor(index / 4) % videoAds.length]]
-    : [ad]);
-}
 
 export function NewsFeedSection({
   title,

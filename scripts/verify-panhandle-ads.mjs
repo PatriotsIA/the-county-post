@@ -5,6 +5,11 @@ import { join } from "node:path";
 
 const baseURL = process.env.COUNTY_POST_URL || "http://127.0.0.1:4186";
 const checkPlayback = !process.argv.includes("--skip-playback");
+// The complete https://vimeo.com/showcase/12112279 membership, verified 2026-09-14.
+const showcaseVideoIds = [
+  "1165499745", "1165499670", "1165499251", "1165499027", "1165498956",
+  "1165498523", "1165498343", "1206153465", "1215218560",
+].sort();
 const outputDirectory = "test-results/panhandle-review";
 await mkdir(outputDirectory, { recursive: true });
 // A normal, temporary profile is required: browsers disable app installation
@@ -15,25 +20,49 @@ const browserContext = await chromium.launchPersistentContext(profileDirectory, 
   viewport: { width: 1280, height: 900 }, reducedMotion: "reduce",
 });
 const page = await browserContext.newPage();
-const result = { baseURL, videos: [], partners: [], errors: [], failedRequests: [] };
+const result = { baseURL, catalog: [], editions: [], videos: [], partners: [], errors: [], failedRequests: [] };
 if (!checkPlayback) result.playbackCheck = "Skipped: Vimeo's connection restriction was already recorded in this environment";
 page.on("pageerror", (error) => result.errors.push(error.message));
 page.on("requestfailed", (request) => {
   if (/vimeo/.test(request.url())) result.failedRequests.push({ url: request.url(), error: request.failure()?.errorText });
 });
 
+async function verifyEditionCatalog(path) {
+  await page.goto(`${baseURL}${path}`, { waitUntil: "domcontentloaded" });
+  const carousels = page.locator(".ad-slot-inline");
+  await carousels.first().waitFor({ state: "attached" });
+  const counts = [];
+  for (const carousel of await carousels.all()) {
+    const videos = await carousel.locator(".video-ad").evaluateAll(async (cards) => Promise.all(cards.map(async (card) => {
+      const image = card.querySelector("img");
+      image.loading = "eager";
+      await image.decode();
+      return {
+        id: card.dataset.adId,
+        title: card.querySelector(".video-ad-title").textContent,
+        watchUrl: card.querySelector("a[href^='https://vimeo.com/']").href,
+        thumbnailLoaded: image.naturalWidth > 0 && image.naturalHeight > 0,
+      };
+    })));
+    const ids = videos.map((video) => video.watchUrl.split("/").pop()).sort();
+    if (ids.join(",") !== showcaseVideoIds.join(",")) throw new Error(`Incomplete showcase at ${path}: ${ids.join(",")}`);
+    if (videos.some((video) => !video.thumbnailLoaded)) throw new Error(`Missing video thumbnail at ${path}`);
+    counts.push(videos.length);
+    if (path === "/texas") result.catalog = videos;
+  }
+  if (await page.locator("iframe[src*='player.vimeo.com']").count()) throw new Error("Video player loaded before a reader clicked");
+  result.editions.push({ path, carouselVideoCounts: counts, thumbnailsLoaded: true });
+}
+
 try {
-  await page.goto(`${baseURL}/texas`, { waitUntil: "domcontentloaded" });
+  await verifyEditionCatalog("/texas");
   // The carousel follows three news sections. Wait for those sections to
   // settle so their initial expansion does not scroll the player out of view.
   if (checkPlayback) await page.locator(".feed-source").nth(2).waitFor({ state: "attached", timeout: 30000 });
   const carousel = page.locator(".ad-slot-inline").first();
-  await carousel.waitFor({ state: "attached" });
-  if (await carousel.locator(".video-ad").count() !== 3) throw new Error("Expected three Texas video creatives");
-  if (await page.locator("iframe[src*='player.vimeo.com']").count()) throw new Error("Video player loaded before a reader clicked");
 
-  for (const id of checkPlayback ? ["quanah-parker", "georgia-okeeffe", "goodnights"] : []) {
-    const card = carousel.locator(`[data-ad-id='panhandle-legends-${id}']`);
+  for (const { id } of checkPlayback ? result.catalog : []) {
+    const card = carousel.locator(`[data-ad-id='${id}']`);
     await card.scrollIntoViewIfNeeded();
     await card.locator("img").evaluate((image) => image.decode());
     await card.getByRole("button", { name: /^Play Panhandle Legends:/ }).click();
@@ -60,6 +89,8 @@ try {
     await page.screenshot({ path: `${outputDirectory}/${id}.png` });
     await card.getByRole("button", { name: "Close video", exact: true }).click();
   }
+
+  for (const path of ["/texas/randall", "/texas/harris"]) await verifyEditionCatalog(path);
 
   for (const path of ["/partners", "/texas/harris/partners", "/texas/randall/partners", "/arkansas/polk/partners"]) {
     await page.goto(`${baseURL}${path}`, { waitUntil: "domcontentloaded" });

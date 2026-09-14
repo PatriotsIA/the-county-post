@@ -64,6 +64,22 @@ export function canSponsorFeed(ad: AdCreative) {
   return !ad.video && !isCarouselOnlyAd(ad.id);
 }
 
+const DEFAULT_IN_FEED_AD_WEIGHT = 3;
+
+export function getInFeedAdRotation(editionKey?: string) {
+  const inFeedAds = getAdsForSlot("inline", editionKey).filter((ad) => !isCarouselOnlyAd(ad.id));
+  const videoAds = inFeedAds.filter((ad) => ad.video);
+  const imageRotation = Array.from({ length: DEFAULT_IN_FEED_AD_WEIGHT }, (_, round) =>
+    inFeedAds.filter((ad) => !ad.video && (ad.inFeedWeight ?? DEFAULT_IN_FEED_AD_WEIGHT) > round),
+  ).flat();
+  if (!videoAds.length) return imageRotation;
+  // Use one of the existing ad positions for video after four image ads.
+  // Each feed starts at a different point, and the overall ad density is unchanged.
+  return imageRotation.flatMap((ad, index) => index % 4 === 3
+    ? [ad, videoAds[Math.floor(index / 4) % videoAds.length]]
+    : [ad]);
+}
+
 export type AdCreative = {
   id: string;
   slot: AdSlotId;

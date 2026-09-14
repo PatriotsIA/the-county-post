@@ -1,5 +1,11 @@
 import { expect, test, devices, type Page } from "@playwright/test";
 
+// Membership from https://vimeo.com/api/v2/album/12112279/videos.json (2026-09-14).
+const showcaseVideoIds = [
+  "1165499745", "1165499670", "1165499251", "1165499027", "1165498956",
+  "1165498523", "1165498343", "1206153465", "1215218560",
+].sort();
+
 async function mockNews(page: Page) {
   await page.route("http://localhost:8787/**", async (route) => {
     const url = new URL(route.request().url());
@@ -32,13 +38,15 @@ test.beforeEach(async ({ page }) => { await mockNews(page); });
 
 test("Texas advertiser targeting covers all 254 counties and excludes other editions", async ({ page }) => {
   await page.goto("/partners");
-  const result = await page.evaluate(async () => {
+  const result = await page.evaluate(async (expectedVideoIds) => {
     const paths = ["/src/data/ads.ts", "/src/data/partners.ts", "/src/data/counties.ts"];
     const [adData, partnerData, countyData] = await Promise.all(paths.map((path) => import(path)));
     const texas = countyData.getCountiesForState("texas");
     const otherCounties = countyData.counties.filter((county: { state: { slug: string } }) => county.state.slug !== "texas");
     const hasGear = (key?: string) => adData.getAdsForSlot("inline", key).some((ad: { name: string }) => ad.name === "Guerrilla Gear");
     const videoCount = (key?: string) => adData.getAdsForSlot("inline", key).filter((ad: { video?: unknown }) => ad.video).length;
+    const videoIds = (creatives: { video?: { watchUrl: string } }[]) => [...new Set(creatives
+      .flatMap((ad) => ad.video ? [ad.video.watchUrl.split("/").pop()] : []))].sort().join(",");
     return {
       texasCount: texas.length,
       statewide: hasGear("texas"),
@@ -48,14 +56,17 @@ test("Texas advertiser targeting covers all 254 counties and excludes other edit
       removed: adData.ads.filter((ad: { name: string }) => /Pasture Exchange|PestCon/.test(ad.name)).length,
       partnerPageCount: partnerData.getCountyPartnerPageKeys().length,
       scopedRealty: [undefined, "texas", "texas/randall", "texas/potter", "texas/harris"].map((key) => adData.getAdsForSlot("inline", key).some((ad: { id: string }) => ad.id === "lori-horner-inline")),
-      everyTexasCountyHasVideos: texas.every((county: { slug: string }) => videoCount(`texas/${county.slug}`) === 3),
+      everyTexasCountyHasVideos: texas.every((county: { slug: string }) => videoCount(`texas/${county.slug}`) === expectedVideoIds.length),
+      everyTexasEditionHasFullShowcase: ["texas", ...texas.map((county: { slug: string }) => `texas/${county.slug}`)].every((key) =>
+        videoIds(adData.getAdsForSlot("inline", key)) === expectedVideoIds.join(",") &&
+        videoIds(adData.getInFeedAdRotation(key)) === expectedVideoIds.join(",")),
       noVideosElsewhere: !videoCount() && !videoCount("arkansas") && otherCounties.every((county: { state: { slug: string }; slug: string }) => !videoCount(`${county.state.slug}/${county.slug}`)),
       videosCannotSponsor: adData.ads.filter((ad: { video?: unknown }) => ad.video).every((ad: unknown) => !adData.canSponsorFeed(ad)),
       onePanhandlePartner: partnerData.getPartnerCreatives().filter((ad: { name: string }) => ad.name === "Panhandle Legends").length,
       everyTexasCountyHasPartner: texas.every((county: { slug: string }) => partnerData.getPartnersForCounty(`texas/${county.slug}`).some((ad: { name: string }) => ad.name === "Panhandle Legends")),
     };
-  });
-  expect(result).toEqual({ texasCount: 254, statewide: true, everyTexasCounty: true, noOtherCounty: true, national: false, removed: 0, partnerPageCount: 254, scopedRealty: [false, false, true, true, false], everyTexasCountyHasVideos: true, noVideosElsewhere: true, videosCannotSponsor: true, onePanhandlePartner: 1, everyTexasCountyHasPartner: true });
+  }, showcaseVideoIds);
+  expect(result).toEqual({ texasCount: 254, statewide: true, everyTexasCounty: true, noOtherCounty: true, national: false, removed: 0, partnerPageCount: 254, scopedRealty: [false, false, true, true, false], everyTexasCountyHasVideos: true, everyTexasEditionHasFullShowcase: true, noVideosElsewhere: true, videosCannotSponsor: true, onePanhandlePartner: 1, everyTexasCountyHasPartner: true });
   await expect(page.getByRole("heading", { name: "Guerrilla Gear", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Panhandle Legends", exact: true })).toHaveCount(1);
   await page.goto("/texas/harris/partners");
@@ -69,7 +80,10 @@ test("Texas advertiser targeting covers all 254 counties and excludes other edit
 test("Panhandle videos occur in Texas feeds and carousels without loading players or becoming sponsors", async ({ page }) => {
   for (const path of ["/texas", "/texas/randall", "/texas/harris"]) {
     await page.goto(path);
-    await expect(page.locator(".ad-slot-inline").first().locator(".video-ad")).toHaveCount(3);
+    await expect(page.locator(".ad-slot-inline").first().locator(".video-ad")).toHaveCount(9);
+    for (const carousel of await page.locator(".ad-slot-inline").all()) {
+      await expect(carousel.locator(".video-ad")).toHaveCount(9);
+    }
     await expect(page.locator(".feed-video-card").first()).toBeAttached();
     await expect(page.locator("iframe[src*='player.vimeo.com']")).toHaveCount(0);
     await expect(page.locator(".feed-sponsor img[alt*='Panhandle'], .county-sponsor img[alt*='Panhandle']")).toHaveCount(0);
@@ -83,6 +97,25 @@ test("Panhandle videos occur in Texas feeds and carousels without loading player
     await expect(page.locator(".ad-slot-inline").first()).toBeAttached();
     await expect(page.locator(".video-ad")).toHaveCount(0);
   }
+});
+
+test("all nine showcase cards load the matching player only when played", async ({ page }) => {
+  await page.clock.install();
+  await page.route("https://player.vimeo.com/video/**", (route) => route.fulfill({ contentType: "text/html", body: "<html><body>Video player fixture</body></html>" }));
+  await page.goto("/texas");
+  await page.locator(".feed-source").nth(2).waitFor({ state: "attached" });
+  const carousel = page.locator(".ad-slot-inline").first();
+  await expect(carousel.locator(".video-ad")).toHaveCount(9);
+  for (const id of showcaseVideoIds) {
+    const video = carousel.locator(`.video-ad:has(a[href='https://vimeo.com/${id}'])`);
+    await video.scrollIntoViewIfNeeded();
+    await video.locator("img").evaluate((image: HTMLImageElement) => image.decode());
+    await expect(page.locator("iframe[src*='player.vimeo.com']")).toHaveCount(0);
+    await video.getByRole("button", { name: /^Play Panhandle Legends:/ }).click();
+    await expect(video.locator("iframe")).toHaveAttribute("src", `https://player.vimeo.com/video/${id}?autoplay=1&dnt=1&title=0&byline=0&portrait=0`);
+    await video.getByRole("button", { name: "Close video", exact: true }).click();
+  }
+  await expect(page.locator("iframe[src*='player.vimeo.com']")).toHaveCount(0);
 });
 
 test("video carousel waits during playback and stops an offscreen player", async ({ page }) => {
