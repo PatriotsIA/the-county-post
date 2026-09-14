@@ -1,5 +1,6 @@
 import { ads, isAdVisibleInCounty, isCarouselOnlyAd, PARTNER_DIRECTORY_PATH, type AdCreative } from "./ads";
-import { getCounty } from "./counties";
+import { getCounty, getCountiesForState } from "./counties";
+import { getStateBySlug } from "./states";
 
 export function countyPartnersPath(stateSlug: string, countySlug: string) {
   return `/${stateSlug}/${countySlug}/partners`;
@@ -32,7 +33,17 @@ export function getPartnerCreatives(): AdCreative[] {
 }
 
 export function getSitewidePartners(): AdCreative[] {
-  return getPartnerCreatives().filter((partner) => !partner.countyKeys?.length);
+  return getPartnerCreatives().filter((partner) => !partner.countyKeys?.length && !partner.stateSlugs?.length);
+}
+
+export function getStatewidePartners(stateSlug?: string): AdCreative[] {
+  return getPartnerCreatives().filter((partner) =>
+    partner.stateSlugs?.length && !partner.countyKeys?.length && (!stateSlug || partner.stateSlugs.includes(stateSlug)),
+  );
+}
+
+export function formatPartnerStateLabels(stateSlugs: string[]) {
+  return stateSlugs.map((slug) => getStateBySlug(slug)?.name ?? slug).join(", ");
 }
 
 export function getCountyScopedPartners(): AdCreative[] {
@@ -53,6 +64,14 @@ export function getCountyPartnerPageKeys(): string[] {
   for (const partner of getCountyScopedPartners()) {
     for (const key of partner.countyKeys ?? []) {
       keys.add(key);
+    }
+  }
+
+  for (const partner of getStatewidePartners()) {
+    for (const stateSlug of partner.stateSlugs ?? []) {
+      for (const county of getCountiesForState(stateSlug)) {
+        keys.add(`${stateSlug}/${county.slug}`);
+      }
     }
   }
 

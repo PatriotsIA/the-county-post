@@ -1,6 +1,8 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ads, isCarouselOnlyAd } from "../data/ads";
+import { canSponsorFeed, getAdsForSlot, isCarouselOnlyAd, type AdCreative } from "../data/ads";
+import { useAdEditionKey } from "../lib/useAdEditionKey";
+import { VideoAd } from "./VideoAd";
 import { prependFeaturedCountyPostOpEd } from "../data/county-post-op-eds";
 import { isTrustedCountyNativeNewsItem } from "../lib/local-news-sources";
 import { fetchNewsApiFeed, isNewsApiConfigured, type NewsFeedItem, type Topic } from "../lib/news-api";
@@ -56,11 +58,21 @@ type Props = {
 // of a county's coverage a reader could ever scroll to.
 const MAX_REQUESTED_ITEMS = 600;
 type FeedSource = "api" | "fallback";
-const inFeedAds = ads.filter((ad) => ad.slot === "inline" && !isCarouselOnlyAd(ad.id));
 const DEFAULT_IN_FEED_AD_WEIGHT = 3;
-const inFeedAdRotation = Array.from({ length: DEFAULT_IN_FEED_AD_WEIGHT }, (_, round) =>
-  inFeedAds.filter((ad) => (ad.inFeedWeight ?? DEFAULT_IN_FEED_AD_WEIGHT) > round),
-).flat();
+
+function getInFeedAdRotation(editionKey?: string) {
+  const inFeedAds = getAdsForSlot("inline", editionKey).filter((ad) => !isCarouselOnlyAd(ad.id));
+  const videoAds = inFeedAds.filter((ad) => ad.video);
+  const imageRotation = Array.from({ length: DEFAULT_IN_FEED_AD_WEIGHT }, (_, round) =>
+    inFeedAds.filter((ad) => !ad.video && (ad.inFeedWeight ?? DEFAULT_IN_FEED_AD_WEIGHT) > round),
+  ).flat();
+  if (!videoAds.length) return imageRotation;
+  // Use one of the existing ad positions for video after four image ads.
+  // Each feed starts at a different point, and the overall ad density is unchanged.
+  return imageRotation.flatMap((ad, index) => index % 4 === 3
+    ? [ad, videoAds[Math.floor(index / 4) % videoAds.length]]
+    : [ad]);
+}
 
 export function NewsFeedSection({
   title,
@@ -85,6 +97,8 @@ export function NewsFeedSection({
   loadEnabled = true,
   onLoadSettled,
 }: Props) {
+  const editionKey = useAdEditionKey();
+  const inFeedAdRotation = useMemo(() => getInFeedAdRotation(editionKey), [editionKey]);
   const [items, setItems] = useState<NewsFeedItem[]>([]);
   const [status, setStatus] = useState<"idle" | "loading" | "loaded" | "error">("idle");
   const [error, setError] = useState<string>("");
@@ -133,8 +147,8 @@ export function NewsFeedSection({
     return dedupeTitles(kind === "opinion" ? prependFeaturedCountyPostOpEd(scopedItems) : scopedItems);
   }, [effectiveCountyDistinctive, effectiveDatelinePlaces, effectivePlaces, effectiveTrustedHosts, items, kind, locality, source]);
   const feedEntries = useMemo(
-    () => createFeedEntries(filteredItems, `${title}-${kind}-${locality?.countyName || locality?.stateName || ""}`, gridColumns),
-    [filteredItems, gridColumns, kind, locality?.countyName, locality?.stateName, title],
+    () => createFeedEntries(filteredItems, `${title}-${kind}-${editionKey || "national"}`, gridColumns, inFeedAdRotation),
+    [filteredItems, gridColumns, kind, editionKey, title, inFeedAdRotation],
   );
   // The API reports whether more pages exist. Falling back to comparing what
   // survived the client filter against what was asked for meant a feed whose
@@ -326,8 +340,7 @@ export function NewsFeedSection({
           >
             {isOpen ? "Hide stories" : "Show stories"} <span aria-hidden="true">{isOpen ? "−" : "+"}</span>
           </button>
-          <p className="feed-presented-by">Presented by</p>
-          <FeedSponsor kind={kind} sponsorId={sponsorId} />
+          <FeedSponsor kind={kind} sponsorId={sponsorId} editionKey={editionKey} />
           {actionLink ? (
             <Link to={actionLink.to} className="section-action">
               {actionLink.label}
@@ -348,7 +361,11 @@ export function NewsFeedSection({
         <div className="feed-scroll" ref={containerRef}>
           <div className="feed-grid" ref={gridRef}>
             {feedEntries.map((entry) =>
-              entry.type === "ad" ? (
+              entry.type === "ad" ? entry.ad.video ? (
+                <div key={`ad-${entry.ad.id}-${entry.position}`} className="feed-card feed-ad-card feed-video-card" aria-label={`Advertisement: ${entry.ad.name}`}>
+                  <VideoAd ad={entry.ad} />
+                </div>
+              ) : (
                 <a
                   key={`ad-${entry.ad.id}-${entry.position}`}
                   className="feed-card feed-ad-card"
@@ -480,9 +497,9 @@ function genericNewsLabel(locality?: LocalityScope) {
   return "News";
 }
 
-type FeedEntry = { type: "article"; item: NewsFeedItem } | { type: "ad"; ad: (typeof ads)[number]; position: number };
+type FeedEntry = { type: "article"; item: NewsFeedItem } | { type: "ad"; ad: AdCreative; position: number };
 
-function createFeedEntries(items: NewsFeedItem[], feedIdentity: string, gridColumns: number): FeedEntry[] {
+function createFeedEntries(items: NewsFeedItem[], feedIdentity: string, gridColumns: number, inFeedAdRotation: AdCreative[]): FeedEntry[] {
   const entries: FeedEntry[] = [];
   const seed = hashFeedIdentity(feedIdentity);
   const articlesPerAd = Math.max(1, gridColumns * 2 - 1);
@@ -516,7 +533,6 @@ const feedSponsorIds: Partial<Record<FeedKind, string>> = {
   general: "guerrilla-gear-inline",
   sports: "lemc-inline",
   economy: "plains-bank-inline",
-  crime: "pasture-exchange-inline",
   obituaries: "patriot-trailer-inline",
   opinion: "cbt-inline",
   "monetary-policy": "brown-gmc-inline",
@@ -524,19 +540,21 @@ const feedSponsorIds: Partial<Record<FeedKind, string>> = {
   "property-taxes": "dyers-inline",
   "municipal-bonds": "hoffbrau-inline",
   "budgets-levies": "lawyers-title-inline",
-  "voting-systems": "pestcon-inline",
   "audits-recounts": "amberwood-brush-inline",
 };
 
-function FeedSponsor({ kind, sponsorId }: { kind: FeedKind; sponsorId?: string }) {
+function FeedSponsor({ kind, sponsorId, editionKey }: { kind: FeedKind; sponsorId?: string; editionKey?: string }) {
   const requestedId = sponsorId || feedSponsorIds[kind];
-  const sponsor = ads.find((ad) => ad.id === requestedId && !isCarouselOnlyAd(ad.id));
+  const sponsor = getAdsForSlot("inline", editionKey).find((ad) => ad.id === requestedId && canSponsorFeed(ad));
   if (!sponsor) return null;
 
   return (
+    <>
+    <p className="feed-presented-by">Presented by</p>
     <a className="feed-sponsor" href={sponsor.href} target="_blank" rel="noreferrer sponsored">
       <img src={sponsor.image} alt={sponsor.alt} />
     </a>
+    </>
   );
 }
 

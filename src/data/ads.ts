@@ -10,14 +10,12 @@ import lemcInline from "../../ad-assets/LEMC250.jpg";
 import lemcBanner from "../../ad-assets/LEMC980.jpg";
 import mattressBanner from "../../ad-assets/matress-ad.jpg";
 import lawyersTitle from "../../ad-assets/LawyersTitle250.jpg";
-import pastureBanner from "../../ad-assets/Pasture-Exchange980.jpg";
-import pastureInline from "../../ad-assets/PastureEXCHANGELogo.jpg";
 import patriotTrailer from "../../ad-assets/PatriotTrailerStore.jpg";
-import pestCon from "../../ad-assets/PestCon250.jpg";
 import piaBanner from "../../ad-assets/PIA980.jpg";
 import piaMerchStore from "../../ad-assets/pia-merch-store-ad.jpg";
 import plainsBank from "../../ad-assets/PlainsBank250.jpg";
 import loriHorner from "../../ad-assets/lori-horner-ad.png";
+import { panhandleLegendsAds } from "./panhandle-legends";
 
 export type AdSlotId = "inline" | "banner";
 
@@ -28,10 +26,11 @@ export function countyAdKey(stateSlug: string, countySlug: string) {
   return `${stateSlug}/${countySlug}`;
 }
 
-export function isAdVisibleInCounty(ad: AdCreative, countyKey?: string) {
-  if (!ad.countyKeys?.length) return true;
-  if (!countyKey) return false;
-  return ad.countyKeys.includes(countyKey);
+// An edition key is a state slug or a state/county pair; undefined is national.
+export function isAdVisibleInCounty(ad: AdCreative, editionKey?: string) {
+  if (ad.stateSlugs?.length && (!editionKey || !ad.stateSlugs.includes(editionKey.split("/")[0]))) return false;
+  if (ad.countyKeys?.length && (!editionKey || !ad.countyKeys.includes(editionKey))) return false;
+  return true;
 }
 
 export function getAdsForSlot(slot: AdSlotId, countyKey?: string) {
@@ -61,6 +60,10 @@ export function isCarouselOnlyAd(id: string) {
   return CAROUSEL_ONLY_AD_IDS.has(id);
 }
 
+export function canSponsorFeed(ad: AdCreative) {
+  return !ad.video && !isCarouselOnlyAd(ad.id);
+}
+
 export type AdCreative = {
   id: string;
   slot: AdSlotId;
@@ -68,8 +71,10 @@ export type AdCreative = {
   name: string;
   alt: string;
   href: string;
+  stateSlugs?: string[];
   countyKeys?: string[];
   inFeedWeight?: number;
+  video?: { embedUrl: string; title: string; watchUrl: string };
 };
 
 export const PARTNER_DIRECTORY_PATH = "/partners";
@@ -120,14 +125,6 @@ export const ads: AdCreative[] = [
     href: PARTNER_DIRECTORY_PATH,
   },
   {
-    id: "pasture-exchange-inline",
-    slot: "inline",
-    image: pastureInline,
-    name: "Pasture Exchange",
-    alt: "Pasture Exchange",
-    href: PARTNER_DIRECTORY_PATH,
-  },
-  {
     id: "patriot-trailer-inline",
     slot: "inline",
     image: patriotTrailer,
@@ -142,7 +139,9 @@ export const ads: AdCreative[] = [
     name: "Guerrilla Gear",
     alt: "Guerrilla Gear",
     href: "https://www.guerrillagear.com/",
+    stateSlugs: ["texas"],
   },
+  ...panhandleLegendsAds,
   {
     id: "lemc-banner",
     slot: "banner",
@@ -208,27 +207,11 @@ export const ads: AdCreative[] = [
     href: PARTNER_DIRECTORY_PATH,
   },
   {
-    id: "pestcon-inline",
-    slot: "inline",
-    image: pestCon,
-    name: "PestCon",
-    alt: "PestCon",
-    href: PARTNER_DIRECTORY_PATH,
-  },
-  {
     id: "mattress-banner",
     slot: "banner",
     image: mattressBanner,
     name: "Mattress By Appointment",
     alt: "Mattress By Appointment",
-    href: PARTNER_DIRECTORY_PATH,
-  },
-  {
-    id: "pasture-exchange-banner",
-    slot: "banner",
-    image: pastureBanner,
-    name: "Pasture Exchange",
-    alt: "Pasture Exchange",
     href: PARTNER_DIRECTORY_PATH,
   },
   {

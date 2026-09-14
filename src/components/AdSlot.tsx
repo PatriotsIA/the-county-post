@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getAdsForSlot, featuredAdRank, type AdSlotId } from "../data/ads";
+import { useAdEditionKey } from "../lib/useAdEditionKey";
+import { VideoAd } from "./VideoAd";
 
 type Props = {
   slot: AdSlotId;
@@ -19,33 +21,36 @@ export function RotatingAdSpot({
   label?: string;
   countyKey?: string;
 }) {
-  const creatives = getAdsForSlot("inline").sort((a, b) => featuredAdRank(a.id, countyKey) - featuredAdRank(b.id, countyKey));
+  const editionKey = useAdEditionKey(countyKey);
+  const creatives = getAdsForSlot("inline", editionKey).sort((a, b) => featuredAdRank(a.id, editionKey) - featuredAdRank(b.id, editionKey));
+  const [playing, setPlaying] = useState(false);
   const [activeIndex, setActiveIndex] = useState(() => (creatives.length ? seed % creatives.length : 0));
 
   useEffect(() => {
-    if (creatives.length < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (playing || creatives.length < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const interval = window.setInterval(() => {
       setActiveIndex((index) => (index + 1) % creatives.length);
     }, intervalMs);
     return () => window.clearInterval(interval);
-  }, [creatives.length, intervalMs]);
+  }, [creatives.length, intervalMs, playing]);
 
-  const ad = creatives[activeIndex];
+  const ad = creatives[activeIndex % creatives.length];
   if (!ad) return null;
 
   return (
     <aside className="show-up-ad-spot" aria-label={label}>
       <p className="ad-slot-label">{label}</p>
-      <a className="ad-link" href={ad.href} target="_blank" rel="noreferrer sponsored">
+      {ad.video ? <VideoAd key={ad.id} ad={ad} onPlaybackChange={setPlaying} /> : <a className="ad-link" href={ad.href} target="_blank" rel="noreferrer sponsored">
         <img src={ad.image} alt={ad.alt} />
-      </a>
+      </a>}
     </aside>
   );
 }
 
 export function AdSlot({ slot, limit, className, countyKey }: Props) {
-  const creatives = getAdsForSlot(slot, countyKey)
-    .sort((a, b) => featuredAdRank(a.id, countyKey) - featuredAdRank(b.id, countyKey))
+  const editionKey = useAdEditionKey(countyKey);
+  const creatives = getAdsForSlot(slot, editionKey)
+    .sort((a, b) => featuredAdRank(a.id, editionKey) - featuredAdRank(b.id, editionKey))
     .slice(0, limit);
   if (!creatives.length) return null;
 
@@ -77,7 +82,9 @@ function SquareAdCarousel({ creatives, className }: { creatives: ReturnType<type
 
   useEffect(() => {
     if (creatives.length < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const interval = window.setInterval(() => move(1), 20_000);
+    const interval = window.setInterval(() => {
+      if (!trackRef.current?.querySelector("iframe") && !trackRef.current?.contains(document.activeElement)) move(1);
+    }, 20_000);
     return () => window.clearInterval(interval);
   }, [creatives.length]);
 
@@ -90,7 +97,7 @@ function SquareAdCarousel({ creatives, className }: { creatives: ReturnType<type
         </button>
         <div className="ad-slot-items" ref={trackRef}>
           {creatives.map((ad) => (
-            <a key={ad.id} className="ad-link" href={ad.href} target="_blank" rel="noreferrer sponsored">
+            ad.video ? <VideoAd key={ad.id} ad={ad} className="ad-link" /> : <a key={ad.id} className="ad-link" href={ad.href} target="_blank" rel="noreferrer sponsored">
               <img src={ad.image} alt={ad.alt} />
             </a>
           ))}

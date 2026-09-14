@@ -3,6 +3,7 @@ import { Link, Navigate, NavLink, Route, Routes, useLocation, useNavigate, usePa
 import { SubmissionForm } from "./components/SubmissionForm";
 import { ClassifiedSubmissionForm } from "./components/ClassifiedSubmissionForm";
 import { AdSlot } from "./components/AdSlot";
+import { BookmarkPrompt } from "./components/BookmarkPrompt";
 import { HardAssetsFeed } from "./components/HardAssetsFeed";
 import { NewsFeedSection } from "./components/NewsFeedSection";
 import { CountyEconomicData, CountyEconomicSnapshot } from "./components/CountyEconomicData";
@@ -18,7 +19,7 @@ import { atlasDomainLabels } from "./lib/atlas-domain-labels";
 import { EditionMap } from "./components/EditionMap";
 import { LoadingIndicator } from "./components/LoadingIndicator";
 import { TopTicker } from "./components/TopTicker";
-import { ads, countyAdKey, getSportsFeedSponsorId, isCarouselOnlyAd } from "./data/ads";
+import { canSponsorFeed, countyAdKey, getAdsForSlot, getSportsFeedSponsorId } from "./data/ads";
 import { getCounty, getCountiesForState } from "./data/counties";
 import { site } from "./data/site";
 import { getExactSearchState, searchCounties, searchStates } from "./data/place-search";
@@ -364,6 +365,7 @@ function App() {
           <Link to="/partners">Partners</Link>
           <Link to="/privacy">Privacy</Link>
           <Link to="/terms">Terms</Link>
+          <BookmarkPrompt county={activeCounty} autoShow={pathname === "/" || isCountyHomePath(pathname, activeCounty)} />
         </div>
       </footer>
     </div>
@@ -1637,7 +1639,8 @@ function MastheadHeroCopy({
 }
 
 function CountySponsor({ county }: { county: NonNullable<ReturnType<typeof getCounty>> }) {
-  const sponsorAds = ads.filter((ad) => ad.slot === "inline" && ad.id !== "guerrilla-gear-inline" && !isCarouselOnlyAd(ad.id));
+  const sponsorAds = getAdsForSlot("inline", countyAdKey(county.state.slug, county.slug))
+    .filter((ad) => ad.id !== "guerrilla-gear-inline" && canSponsorFeed(ad));
   const seed = county.fips || `${county.state.slug}/${county.slug}`;
   const hash = Array.from(seed).reduce((total, character) => total + character.charCodeAt(0), 0);
   const sponsor = sponsorAds[hash % sponsorAds.length];

@@ -2326,6 +2326,7 @@ button:disabled {
 }
 
 .ad-slot-items {
+  position: relative;
   display: flex;
   gap: 12px;
   overflow-x: auto;
@@ -2392,6 +2393,99 @@ button:disabled {
 
 .ad-link:hover img {
   transform: scale(1.02);
+}
+
+.video-ad {
+  width: 100%;
+  min-width: 0;
+  align-self: center;
+  padding: 10px;
+  background: var(--panel);
+  color: var(--ink);
+  line-height: 1.45;
+  text-align: left;
+}
+
+.video-ad-label {
+  margin: 0 0 8px;
+  font-family: "Roboto Mono", monospace;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.video-ad-media {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: #101010;
+  overflow: hidden;
+}
+
+.video-ad-media iframe,
+.video-ad-play,
+.video-ad-play img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.video-ad-play {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  background: #101010;
+  cursor: pointer;
+}
+
+.video-ad-play img {
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.video-ad-play-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 2px solid var(--white);
+  border-radius: 50%;
+  background: var(--news-red);
+  color: var(--white);
+  transform: translate(-50%, -50%);
+  font-size: 20px;
+}
+
+.video-ad-title {
+  margin: 8px 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.video-ad-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.video-ad-actions a {
+  color: var(--news-blue);
+  text-decoration: underline;
+}
+
+.video-ad-actions button {
+  min-height: 32px;
+  padding: 4px 6px;
+  font-size: 11px;
+}
+
+.feed-video-card {
+  padding: 0;
 }
 
 .ad-banner-viewport {
@@ -3210,6 +3304,7 @@ button:disabled {
 
 .footer-links {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: 12px;
   margin-top: 6px;
@@ -3224,6 +3319,136 @@ button:disabled {
 
 .footer-links a:hover {
   text-decoration: underline;
+}
+
+.save-site-link {
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  padding: 0 0 2px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+}
+
+.bookmark-toast {
+  position: fixed;
+  z-index: 80;
+  left: 16px;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  width: min(390px, calc(100vw - 32px));
+  max-height: min(640px, calc(100dvh - 40px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--news-red);
+  padding: 20px;
+  background: var(--white);
+  color: var(--ink);
+  box-shadow: var(--soft-shadow);
+  text-align: left;
+  font-family: "Libre Baskerville", Georgia, serif;
+  font-size: 13px;
+  letter-spacing: normal;
+  line-height: 1.6;
+}
+
+.bookmark-toast .kicker {
+  margin: 0 32px 8px 0;
+  font-size: 9px;
+}
+
+.bookmark-toast h2 {
+  margin: 0 24px 8px 0;
+  font-size: 21px;
+  line-height: 1.3;
+}
+
+.bookmark-toast p {
+  margin: 8px 0 12px;
+}
+
+.bookmark-toast-close {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.bookmark-toast-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bookmark-toast-actions button {
+  min-height: 40px;
+  border: 1px solid var(--news-blue);
+  padding: 8px 10px;
+  background: var(--news-blue);
+  color: var(--white);
+  font-family: "Roboto Mono", monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bookmark-toast-actions button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.bookmark-toast-actions .bookmark-toast-later {
+  background: var(--white);
+  color: var(--ink);
+  border-color: var(--rule);
+}
+
+.bookmark-install {
+  margin-top: 16px;
+  border-top: 1px solid #d8d8d3;
+  padding-top: 12px;
+}
+
+.bookmark-install h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+}
+
+.bookmark-toast-instructions:empty {
+  display: none;
+}
+
+.bookmark-toast-instructions {
+  margin-top: 12px;
+  border-top: 1px solid #d8d8d3;
+  padding-top: 4px;
+  font-size: 12px;
+}
+
+.bookmark-toast-instructions ol {
+  margin: 6px 0;
+  padding-left: 20px;
+}
+
+.bookmark-toast-instructions li + li {
+  margin-top: 6px;
+}
+
+@media (max-width: 480px) {
+  .bookmark-toast {
+    max-height: 70dvh;
+    padding: 16px;
+  }
 }
 
 @media (max-width: 720px) {

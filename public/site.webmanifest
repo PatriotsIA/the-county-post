@@ -1,6 +1,7 @@
 {
   "name": "The County Post",
   "short_name": "County Post",
+  "id": "/",
   "description": "County-level news, weather, and official data for all 3,143 U.S. counties.",
   "start_url": "/",
   "scope": "/",

@@ -8,10 +8,12 @@ import {
   countyPartnersPath,
   formatPartnerCountyLabel,
   formatPartnerCountyLabels,
+  formatPartnerStateLabels,
   getCountyPartnerPageKeys,
   getCountyScopedPartners,
   getLocalCountyPartners,
   getSitewidePartners,
+  getStatewidePartners,
   isPartnerDirectoryHref,
 } from "../data/partners";
 
@@ -42,7 +44,9 @@ function PartnerList({ partners, showCountyCoverage = false }: { partners: AdCre
           <img src={partner.image} alt="" />
           <div>
             <h3>{partner.name}</h3>
-            {showCountyCoverage && partner.countyKeys?.length ? (
+            {partner.stateSlugs?.length ? (
+              <p className="partner-coverage">Supporting every county in {formatPartnerStateLabels(partner.stateSlugs)}.</p>
+            ) : showCountyCoverage && partner.countyKeys?.length ? (
               <p className="partner-coverage">Supporting {formatPartnerCountyLabels(partner.countyKeys)}</p>
             ) : (
               <p>Supporting independent county-by-county news coverage.</p>
@@ -63,6 +67,7 @@ function PartnerList({ partners, showCountyCoverage = false }: { partners: AdCre
 
 export function GlobalPartnerDirectory() {
   const sitewidePartners = getSitewidePartners();
+  const statewidePartners = getStatewidePartners();
   const countyPartners = getCountyScopedPartners();
   const countyPartnerPages = getCountyPartnerPageKeys();
 
@@ -99,6 +104,14 @@ export function GlobalPartnerDirectory() {
         <PartnerList partners={sitewidePartners} />
       </section>
 
+      {statewidePartners.length ? (
+        <section className="card partner-section">
+          <p className="kicker">Statewide partners</p>
+          <h2>Partners supporting every county in their state</h2>
+          <PartnerList partners={statewidePartners} />
+        </section>
+      ) : null}
+
       {countyPartners.length ? (
         <section className="card partner-section">
           <p className="kicker">County edition partners</p>
@@ -132,6 +145,7 @@ export function GlobalPartnerDirectory() {
 export function CountyPartnerDirectory({ county }: { county: CountySite }) {
   const countyKey = countyAdKey(county.state.slug, county.slug);
   const localPartners = getLocalCountyPartners(countyKey);
+  const statewidePartners = getStatewidePartners(county.state.slug);
   const sitewidePartners = getSitewidePartners();
 
   return (
@@ -148,6 +162,14 @@ export function CountyPartnerDirectory({ county }: { county: CountySite }) {
       </section>
 
       <PartnerCallout />
+
+      {statewidePartners.length ? (
+        <section className="card partner-section">
+          <p className="kicker">{county.state.name} statewide partners</p>
+          <h2>Partners supporting every {county.state.name} county</h2>
+          <PartnerList partners={statewidePartners} />
+        </section>
+      ) : null}
 
       {localPartners.length ? (
         <section className="card partner-section">
