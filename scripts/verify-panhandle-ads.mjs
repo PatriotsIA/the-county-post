@@ -1,12 +1,22 @@
 import { chromium } from "playwright";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const baseURL = process.env.COUNTY_POST_URL || "http://127.0.0.1:4186";
+const checkPlayback = !process.argv.includes("--skip-playback");
 const outputDirectory = "test-results/panhandle-review";
 await mkdir(outputDirectory, { recursive: true });
-const browser = await chromium.launch({ executablePath: "/usr/bin/chromium", headless: true, args: ["--no-sandbox"] });
-const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, reducedMotion: "reduce" });
+// A normal, temporary profile is required: browsers disable app installation
+// in the incognito contexts used by browser.newPage().
+const profileDirectory = await mkdtemp(join(tmpdir(), "county-post-review-"));
+const browserContext = await chromium.launchPersistentContext(profileDirectory, {
+  executablePath: "/usr/bin/chromium", headless: true, args: ["--no-sandbox"],
+  viewport: { width: 1280, height: 900 }, reducedMotion: "reduce",
+});
+const page = await browserContext.newPage();
 const result = { baseURL, videos: [], partners: [], errors: [], failedRequests: [] };
+if (!checkPlayback) result.playbackCheck = "Skipped: Vimeo's connection restriction was already recorded in this environment";
 page.on("pageerror", (error) => result.errors.push(error.message));
 page.on("requestfailed", (request) => {
   if (/vimeo/.test(request.url())) result.failedRequests.push({ url: request.url(), error: request.failure()?.errorText });
@@ -14,12 +24,15 @@ page.on("requestfailed", (request) => {
 
 try {
   await page.goto(`${baseURL}/texas`, { waitUntil: "domcontentloaded" });
+  // The carousel follows three news sections. Wait for those sections to
+  // settle so their initial expansion does not scroll the player out of view.
+  if (checkPlayback) await page.locator(".feed-source").nth(2).waitFor({ state: "attached", timeout: 30000 });
   const carousel = page.locator(".ad-slot-inline").first();
   await carousel.waitFor({ state: "attached" });
   if (await carousel.locator(".video-ad").count() !== 3) throw new Error("Expected three Texas video creatives");
   if (await page.locator("iframe[src*='player.vimeo.com']").count()) throw new Error("Video player loaded before a reader clicked");
 
-  for (const id of ["quanah-parker", "georgia-okeeffe", "goodnights"]) {
+  for (const id of checkPlayback ? ["quanah-parker", "georgia-okeeffe", "goodnights"] : []) {
     const card = carousel.locator(`[data-ad-id='panhandle-legends-${id}']`);
     await card.scrollIntoViewIfNeeded();
     await card.locator("img").evaluate((image) => image.decode());
@@ -62,6 +75,14 @@ try {
   await page.goto(baseURL, { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: "Bookmark nationwide homepage" }).waitFor();
   result.nationalBookmark = true;
+  result.bookmarkPopup = await page.locator(".bookmark-toast").evaluate((element) => {
+    const bounds = element.getBoundingClientRect();
+    return { width: bounds.width, right: innerWidth - bounds.right, bottom: innerHeight - bounds.bottom };
+  });
+  if (result.bookmarkPopup.width > 330 || result.bookmarkPopup.right !== 16 || result.bookmarkPopup.bottom !== 16) {
+    throw new Error("The compact bottom-right popup is not being served");
+  }
+  await page.screenshot({ path: `${outputDirectory}/national-popup.png` });
   const cdp = await page.context().newCDPSession(page);
   result.installability = await cdp.send("Page.getInstallabilityErrors");
   result.manifest = await cdp.send("Page.getAppManifest").then(({ url, errors }) => ({ url, errors }));
@@ -78,5 +99,6 @@ try {
   console.log(JSON.stringify(result, null, 2));
   process.exitCode = 1;
 } finally {
-  await browser.close();
+  await browserContext.close();
+  await rm(profileDirectory, { recursive: true, force: true });
 }

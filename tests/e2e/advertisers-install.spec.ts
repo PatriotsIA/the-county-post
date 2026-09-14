@@ -106,6 +106,11 @@ test("bookmark reminder appears nationally and by county, dismisses for the sess
   await page.goto("/");
   const prompt = page.getByRole("complementary", { name: "Bookmark The County Post", exact: true });
   await expect(prompt).toBeVisible();
+  expect(await prompt.evaluate((element) => {
+    const bounds = element.getBoundingClientRect();
+    return bounds.width <= 330 && innerWidth - bounds.right === 16 && innerHeight - bounds.bottom === 16;
+  })).toBe(true);
+  await page.screenshot({ path: "test-results/bookmark-desktop.png" });
   await prompt.getByRole("button", { name: "Bookmark nationwide homepage" }).click();
   await expect(prompt.getByText("Press Ctrl+D", { exact: false })).toBeVisible();
   await prompt.getByRole("button", { name: "Dismiss bookmark reminder" }).click();
