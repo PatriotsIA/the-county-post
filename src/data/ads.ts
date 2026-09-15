@@ -26,6 +26,7 @@ export type AdSlotId = "inline" | "banner";
 export const LORI_HORNER_AD_ID = "lori-horner-inline";
 const loriHornerCountyKeys = ["texas/randall", "texas/potter"] as const;
 const littleItalyCountyKeys = [
+  "arkansas/polk",
   "arkansas/scott",
   "arkansas/montgomery",
   "arkansas/pike",
@@ -195,7 +196,7 @@ export const ads: AdCreative[] = [
     image: littleItalyInline,
     name: "Little Italy",
     alt: "Little Italy Italian Restaurant in Mena, Arkansas",
-    href: PARTNER_DIRECTORY_PATH,
+    href: "http://littleitalymena.com/",
     countyKeys: littleItalyCountyKeys,
   },
   {
@@ -204,7 +205,7 @@ export const ads: AdCreative[] = [
     image: littleItalyBanner,
     name: "Little Italy",
     alt: "Little Italy Italian Restaurant — welcome to Little Italy in Mena, Arkansas",
-    href: PARTNER_DIRECTORY_PATH,
+    href: "http://littleitalymena.com/",
     countyKeys: littleItalyCountyKeys,
   },
   {
