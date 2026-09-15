@@ -15,12 +15,25 @@ import piaBanner from "../../ad-assets/PIA980.jpg";
 import piaMerchStore from "../../ad-assets/pia-merch-store-ad.jpg";
 import plainsBank from "../../ad-assets/PlainsBank250.jpg";
 import loriHorner from "../../ad-assets/lori-horner-ad.png";
+import freedomPavementBanner from "../../ad-assets/freedom-pavement-banner.png";
+import freedomPavementInline from "../../ad-assets/freedom-pavement-inline.png";
+import littleItalyBanner from "../../ad-assets/little-italy-banner.png";
+import littleItalyInline from "../../ad-assets/little-italy-inline.png";
 import { panhandleLegendsAds } from "./panhandle-legends";
 
 export type AdSlotId = "inline" | "banner";
 
 export const LORI_HORNER_AD_ID = "lori-horner-inline";
 const loriHornerCountyKeys = ["texas/randall", "texas/potter"] as const;
+const littleItalyCountyKeys = [
+  "arkansas/scott",
+  "arkansas/montgomery",
+  "arkansas/pike",
+  "arkansas/howard",
+  "arkansas/sevier",
+  "oklahoma/mccurtain",
+  "oklahoma/le-flore",
+];
 
 export function countyAdKey(stateSlug: string, countySlug: string) {
   return `${stateSlug}/${countySlug}`;
@@ -158,6 +171,42 @@ export const ads: AdCreative[] = [
     stateSlugs: ["texas"],
   },
   ...panhandleLegendsAds,
+  {
+    id: "freedom-pavement-inline",
+    slot: "inline",
+    image: freedomPavementInline,
+    name: "Freedom Pavement Services",
+    alt: "Freedom Pavement Services — parking lot striping, sealcoating, and more. Call (405) 974-8118 for a free quote.",
+    href: "https://freedom-pavement.com/",
+    stateSlugs: ["oklahoma"],
+  },
+  {
+    id: "freedom-pavement-banner",
+    slot: "banner",
+    image: freedomPavementBanner,
+    name: "Freedom Pavement Services",
+    alt: "Freedom Pavement Services — done right the first time. Call (405) 974-8118 for a free quote.",
+    href: "https://freedom-pavement.com/",
+    stateSlugs: ["oklahoma"],
+  },
+  {
+    id: "little-italy-inline",
+    slot: "inline",
+    image: littleItalyInline,
+    name: "Little Italy",
+    alt: "Little Italy Italian Restaurant in Mena, Arkansas",
+    href: PARTNER_DIRECTORY_PATH,
+    countyKeys: littleItalyCountyKeys,
+  },
+  {
+    id: "little-italy-banner",
+    slot: "banner",
+    image: littleItalyBanner,
+    name: "Little Italy",
+    alt: "Little Italy Italian Restaurant — welcome to Little Italy in Mena, Arkansas",
+    href: PARTNER_DIRECTORY_PATH,
+    countyKeys: littleItalyCountyKeys,
+  },
   {
     id: "lemc-banner",
     slot: "banner",

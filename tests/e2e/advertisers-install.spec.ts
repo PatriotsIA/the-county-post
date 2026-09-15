@@ -54,7 +54,7 @@ test("Texas advertiser targeting covers all 254 counties and excludes other edit
       noOtherCounty: otherCounties.every((county: { state: { slug: string }; slug: string }) => !hasGear(`${county.state.slug}/${county.slug}`)),
       national: hasGear(),
       removed: adData.ads.filter((ad: { name: string }) => /Pasture Exchange|PestCon/.test(ad.name)).length,
-      partnerPageCount: partnerData.getCountyPartnerPageKeys().length,
+      texasPartnerPageCount: partnerData.getCountyPartnerPageKeys().filter((key: string) => key.startsWith("texas/")).length,
       scopedRealty: [undefined, "texas", "texas/randall", "texas/potter", "texas/harris"].map((key) => adData.getAdsForSlot("inline", key).some((ad: { id: string }) => ad.id === "lori-horner-inline")),
       everyTexasCountyHasVideos: texas.every((county: { slug: string }) => videoCount(`texas/${county.slug}`) === expectedVideoIds.length),
       everyTexasEditionHasFullShowcase: ["texas", ...texas.map((county: { slug: string }) => `texas/${county.slug}`)].every((key) =>
@@ -66,7 +66,7 @@ test("Texas advertiser targeting covers all 254 counties and excludes other edit
       everyTexasCountyHasPartner: texas.every((county: { slug: string }) => partnerData.getPartnersForCounty(`texas/${county.slug}`).some((ad: { name: string }) => ad.name === "Panhandle Legends")),
     };
   }, showcaseVideoIds);
-  expect(result).toEqual({ texasCount: 254, statewide: true, everyTexasCounty: true, noOtherCounty: true, national: false, removed: 0, partnerPageCount: 254, scopedRealty: [false, false, true, true, false], everyTexasCountyHasVideos: true, everyTexasEditionHasFullShowcase: true, noVideosElsewhere: true, videosCannotSponsor: true, onePanhandlePartner: 1, everyTexasCountyHasPartner: true });
+  expect(result).toEqual({ texasCount: 254, statewide: true, everyTexasCounty: true, noOtherCounty: true, national: false, removed: 0, texasPartnerPageCount: 254, scopedRealty: [false, false, true, true, false], everyTexasCountyHasVideos: true, everyTexasEditionHasFullShowcase: true, noVideosElsewhere: true, videosCannotSponsor: true, onePanhandlePartner: 1, everyTexasCountyHasPartner: true });
   await expect(page.getByRole("heading", { name: "Guerrilla Gear", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Panhandle Legends", exact: true })).toHaveCount(1);
   await page.goto("/texas/harris/partners");
