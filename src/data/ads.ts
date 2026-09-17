@@ -19,6 +19,7 @@ import freedomPavementBanner from "../../ad-assets/freedom-pavement-banner.png";
 import freedomPavementInline from "../../ad-assets/freedom-pavement-inline.png";
 import littleItalyBanner from "../../ad-assets/little-italy-banner.png";
 import littleItalyInline from "../../ad-assets/little-italy-inline.png";
+import eskimoHut from "../../ad-assets/eskimo-hut-inline.jpg";
 import { panhandleLegendsAds } from "./panhandle-legends";
 
 export type AdSlotId = "inline" | "banner";
@@ -129,6 +130,15 @@ export const ads: AdCreative[] = [
     href: "https://www.lorihorner.com/",
     countyKeys: [...loriHornerCountyKeys],
     inFeedWeight: 1,
+  },
+  {
+    id: "eskimo-hut-inline",
+    slot: "inline",
+    image: eskimoHut,
+    name: "Eskimo Hut",
+    alt: "Eskimo Hut — Mighty Cold!",
+    href: "https://eskimohut.com/",
+    countyKeys: ["texas/harris"],
   },
   {
     id: "lemc-inline",
