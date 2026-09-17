@@ -420,6 +420,7 @@ const SECTION_LABELS: Record<string, string> = {
   "economic-data": "Economic Data",
   "op-eds": "Op-Eds",
   partners: "Partners",
+  "texas-legends": "Texas Legends",
   "local-sources": "Local Sources",
   submit: "Submit A Story",
   classifieds: "Classifieds",

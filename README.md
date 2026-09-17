@@ -86,6 +86,7 @@ The `SubmissionForm` component posts to EmailJS using the three `VITE_EMAILJS_*`
   - Elections & Transparency: `elections-transparency`, `voting-systems`, `election-administration`, `audits-recounts`, `open-records`
 - `/submit` national submit op-eds/stories page
 - `/states` state and county directory
+- `/texas/texas-legends` Panhandle Legends video collection, series background, websites, and publisher social links; also available at `/texas/:countySlug/texas-legends` with county navigation
 - `/states/:stateSlug` state news page
 - `/states/:stateSlug/:subjectSlug` state subject pages, including `op-eds`
 - `/states/:stateSlug/submit` state submit op-eds/stories page

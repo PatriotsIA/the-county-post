@@ -22,6 +22,7 @@ import { states } from "../../src/data/states";
 import { site } from "../../src/data/site";
 import { subjectGroups, subjectPages } from "../../src/data/subjects";
 import { dataCentersOpEd } from "../../src/data/county-post-op-eds";
+import { TEXAS_LEGENDS_PATH } from "../../src/data/panhandle-legends";
 
 const OUT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "../dist");
 
@@ -93,6 +94,7 @@ const corePaths = [
   "/states",
   "/about",
   "/partners",
+  TEXAS_LEGENDS_PATH,
   "/op-eds",
   dataCentersOpEd.path,
   "/privacy",

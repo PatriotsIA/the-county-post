@@ -1,0 +1,101 @@
+.legends-page {
+  --legends-paper: #f6f0e3;
+  --legends-gold: #edc77c;
+  display: grid;
+  gap: 36px;
+  padding-block: 8px 20px;
+}
+
+.legends-page h1, .legends-page h2, .legends-page h3 { margin: 0; }
+.legends-page p { margin: 0 0 14px; }
+.legends-page .kicker { font-size: 11px; letter-spacing: 0.12em; }
+.legends-page a:focus-visible, .partner-legends-button:focus-visible { outline: 3px solid var(--news-red); outline-offset: 5px; }
+
+.legends-hero {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: clamp(24px, 4vw, 56px);
+  align-items: center;
+  padding: clamp(24px, 4vw, 56px);
+  background: var(--news-blue-dark);
+  color: var(--legends-paper);
+  border-top: 5px solid var(--legends-gold);
+}
+.legends-intro { min-width: 0; }
+.legends-hero .kicker { color: var(--legends-gold); }
+.legends-hero h1 { font-size: clamp(40px, 5.8vw, 82px); line-height: 1.05; letter-spacing: -0.035em; }
+.legends-hero .legends-deck { margin-block: 22px 16px; font-size: clamp(20px, 2vw, 27px); line-height: 1.4; }
+.legends-intro > p:not(.legends-deck):not(.kicker) { font-size: 15px; line-height: 1.8; }
+.legends-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 20px;
+  margin-block: 10px 22px;
+  padding: 12px 18px;
+  background: var(--legends-gold);
+  color: var(--news-blue-dark);
+  font: 600 12px / 1.5 "Roboto Mono", monospace;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+.legends-button:hover { background: var(--white); }
+.legends-hero .legends-edition { margin: 0; opacity: 0.8; font-style: italic; }
+.legends-feature { display: block; min-width: 0; color: var(--ink); background: var(--legends-paper); text-decoration: none; border: 1px solid var(--legends-gold); }
+.legends-feature > img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: contain; background: #111; }
+.legends-feature-caption { display: flex; gap: 16px; align-items: center; padding: 20px; font-size: 16px; }
+.legends-feature-caption small { display: block; margin-top: 4px; color: var(--muted); font: 11px / 1.6 "Roboto Mono", monospace; }
+.legends-play { display: grid; place-items: center; width: 42px; height: 42px; flex: 0 0 42px; border-radius: 50%; background: var(--news-red); color: var(--white); font-size: 16px; padding-left: 2px; }
+
+.legends-about { display: grid; grid-template-columns: 1fr 2fr; gap: 40px; padding: 8px 24px 26px; border-bottom: 3px double var(--rule); }
+.legends-about h2 { font-size: clamp(25px, 3vw, 34px); line-height: 1.3; }
+.legends-about p { max-width: 74ch; font-size: 15px; line-height: 1.85; }
+.legends-about .legends-source { font-size: 12px; margin-bottom: 0; }
+.legends-source a { color: var(--news-blue); text-underline-offset: 3px; }
+
+.legends-section-heading { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin-bottom: 22px; }
+.legends-section-heading h2 { font-size: clamp(28px, 3.4vw, 42px); line-height: 1.2; }
+.legends-section-heading > p { max-width: 38ch; margin: 0; font-size: 13px; color: var(--muted); }
+.legends-videos { scroll-margin-top: 24px; }
+.legends-video-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+.legends-video-card { min-width: 0; border: 1px solid var(--border); background: var(--white); }
+.legends-video-card > a { display: block; height: 100%; color: var(--ink); text-decoration: none; }
+.legends-video-card > a:hover h3 { color: var(--news-red); }
+.legends-thumbnail { position: relative; overflow: hidden; background: #111; }
+.legends-thumbnail img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: contain; }
+.legends-thumbnail .legends-play { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 0 5px rgb(255 255 255 / 22%); }
+.legends-duration { position: absolute; right: 10px; bottom: 10px; padding: 3px 7px; background: #111; color: #fff; font: 12px / 1.5 "Roboto Mono", monospace; }
+.legends-video-copy { padding: 18px; }
+.legends-video-copy .kicker { margin-bottom: 8px; color: var(--muted); }
+.legends-video-copy h3 { font-size: clamp(19px, 2vw, 25px); line-height: 1.3; }
+.legends-watch { display: flex; justify-content: space-between; margin-top: 20px; padding-top: 12px; border-top: 1px solid #ddd; color: var(--news-blue); font: 11px / 1.5 "Roboto Mono", monospace; text-transform: uppercase; }
+
+.legends-connect { padding: clamp(20px, 3vw, 36px); border: 1px solid var(--border); background: var(--legends-paper); }
+.legends-link-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.legends-resource { display: block; min-width: 0; padding: 18px; background: var(--white); border: 1px solid #d3c9b8; color: var(--ink); text-decoration: none; }
+.legends-resource:hover { border-color: var(--news-blue); }
+.legends-resource .kicker { color: var(--muted); }
+.legends-resource h3 { margin-top: 6px; font-size: 17px; line-height: 1.5; }
+.legends-resource h3 span { color: var(--news-red); }
+.legends-resource p { margin: 7px 0 0; font-size: 13px; color: var(--muted); }
+.legends-return { display: flex; gap: 18px 28px; flex-wrap: wrap; font: 12px / 1.6 "Roboto Mono", monospace; }
+.legends-return a { color: var(--news-blue); }
+
+.partner-card .partner-legends-button { display: block; width: fit-content; margin-top: 12px; padding: 9px 12px; background: var(--news-blue); border: 1px solid var(--news-blue-dark); color: var(--white); text-decoration: none; }
+.partner-card .partner-legends-button:hover { background: var(--news-blue-dark); color: var(--white); }
+
+@media (max-width: 1000px) {
+  .legends-hero { grid-template-columns: 1fr; }
+  .legends-feature { max-width: 620px; }
+  .legends-video-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .legends-page { gap: 26px; }
+  .legends-hero { padding: 22px 18px; gap: 26px; }
+  .legends-hero h1 { font-size: 42px; }
+  .legends-hero .legends-deck { font-size: 22px; }
+  .legends-about { grid-template-columns: 1fr; gap: 16px; padding: 0 8px 22px; }
+  .legends-section-heading { display: grid; gap: 10px; }
+  .legends-video-grid, .legends-link-grid { grid-template-columns: 1fr; }
+  .legends-feature-caption { padding: 14px; gap: 12px; font-size: 14px; }
+  .legends-connect { padding: 18px 14px; }
+}

@@ -11,6 +11,8 @@ import { CountyWeatherPage } from "./components/CountyWeather";
 import { CountyDataSnapshot } from "./components/CountyDataSnapshot";
 import { CountyShowUpMeter } from "./components/CountyShowUpMeter";
 import { CountyPartnerDirectory, GlobalPartnerDirectory } from "./components/PartnerDirectory";
+import { TexasLegends } from "./components/TexasLegends";
+import { TEXAS_LEGENDS_PATH, texasLegendsPath } from "./data/panhandle-legends";
 import { CountyPublicNotices } from "./components/CountyPublicNotices";
 import { CountyLocalSourcesDirectory } from "./components/LocalSourcesDirectory";
 import { DataCentersOpEdPage } from "./components/CountyPostOpEd";
@@ -246,7 +248,8 @@ function App() {
     return () => window.removeEventListener("scroll", updateScrollTopVisibility);
   }, []);
 
-  const showEditionChrome = isEditionChromePath(pathname, activeCounty, activeState);
+  const isLegendsPage = pathname === TEXAS_LEGENDS_PATH || Boolean(activeCounty?.state.slug === "texas" && pathname === texasLegendsPath(activeCounty.slug));
+  const showEditionChrome = !isLegendsPage && isEditionChromePath(pathname, activeCounty, activeState);
   const isHomeEdition = isEditionHomePath(pathname, activeCounty, activeState);
 
   return (
@@ -310,7 +313,7 @@ function App() {
           <CountyDirectorySearch id="find-a-county" />
         </div>
       ) : null}
-      <TopTicker county={activeCounty} defaultOpen={isEditionHomePath(pathname, activeCounty, activeState)} />
+      {!isLegendsPage ? <TopTicker county={activeCounty} defaultOpen={isEditionHomePath(pathname, activeCounty, activeState)} /> : null}
       <button
         type="button"
         className={`scroll-top${showScrollTop ? " scroll-top-visible" : ""}`}
@@ -331,6 +334,8 @@ function App() {
           <Route path="/states" element={<StateDirectory />} />
           <Route path="/states/:stateSlug/*" element={<LegacyStateRedirect />} />
           <Route path="/partners" element={<GlobalPartnerDirectory />} />
+          <Route path={TEXAS_LEGENDS_PATH} element={<TexasLegends />} />
+          <Route path="/texas/:countySlug/texas-legends" element={<CountyTexasLegendsPage />} />
           <Route path="/op-eds/the-data-centers-and-the-rest-of-us" element={<DataCentersOpEdPage />} />
           <Route path="/op-eds" element={<OpEdPage />} />
           <Route path="/about" element={<AboutPage />} />
@@ -354,7 +359,7 @@ function App() {
         </Routes>
       </main>
 
-      <AdSlot slot="banner" limit={4} />
+      {!isLegendsPage ? <AdSlot slot="banner" limit={4} /> : null}
       <footer className="footer">
         <img className="footer-logo" src={countyPostLogo} alt={site.name} />
         <p>
@@ -470,6 +475,7 @@ function contextLinks(county?: NonNullable<ReturnType<typeof getCounty>>, state?
       { to: `${base}/public-notices`, label: "Public Notices" },
       { to: `${base}/local-sources`, label: "Local Sources" },
       { to: `${base}/partners`, label: "Partners" },
+      ...(county.state.slug === "texas" ? [{ to: texasLegendsPath(county.slug), label: "Texas Legends" }] : []),
       { to: `${base}/classifieds`, label: "Classifieds" },
       { to: `${base}/submit`, label: "Submit A Story" },
     ];
@@ -481,6 +487,7 @@ function contextLinks(county?: NonNullable<ReturnType<typeof getCounty>>, state?
       { to: base, label: "State Home", end: true },
       ...subjectGroups.map((group) => ({ to: `${base}/${group.slug}`, label: group.title })),
       { to: `${base}/op-eds`, label: "State Op-Eds" },
+      ...(state.slug === "texas" ? [{ to: TEXAS_LEGENDS_PATH, label: "Texas Legends" }] : []),
       { to: `${base}/submit`, label: "Submit A Story" },
     ];
   }
@@ -1761,6 +1768,13 @@ function CountySubjectGroupPage({ county, group }: { county: NonNullable<ReturnT
       ))}
     </div>
   );
+}
+
+function CountyTexasLegendsPage() {
+  const { countySlug } = useParams<{ countySlug: string }>();
+  const county = getCounty("texas", countySlug);
+  if (!county) return <NotFound />;
+  return <TexasLegends county={county} />;
 }
 
 function CountyPartnersPage() {
