@@ -537,7 +537,7 @@ function FeedSponsor({ kind, sponsorId, editionKey }: { kind: FeedKind; sponsorI
     <>
     <p className="feed-presented-by">Presented by</p>
     <a className="feed-sponsor" href={sponsor.href} target="_blank" rel="noreferrer sponsored">
-      <img src={sponsor.image} alt={sponsor.alt} />
+      <img src={sponsor.sponsorImage ?? sponsor.image} alt={sponsor.alt} />
     </a>
     </>
   );

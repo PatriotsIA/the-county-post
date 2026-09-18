@@ -6,7 +6,7 @@ const showcaseVideoIds = [
   "1165498523", "1165498343", "1206153465", "1215218560",
 ].sort();
 
-async function mockNews(page: Page) {
+async function mockNews(page: Page, itemCount = 24) {
   await page.route("http://localhost:8787/**", async (route) => {
     const url = new URL(route.request().url());
     if (!url.pathname.includes("/pages/") && !url.pathname.includes("/feeds/")) {
@@ -17,9 +17,11 @@ async function mockNews(page: Page) {
     const isCounty = url.pathname.includes("/counties/");
     const countySlug = isCounty ? url.pathname.split("/")[5] : undefined;
     const location = isCounty ? `${countySlug === "harris" ? "Harris" : "Randall"} County, Texas` : isTexas ? "Texas" : "United States";
-    const items = Array.from({ length: 24 }, (_, index) => ({
+    const items = Array.from({ length: itemCount }, (_, index) => ({
       id: `${url.pathname}-${index}`,
-      title: `${location} local news, sports and community report ${index}`,
+      title: itemCount > 24
+        ? `${location}: topic${index} project${index} meeting${index} report${index}`
+        : `${location} local news, sports and community report ${index}`,
       link: `https://example.com/report/${index}`,
       source: "Community News",
       contentSnippet: `News from ${location}.`,
@@ -35,6 +37,26 @@ async function mockNews(page: Page) {
 }
 
 test.beforeEach(async ({ page }) => { await mockNews(page); });
+
+test("Amberwood uses square artwork for ads and the wide logo for feed sponsorship", async ({ page }) => {
+  // A full feed exercises the rotating ad catalog, beyond the first few ads.
+  await mockNews(page, 96);
+  await page.goto("/texas/randall");
+  const square = page.locator('.ad-slot-inline img[alt^="Amberwood"]').first();
+  const feedAd = page.locator('.feed-ad-image[alt^="Amberwood"]').first();
+  const sponsor = page.locator('.feed-sponsor img[alt^="Amberwood"]').first();
+  for (const image of [square, feedAd, sponsor]) {
+    await expect(image).toBeAttached();
+    await image.evaluate((element: HTMLImageElement) => element.decode());
+  }
+  await expect(square).toHaveAttribute("src", /amberwood-brush-square\.png/);
+  await expect(feedAd).toHaveAttribute("src", /amberwood-brush-square\.png/);
+  await expect(sponsor).toHaveAttribute("src", /amberwood-brush-logo\.png/);
+  expect(await square.evaluate((image: HTMLImageElement) => [image.naturalWidth, image.naturalHeight])).toEqual([600, 600]);
+  expect(await sponsor.evaluate((image: HTMLImageElement) => [image.naturalWidth, image.naturalHeight])).toEqual([2477, 923]);
+  await expect(sponsor.locator("..")).toHaveAttribute("href", "/partners");
+  await expect(page.locator('img[src*="Amberwood-Brush-Site-250"]')).toHaveCount(0);
+});
 
 test("Texas advertiser targeting covers all 254 counties and excludes other editions", async ({ page }) => {
   await page.goto("/partners");

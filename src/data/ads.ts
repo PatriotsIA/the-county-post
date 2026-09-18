@@ -1,5 +1,6 @@
 import cbt from "../../ad-assets/CBT4.jpg";
-import amberwoodBrush from "../../ad-assets/Amberwood-Brush-Site-250.jpg";
+import amberwoodBrush from "../../ad-assets/amberwood-brush-square.png";
+import amberwoodBrushLogo from "../../ad-assets/amberwood-brush-logo.png";
 import brownGmc from "../../ad-assets/BrownGMC-250.jpg";
 import becomeAPatriot from "../../ad-assets/BecomeAPatriot.jpg";
 import becomeAPatriot2 from "../../ad-assets/BecomeAPatriot2.jpg";
@@ -99,6 +100,7 @@ export type AdCreative = {
   id: string;
   slot: AdSlotId;
   image: string;
+  sponsorImage?: string;
   name: string;
   alt: string;
   href: string;
@@ -230,8 +232,9 @@ export const ads: AdCreative[] = [
     id: "amberwood-brush-inline",
     slot: "inline",
     image: amberwoodBrush,
+    sponsorImage: amberwoodBrushLogo,
     name: "Amberwood Brush",
-    alt: "Amberwood Brush",
+    alt: "Amberwood Brush Site — serving residential and commercial customers",
     href: PARTNER_DIRECTORY_PATH,
   },
   {

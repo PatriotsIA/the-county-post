@@ -1655,7 +1655,7 @@ function CountySponsor({ county }: { county: NonNullable<ReturnType<typeof getCo
 
   return (
     <a className="county-sponsor" href={sponsor.href} target="_blank" rel="noreferrer sponsored">
-      <img src={sponsor.image} alt={sponsor.alt} />
+      <img src={sponsor.sponsorImage ?? sponsor.image} alt={sponsor.alt} />
     </a>
   );
 }
