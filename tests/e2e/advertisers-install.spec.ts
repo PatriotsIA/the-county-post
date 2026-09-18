@@ -38,6 +38,54 @@ async function mockNews(page: Page, itemCount = 24) {
 
 test.beforeEach(async ({ page }) => { await mockNews(page); });
 
+test("Parallel partners and ads are limited to Randall and Potter counties", async ({ page }) => {
+  await page.goto("/partners");
+  const targeting = await page.evaluate(async () => {
+    const paths = ["/src/data/ads.ts", "/src/data/partners.ts", "/src/data/counties.ts"];
+    const [adData, partnerData, countyData] = await Promise.all(paths.map((path) => import(path)));
+    const isParallel = (ad: { id: string }) => ad.id.startsWith("parallel-");
+    const targets = ["texas/randall", "texas/potter"];
+    return {
+      targetCounts: targets.map((key) => ({
+        inline: adData.getAdsForSlot("inline", key).filter(isParallel).length,
+        banner: adData.getAdsForSlot("banner", key).filter(isParallel).length,
+        partners: partnerData.getLocalCountyPartners(key).filter(isParallel).length,
+        feedIds: [...new Set(adData.getInFeedAdRotation(key).filter(isParallel).map((ad: { id: string }) => ad.id))].sort(),
+      })),
+      excludedElsewhere: [undefined, "texas", ...countyData.counties.map((county: { state: { slug: string }; slug: string }) => `${county.state.slug}/${county.slug}`)]
+        .filter((key) => !targets.includes(key as string))
+        .every((key) => !adData.getAdsForSlot("inline", key).some(isParallel) && !adData.getAdsForSlot("banner", key).some(isParallel) && !adData.getInFeedAdRotation(key).some(isParallel)),
+      globalListings: partnerData.getPartnerCreatives().filter(isParallel).length,
+    };
+  });
+  expect(targeting).toEqual({
+    targetCounts: Array.from({ length: 2 }, () => ({ inline: 2, banner: 2, partners: 2, feedIds: ["parallel-builders-inline", "parallel-roofing-inline"] })),
+    excludedElsewhere: true,
+    globalListings: 2,
+  });
+  for (const path of ["/partners", "/texas/randall/partners", "/texas/potter/partners"]) {
+    await page.goto(path);
+    for (const name of ["Parallel Roofing", "Parallel Builders"]) {
+      await expect(page.getByRole("heading", { name, exact: true })).toHaveCount(1);
+      const card = page.locator(".partner-card").filter({ has: page.getByRole("heading", { name, exact: true }) });
+      await expect(card.getByRole("link", { name: "Visit partner" })).toHaveAttribute("href", "https://pb-tx.com/");
+    }
+  }
+  await page.goto("/texas/harris/partners");
+  await expect(page.getByRole("heading", { name: /^Parallel / })).toHaveCount(0);
+  for (const county of ["randall", "potter"]) {
+    await page.goto(`/texas/${county}`);
+    for (const [name, dimensions] of [["Roofing", [767, 435]], ["Builders", [569, 267]]] as const) {
+      const image = page.locator(`.ad-slot-inline img[alt^="Parallel ${name}"]`).first();
+      await image.evaluate((element: HTMLImageElement) => element.decode());
+      expect(await image.evaluate((element: HTMLImageElement) => [element.naturalWidth, element.naturalHeight])).toEqual(dimensions);
+      await expect(image.locator("..")).toHaveAttribute("href", "https://pb-tx.com/");
+      await expect(page.locator(`.ad-banner-slide img[src*="parallel-${name.toLowerCase()}"]`).first()).toBeAttached();
+      await expect(page.locator(`.ad-banner-slide:has(img[src*="parallel-${name.toLowerCase()}"])`).first()).toHaveAttribute("href", "https://pb-tx.com/");
+    }
+  }
+});
+
 test("Amberwood uses square artwork for ads and the wide logo for feed sponsorship", async ({ page }) => {
   // A full feed exercises the rotating ad catalog, beyond the first few ads.
   await mockNews(page, 96);

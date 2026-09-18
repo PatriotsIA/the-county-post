@@ -21,12 +21,15 @@ import freedomPavementInline from "../../ad-assets/freedom-pavement-inline.png";
 import littleItalyBanner from "../../ad-assets/little-italy-banner.png";
 import littleItalyInline from "../../ad-assets/little-italy-inline.png";
 import eskimoHut from "../../ad-assets/eskimo-hut-inline.jpg";
+import parallelRoofing from "../../ad-assets/parallel-roofing.png";
+import parallelBuilders from "../../ad-assets/parallel-builders.png";
 import { panhandleLegendsAds } from "./panhandle-legends";
 
 export type AdSlotId = "inline" | "banner";
 
 export const LORI_HORNER_AD_ID = "lori-horner-inline";
 const loriHornerCountyKeys = ["texas/randall", "texas/potter"] as const;
+const parallelCountyKeys = ["texas/randall", "texas/potter"];
 const littleItalyCountyKeys = [
   "arkansas/polk",
   "arkansas/scott",
@@ -132,6 +135,42 @@ export const ads: AdCreative[] = [
     href: "https://www.lorihorner.com/",
     countyKeys: [...loriHornerCountyKeys],
     inFeedWeight: 1,
+  },
+  {
+    id: "parallel-roofing-inline",
+    slot: "inline",
+    image: parallelRoofing,
+    name: "Parallel Roofing",
+    alt: "Parallel Roofing — a division of Parallel Builders",
+    href: "https://pb-tx.com/",
+    countyKeys: parallelCountyKeys,
+  },
+  {
+    id: "parallel-roofing-banner",
+    slot: "banner",
+    image: parallelRoofing,
+    name: "Parallel Roofing",
+    alt: "Parallel Roofing — a division of Parallel Builders",
+    href: "https://pb-tx.com/",
+    countyKeys: parallelCountyKeys,
+  },
+  {
+    id: "parallel-builders-inline",
+    slot: "inline",
+    image: parallelBuilders,
+    name: "Parallel Builders",
+    alt: "Parallel Builders — general contractors",
+    href: "https://pb-tx.com/",
+    countyKeys: parallelCountyKeys,
+  },
+  {
+    id: "parallel-builders-banner",
+    slot: "banner",
+    image: parallelBuilders,
+    name: "Parallel Builders",
+    alt: "Parallel Builders — general contractors",
+    href: "https://pb-tx.com/",
+    countyKeys: parallelCountyKeys,
   },
   {
     id: "eskimo-hut-inline",
