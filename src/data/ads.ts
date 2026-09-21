@@ -23,6 +23,7 @@ import littleItalyInline from "../../ad-assets/little-italy-inline.png";
 import eskimoHut from "../../ad-assets/eskimo-hut-inline.jpg";
 import parallelRoofing from "../../ad-assets/parallel-roofing.png";
 import parallelBuilders from "../../ad-assets/parallel-builders.png";
+import gopConnect from "../../ad-assets/gopconnect-be-informed.png";
 import { panhandleLegendsAds } from "./panhandle-legends";
 
 export type AdSlotId = "inline" | "banner";
@@ -118,6 +119,14 @@ export const PARTNER_DIRECTORY_PATH = "/partners";
 // When adding a county-scoped ad (countyKeys), it is included automatically on that
 // county's partners page and in the global partners directory via src/data/partners.ts.
 export const ads: AdCreative[] = [
+  {
+    id: "gopconnect-inline",
+    slot: "inline",
+    image: gopConnect,
+    name: "GOPConnect",
+    alt: "My Local GOP — Be informed. Text GOP to 84576. Paid for by GOPConnect, LLC.",
+    href: "https://mylocalgop.com/",
+  },
   {
     id: "merch-inline",
     slot: "inline",

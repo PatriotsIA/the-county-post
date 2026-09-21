@@ -38,6 +38,43 @@ async function mockNews(page: Page, itemCount = 24) {
 
 test.beforeEach(async ({ page }) => { await mockNews(page); });
 
+test("GOPConnect ads and partner listings cover every state and county and link to My Local GOP", async ({ page }) => {
+  await mockNews(page, 96);
+  await page.goto("/partners");
+  const coverage = await page.evaluate(async () => {
+    const paths = ["/src/data/ads.ts", "/src/data/partners.ts", "/src/data/counties.ts", "/src/data/states.ts"];
+    const [adData, partnerData, countyData, stateData] = await Promise.all(paths.map((path) => import(path)));
+    const countyKeys = countyData.counties.map((county: { state: { slug: string }; slug: string }) => `${county.state.slug}/${county.slug}`);
+    const editions = [undefined, ...stateData.states.map((state: { slug: string }) => state.slug), ...countyKeys];
+    const isGopConnect = (ad: { id: string }) => ad.id === "gopconnect-inline";
+    return {
+      counties: countyKeys.length,
+      states: stateData.states.length,
+      allEditions: editions.every((key) => adData.getAdsForSlot("inline", key).filter(isGopConnect).length === 1 && adData.getInFeedAdRotation(key).some(isGopConnect)),
+      allCountyPartners: countyKeys.every((key: string) => partnerData.getPartnersForCounty(key).filter(isGopConnect).length === 1),
+      nationwidePartners: partnerData.getSitewidePartners().filter(isGopConnect).length,
+    };
+  });
+  expect(coverage).toEqual({ counties: 3143, states: 51, allEditions: true, allCountyPartners: true, nationwidePartners: 1 });
+  for (const path of ["/partners", "/texas/randall/partners", "/arkansas/polk/partners", "/california/los-angeles/partners"]) {
+    await page.goto(path);
+    const card = page.locator(".partner-card").filter({ has: page.getByRole("heading", { name: "GOPConnect", exact: true }) });
+    await expect(card).toHaveCount(1);
+    await expect(card.getByRole("link", { name: "Visit partner" })).toHaveAttribute("href", "https://mylocalgop.com/");
+  }
+  for (const path of ["/", "/texas", "/arkansas", "/texas/randall", "/arkansas/polk"]) {
+    await page.goto(path);
+    const image = page.locator('.ad-slot-inline img[alt^="My Local GOP"]').first();
+    await image.evaluate((element: HTMLImageElement) => element.decode());
+    expect(await image.evaluate((element: HTMLImageElement) => [element.naturalWidth, element.naturalHeight])).toEqual([1254, 1254]);
+    await expect(image.locator("..")).toHaveAttribute("href", "https://mylocalgop.com/");
+  }
+  await page.goto("/texas");
+  const feedAd = page.locator('.feed-ad-image[alt^="My Local GOP"]').first();
+  await expect(feedAd).toBeAttached();
+  await expect(feedAd.locator("..")).toHaveAttribute("href", "https://mylocalgop.com/");
+});
+
 test("Parallel partners and ads are limited to Randall and Potter counties", async ({ page }) => {
   await page.goto("/partners");
   const targeting = await page.evaluate(async () => {
