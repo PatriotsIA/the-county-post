@@ -14,15 +14,15 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   webServer: {
-    command: `VITE_NEWS_API_URL=http://localhost:8787 npm run dev -- --host 127.0.0.1 --port ${port}`,
+    command: `VITE_NEWS_API_URL=http://localhost:8787 VITE_EMAILJS_SERVICE_ID=service_test VITE_EMAILJS_TEMPLATE_ID=template_countypost VITE_EMAILJS_PUBLIC_KEY=test_public_key npm run dev -- --host 127.0.0.1 --strictPort --port ${port}`,
     url: baseURL,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 60_000,
   },
   projects: [
     {
       name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      use: { ...devices["Desktop Chrome"], launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE } },
     },
   ],
 });

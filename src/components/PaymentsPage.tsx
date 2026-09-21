@@ -22,6 +22,7 @@ import { getCountiesForState, searchCounties, type CountySite } from "../data/co
 import { searchStates, type StateSite } from "../data/states";
 import { fetchCountyPopulation, startAdvertiserCheckout, uploadAdCreative } from "../lib/checkout-api";
 import { AdvertiserPlacementShowcase } from "./AdvertiserPlacementShowcase";
+import { sendStoryFormEmail } from "../lib/email";
 
 type SelectedCounty = {
   county: CountySite;
@@ -147,6 +148,26 @@ export function PaymentsPage() {
               states: selectedStates.map(({ state }) => state.slug),
               ...(statePlacement === "state-feed-sponsorship" ? { feeds: selectedFeeds } : {}),
             });
+      await sendStoryFormEmail({
+        scope: { level: "national", label: "Advertising campaign request" },
+        title: "Advertising campaign request",
+        replyTo: customerEmail,
+        values: {
+          name: businessName,
+          email: customerEmail,
+          businessName,
+          referredBy,
+          campaignScope: scope,
+          placement: scope === "county" ? countyPlacement : statePlacement,
+          billing,
+          quotedTotal: `${formatAdPrice(total)}/${billing === "annual" ? "year" : "month"}`,
+          counties: scope === "county" ? counties.map(({ county }) => `${county.displayName}, ${county.state.name} (${county.fips})`).join("; ") : undefined,
+          states: scope === "state" ? selectedStates.map(({ state }) => state.name).join("; ") : undefined,
+          feeds: needsFeeds ? selectedFeeds.join(", ") : undefined,
+          creativeAssetKey,
+          paymentStatus: "Checkout requested; payment has not been confirmed.",
+        },
+      });
       window.location.assign(checkoutSession.url);
     } catch (error) {
       setStatus("error");

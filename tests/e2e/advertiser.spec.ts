@@ -1,6 +1,9 @@
 import { expect, test } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
+  await page.route("https://api.emailjs.com/**", async (route) => {
+    await route.fulfill({ status: 200, contentType: "text/plain", body: "OK" });
+  });
   await page.route("http://localhost:8787/v1/counties/**/population", async (route) => {
     const parts = new URL(route.request().url()).pathname.split("/").filter(Boolean);
     const stateSlug = parts[2];
@@ -69,6 +72,11 @@ test("renders checkout first, national contact next, and consolidated pricing", 
 
 test("calculates state and per-feed pricing and submits state fulfillment details", async ({ page }) => {
   let checkoutPayload: Record<string, unknown> | undefined;
+  let notification: { template_id: string; template_params: Record<string, string> } | undefined;
+  await page.route("https://api.emailjs.com/**", async (route) => {
+    notification = route.request().postDataJSON();
+    await route.fulfill({ status: 200, contentType: "text/plain", body: "OK" });
+  });
   await page.route("http://localhost:8787/v1/checkout/sessions", async (route) => {
     checkoutPayload = route.request().postDataJSON() as Record<string, unknown>;
     await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ url: "/?checkout=success" }) });
@@ -103,6 +111,28 @@ test("calculates state and per-feed pricing and submits state fulfillment detail
     businessName: "Texas Example",
     referredBy: "County Post Sales Team",
   });
+  expect(notification?.template_id).toBe("template_countypost");
+  expect(notification?.template_params.reply_to).toBe("ads@example.com");
+  expect(notification?.template_params.message).toContain("businessName: Texas Example");
+  expect(notification?.template_params.message).toContain("states: Texas");
+  expect(notification?.template_params.message).toContain("feeds: general, sports");
+  expect(notification?.template_params.message).toContain("quotedTotal: $101,600/year");
+  expect(notification?.template_params.message).toContain("payment has not been confirmed");
+});
+
+test("keeps the request available when the campaign notification fails", async ({ page }) => {
+  await page.route("https://api.emailjs.com/**", route => route.fulfill({status: 503, body: "Mail temporarily unavailable"}));
+  await page.route("http://localhost:8787/v1/checkout/sessions", route => route.fulfill({status: 201, contentType:"application/json", body: JSON.stringify({url:"/?checkout=success"})}));
+  await page.goto("/");
+  await page.getByLabel("Add a county").fill("Potter");
+  await page.getByRole("button", { name: "Potter County, TX" }).click();
+  await page.getByLabel("Business name").fill("Retained request");
+  await page.getByLabel("Contact email").fill("ads@example.com");
+  await page.getByRole("button", { name: "Continue to secure Stripe checkout" }).click();
+  await expect(page.locator(".error")).toBeVisible();
+  await expect(page).not.toHaveURL(/checkout=success/);
+  await expect(page.getByLabel("Business name")).toHaveValue("Retained request");
+  await expect(page.getByRole("button", { name: "Continue to secure Stripe checkout" })).toBeEnabled();
 });
 
 test("preserves county population-tier checkout", async ({ page }) => {
