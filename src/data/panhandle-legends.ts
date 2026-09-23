@@ -9,17 +9,14 @@ import frayPadilla from "../../ad-assets/panhandle-legends-fray-padilla.jpg";
 import bonesHooks from "../../ad-assets/panhandle-legends-bones-hooks.jpg";
 import type { AdCreative } from "./ads";
 
-export const TEXAS_LEGENDS_PATH = "/texas/texas-legends";
-export const TEXAS_LEGENDS_DESCRIPTION = "Meet the people who shaped the Texas Panhandle. Watch all nine Panhandle Legends videos and connect with the series and its publishers.";
+export const PANHANDLE_LEGENDS_PATH = "/legends";
+export const PANHANDLE_LEGENDS_TITLE = "Panhandle Legends — Texas Statewide Sponsor";
+export const PANHANDLE_LEGENDS_DESCRIPTION = "Explore Panhandle Legends, a Texas statewide sponsor of The County Post. Watch nine short videos celebrating the people and history of the Texas Panhandle.";
 export const PANHANDLE_LEGENDS_SHOP_URL = "https://shop.patriotsinaction.com/collections/texas-panhandle-legends";
-
-export function texasLegendsPath(countySlug?: string) {
-  return countySlug ? `/texas/${countySlug}/texas-legends` : TEXAS_LEGENDS_PATH;
-}
 
 // Publisher identity and video durations verified against Vimeo's public
 // showcase catalog; other sources are recorded in docs/texas-legends.md.
-export const texasLegendsLinks = [
+export const panhandleLegendsLinks = [
   { label: "The complete Vimeo collection", detail: "All Panhandle Legends videos in one showcase.", href: "https://vimeo.com/showcase/12112279", kind: "Watch" },
   { label: "Patriots in Action TV", detail: "Follow the series publisher on Vimeo.", href: "https://vimeo.com/patriotsinactiontv", kind: "Follow" },
   { label: "Patriots in Action", detail: "Visit the website of a series collaborator.", href: "https://patriotsinaction.com/", kind: "Website" },

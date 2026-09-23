@@ -24,8 +24,13 @@ console and CLI steps to apply it, are in
 A consequence worth remembering: a catch-all 200 rewrite is evaluated ahead of
 static files at extensionless paths, so prerendered `<route>/index.html` files
 would be unreachable. Do not build a prerenderer against this serving model. If
-client-side metadata ever proves insufficient, the escalation is real SSR behind
-a different serving model.
+client-side metadata needs to be supplemented for a specific page, that page
+needs an explicit rewrite before the catch-all. `/legends` is one scoped
+exception: the build writes `legends.html` with sponsor-specific initial
+metadata and Amplify rewrites the exact URL to that file. See
+[`texas-legends.md`](texas-legends.md) for the ordered routing rules. This does
+not provide server-rendered content or route-specific initial metadata for the
+rest of the site.
 
 ## Per-page metadata
 

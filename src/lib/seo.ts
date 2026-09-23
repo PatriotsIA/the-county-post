@@ -420,7 +420,8 @@ const SECTION_LABELS: Record<string, string> = {
   "economic-data": "Economic Data",
   "op-eds": "Op-Eds",
   partners: "Partners",
-  "texas-legends": "Texas Legends",
+  "texas-legends": "Panhandle Legends",
+  legends: "Panhandle Legends",
   "local-sources": "Local Sources",
   submit: "Submit A Story",
   classifieds: "Classifieds",
@@ -507,6 +508,7 @@ export function crumbTrail(pathname: string, county?: CountySite, state?: StateS
   // Standalone editorial and legal pages.
   const staticLabels: Record<string, string> = {
     about: "About",
+    legends: "Panhandle Legends",
     partners: "Partners",
     "op-eds": "Op-Eds",
     submit: "Submit A Story",
