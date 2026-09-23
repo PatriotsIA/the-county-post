@@ -81,7 +81,7 @@ export const subjectGroups: SubjectGroup[] = [
   },
   {
     slug: "elections-transparency",
-    title: "Elections & Transparency",
+    title: "Elections",
     kicker: "Civic records",
     description: "Coverage of elections, public records, open government, audits, recounts, and election administration.",
     subjects: [
