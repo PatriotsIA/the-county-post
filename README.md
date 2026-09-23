@@ -83,7 +83,7 @@ The `SubmissionForm` component posts to EmailJS using the three `VITE_EMAILJS_*`
 - `/topics/:subjectSlug` national editorial desk and subcategory pages:
   - Economy & Markets: `economy-markets`, `monetary-policy`, `markets-investing`, `jobs-business`
   - Taxes & Public Finance: `taxes-public-finance`, `property-taxes`, `municipal-bonds`, `budgets-levies`
-  - Elections & Transparency: `elections-transparency`, `voting-systems`, `election-administration`, `audits-recounts`, `open-records`
+  - Elections: `elections-transparency`, `voting-systems`, `election-administration`, `audits-recounts`, `open-records`
 - `/submit` national submit op-eds/stories page
 - `/states` state and county directory
 - `/legends` dedicated Panhandle Legends sponsor page with nine videos, series background, websites, and publisher social links; linked statewide throughout Texas. Former `/texas/texas-legends` and valid `/texas/:countySlug/texas-legends` URLs redirect here.
