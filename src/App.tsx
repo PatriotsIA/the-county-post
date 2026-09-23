@@ -11,8 +11,8 @@ import { CountyWeatherPage } from "./components/CountyWeather";
 import { CountyDataSnapshot } from "./components/CountyDataSnapshot";
 import { CountyShowUpMeter } from "./components/CountyShowUpMeter";
 import { CountyPartnerDirectory, GlobalPartnerDirectory } from "./components/PartnerDirectory";
-import { TexasLegends } from "./components/TexasLegends";
-import { TEXAS_LEGENDS_PATH, texasLegendsPath } from "./data/panhandle-legends";
+import { PanhandleLegends } from "./components/PanhandleLegends";
+import { PANHANDLE_LEGENDS_PATH } from "./data/panhandle-legends";
 import { CountyPublicNotices } from "./components/CountyPublicNotices";
 import { CountyLocalSourcesDirectory } from "./components/LocalSourcesDirectory";
 import { DataCentersOpEdPage } from "./components/CountyPostOpEd";
@@ -248,7 +248,8 @@ function App() {
     return () => window.removeEventListener("scroll", updateScrollTopVisibility);
   }, []);
 
-  const isLegendsPage = pathname === TEXAS_LEGENDS_PATH || Boolean(activeCounty?.state.slug === "texas" && pathname === texasLegendsPath(activeCounty.slug));
+  const normalizedPath = pathname.replace(/\/+$/, "");
+  const isLegendsPage = normalizedPath === PANHANDLE_LEGENDS_PATH || normalizedPath === "/texas/texas-legends" || Boolean(activeCounty?.state.slug === "texas" && normalizedPath === `/texas/${activeCounty.slug}/texas-legends`);
   const showEditionChrome = !isLegendsPage && isEditionChromePath(pathname, activeCounty, activeState);
   const isHomeEdition = isEditionHomePath(pathname, activeCounty, activeState);
 
@@ -306,7 +307,7 @@ function App() {
         </NavLink>
         </nav>
       </header>
-      <ContextNav county={activeCounty} state={activeState} />
+      {!isLegendsPage ? <ContextNav county={activeCounty} state={activeState} /> : null}
       {activeCounty && isCountyDataPath(pathname, activeCounty) ? <AtlasDomainNav county={activeCounty} /> : null}
       {pathname === "/" ? (
         <div className="top-county-finder">
@@ -334,8 +335,9 @@ function App() {
           <Route path="/states" element={<StateDirectory />} />
           <Route path="/states/:stateSlug/*" element={<LegacyStateRedirect />} />
           <Route path="/partners" element={<GlobalPartnerDirectory />} />
-          <Route path={TEXAS_LEGENDS_PATH} element={<TexasLegends />} />
-          <Route path="/texas/:countySlug/texas-legends" element={<CountyTexasLegendsPage />} />
+          <Route path={PANHANDLE_LEGENDS_PATH} element={<PanhandleLegends />} />
+          <Route path="/texas/texas-legends" element={<LegacyLegendsRedirect />} />
+          <Route path="/texas/:countySlug/texas-legends" element={<LegacyLegendsRedirect countyScoped />} />
           <Route path="/op-eds/the-data-centers-and-the-rest-of-us" element={<DataCentersOpEdPage />} />
           <Route path="/op-eds" element={<OpEdPage />} />
           <Route path="/about" element={<AboutPage />} />
@@ -383,8 +385,9 @@ function stateHomePath(state: { slug: string }) {
 
 function LegacyStateRedirect() {
   const { stateSlug, "*": rest } = useParams<{ stateSlug: string; "*": string }>();
+  const { search, hash } = useLocation();
   if (!stateSlug) return <Navigate to="/states" replace />;
-  return <Navigate to={rest ? `/${stateSlug}/${rest}` : `/${stateSlug}`} replace />;
+  return <Navigate to={{ pathname: rest ? `/${stateSlug}/${rest}` : `/${stateSlug}`, search, hash }} replace />;
 }
 
 function CountyOrStateDesk() {
@@ -475,7 +478,7 @@ function contextLinks(county?: NonNullable<ReturnType<typeof getCounty>>, state?
       { to: `${base}/public-notices`, label: "Public Notices" },
       { to: `${base}/local-sources`, label: "Local Sources" },
       { to: `${base}/partners`, label: "Partners" },
-      ...(county.state.slug === "texas" ? [{ to: texasLegendsPath(county.slug), label: "Texas Legends" }] : []),
+      ...(county.state.slug === "texas" ? [{ to: PANHANDLE_LEGENDS_PATH, label: "Panhandle Legends" }] : []),
       { to: `${base}/classifieds`, label: "Classifieds" },
       { to: `${base}/submit`, label: "Submit A Story" },
     ];
@@ -487,7 +490,7 @@ function contextLinks(county?: NonNullable<ReturnType<typeof getCounty>>, state?
       { to: base, label: "State Home", end: true },
       ...subjectGroups.map((group) => ({ to: `${base}/${group.slug}`, label: group.title })),
       { to: `${base}/op-eds`, label: "State Op-Eds" },
-      ...(state.slug === "texas" ? [{ to: TEXAS_LEGENDS_PATH, label: "Texas Legends" }] : []),
+      ...(state.slug === "texas" ? [{ to: PANHANDLE_LEGENDS_PATH, label: "Panhandle Legends" }] : []),
       { to: `${base}/submit`, label: "Submit A Story" },
     ];
   }
@@ -1770,11 +1773,11 @@ function CountySubjectGroupPage({ county, group }: { county: NonNullable<ReturnT
   );
 }
 
-function CountyTexasLegendsPage() {
+function LegacyLegendsRedirect({ countyScoped = false }: { countyScoped?: boolean }) {
   const { countySlug } = useParams<{ countySlug: string }>();
-  const county = getCounty("texas", countySlug);
-  if (!county) return <NotFound />;
-  return <TexasLegends county={county} />;
+  const { search, hash } = useLocation();
+  if (countyScoped && !getCounty("texas", countySlug)) return <NotFound />;
+  return <Navigate to={{ pathname: PANHANDLE_LEGENDS_PATH, search, hash }} replace />;
 }
 
 function CountyPartnersPage() {

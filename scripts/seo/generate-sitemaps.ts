@@ -14,7 +14,7 @@
  * Only Tier 1 routes are listed. See `indexPolicy` in src/lib/seo.ts for why the
  * other ~85,000 URLs are deliberately left out.
  */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { counties } from "../../src/data/counties";
@@ -22,7 +22,8 @@ import { states } from "../../src/data/states";
 import { site } from "../../src/data/site";
 import { subjectGroups, subjectPages } from "../../src/data/subjects";
 import { dataCentersOpEd } from "../../src/data/county-post-op-eds";
-import { TEXAS_LEGENDS_PATH } from "../../src/data/panhandle-legends";
+import { PANHANDLE_LEGENDS_PATH, PANHANDLE_LEGENDS_TITLE, PANHANDLE_LEGENDS_DESCRIPTION } from "../../src/data/panhandle-legends";
+import { clampDescription, pageTitle } from "../../src/lib/seo";
 
 const OUT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "../dist");
 
@@ -94,7 +95,7 @@ const corePaths = [
   "/states",
   "/about",
   "/partners",
-  TEXAS_LEGENDS_PATH,
+  PANHANDLE_LEGENDS_PATH,
   "/op-eds",
   dataCentersOpEd.path,
   "/privacy",
@@ -112,6 +113,28 @@ const countyDataPaths = counties.flatMap((county) =>
 );
 
 mkdirSync(OUT_DIR, { recursive: true });
+
+// The dedicated sponsor URL has its own initial metadata for link previews.
+// Amplify's exact /legends rewrite must precede the general SPA rewrite.
+const legendsTitle = pageTitle(PANHANDLE_LEGENDS_TITLE);
+const legendsDescription = clampDescription(PANHANDLE_LEGENDS_DESCRIPTION);
+const legendsCanonical = loc(PANHANDLE_LEGENDS_PATH);
+const legendsMeta: Record<string, string> = {
+  description: legendsDescription,
+  "og:title": legendsTitle,
+  "og:description": legendsDescription,
+  "og:url": legendsCanonical,
+  "twitter:title": legendsTitle,
+  "twitter:description": legendsDescription,
+};
+const legendsHtml = readFileSync(join(OUT_DIR, "index.html"), "utf8")
+  .replace(/<title data-seo-default>[^<]*<\/title>/, `<title data-seo-default>${escapeXml(legendsTitle)}</title>`)
+  .replace(/<meta\b[^>]*data-seo-default[^>]*>/g, (tag) => {
+    const key = tag.match(/\b(?:name|property)="([^"]+)"/)?.[1];
+    return key && legendsMeta[key] ? tag.replace(/\bcontent="[^"]*"/, `content="${escapeXml(legendsMeta[key])}"`) : tag;
+  })
+  .replace(/<link\b[^>]*data-seo-default[^>]*rel="canonical"[^>]*>/, `<link data-seo-default rel="canonical" href="${escapeXml(legendsCanonical)}" />`);
+writeFileSync(join(OUT_DIR, "legends.html"), legendsHtml, "utf8");
 
 const files = [
   ...writeUrlset("sitemap-core", corePaths),

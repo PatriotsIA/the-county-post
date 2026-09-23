@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import type { AdCreative } from "../data/ads";
 import type { CountySite } from "../data/counties";
 import { countyAdKey } from "../data/ads";
-import { texasLegendsPath } from "../data/panhandle-legends";
+import { PANHANDLE_LEGENDS_PATH } from "../data/panhandle-legends";
 import {
   countyPartnersPath,
   formatPartnerCountyLabel,
@@ -33,7 +33,7 @@ function PartnerCallout() {
   );
 }
 
-function PartnerList({ partners, showCountyCoverage = false, countySlug }: { partners: AdCreative[]; showCountyCoverage?: boolean; countySlug?: string }) {
+function PartnerList({ partners, showCountyCoverage = false }: { partners: AdCreative[]; showCountyCoverage?: boolean }) {
   if (!partners.length) {
     return <p className="muted">No partners listed yet.</p>;
   }
@@ -60,7 +60,7 @@ function PartnerList({ partners, showCountyCoverage = false, countySlug }: { par
               </a>
             )}
             {partner.id.startsWith("panhandle-legends-") ? (
-              <Link to={texasLegendsPath(countySlug)} className="partner-legends-button">Explore Texas Legends <span aria-hidden="true">→</span></Link>
+              <Link to={PANHANDLE_LEGENDS_PATH} className="partner-legends-button">Explore Panhandle Legends <span aria-hidden="true">→</span></Link>
             ) : null}
           </div>
         </article>
@@ -171,7 +171,7 @@ export function CountyPartnerDirectory({ county }: { county: CountySite }) {
         <section className="card partner-section">
           <p className="kicker">{county.state.name} statewide partners</p>
           <h2>Partners supporting every {county.state.name} county</h2>
-          <PartnerList partners={statewidePartners} countySlug={county.state.slug === "texas" ? county.slug : undefined} />
+          <PartnerList partners={statewidePartners} />
         </section>
       ) : null}
 

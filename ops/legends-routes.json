@@ -1,0 +1,6 @@
+[
+  { "source": "/legends/", "target": "/legends", "status": "301" },
+  { "source": "/legends", "target": "/legends.html", "status": "200" },
+  { "source": "/texas/texas-legends", "target": "/legends", "status": "301" },
+  { "source": "/states/texas/texas-legends", "target": "/legends", "status": "301" }
+]
