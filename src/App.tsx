@@ -1,4 +1,4 @@
-import { Fragment, lazy, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, Navigate, NavLink, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
 import { SubmissionForm } from "./components/SubmissionForm";
 import { ClassifiedSubmissionForm } from "./components/ClassifiedSubmissionForm";
@@ -633,19 +633,18 @@ function HomePage() {
         fallbackFeedUrls={buildNationalFallbackFeedUrls("general")}
         {...pageSectionProps(nationalLeadPage, "general")}
       />
+      <AdSlot slot="inline" />
       {topicSections.map((section, index) => (
-        <Fragment key={section.kind}>
-          <NewsFeedSection
-            title={section.title}
-            kicker={section.kicker}
-            apiPath={nationalApiPath(section.kind)}
-            fallbackFeedUrls={buildNationalFallbackFeedUrls(section.kind)}
-            kind={section.kind}
-            loadEnabled={nationalBackgroundLoader.isEnabled(index)}
-            onLoadSettled={() => nationalBackgroundLoader.markSettled(index)}
-          />
-          {section.kind === "obituaries" ? <AdSlot slot="inline" /> : null}
-        </Fragment>
+        <NewsFeedSection
+          key={section.kind}
+          title={section.title}
+          kicker={section.kicker}
+          apiPath={nationalApiPath(section.kind)}
+          fallbackFeedUrls={buildNationalFallbackFeedUrls(section.kind)}
+          kind={section.kind}
+          loadEnabled={nationalBackgroundLoader.isEnabled(index)}
+          onLoadSettled={() => nationalBackgroundLoader.markSettled(index)}
+        />
       ))}
 
       <section className="card">
@@ -795,20 +794,19 @@ function StatePage() {
         {...pageSectionProps(stateLeadPage, "general")}
         locality={{ stateName: state.name, stateAbbr: state.abbr, strict: true }}
       />
+      <AdSlot slot="inline" />
       {topicSections.map((section, index) => (
-        <Fragment key={section.kind}>
-          <NewsFeedSection
-            title={section.title}
-            kicker={section.kicker}
-            apiPath={stateApiPath(state.slug, section.kind)}
-            fallbackFeedUrls={buildStateFallbackFeedUrls(state, section.kind)}
-            kind={section.kind}
-            locality={{ stateName: state.name, stateAbbr: state.abbr, strict: true }}
-            loadEnabled={stateBackgroundLoader.isEnabled(index)}
-            onLoadSettled={() => stateBackgroundLoader.markSettled(index)}
-          />
-          {section.kind === "obituaries" ? <AdSlot slot="inline" /> : null}
-        </Fragment>
+        <NewsFeedSection
+          key={section.kind}
+          title={section.title}
+          kicker={section.kicker}
+          apiPath={stateApiPath(state.slug, section.kind)}
+          fallbackFeedUrls={buildStateFallbackFeedUrls(state, section.kind)}
+          kind={section.kind}
+          locality={{ stateName: state.name, stateAbbr: state.abbr, strict: true }}
+          loadEnabled={stateBackgroundLoader.isEnabled(index)}
+          onLoadSettled={() => stateBackgroundLoader.markSettled(index)}
+        />
       ))}
       <NewsFeedSection
         title="National briefing"
@@ -1187,6 +1185,7 @@ function CountyPage() {
         kind="general"
         locality={locality}
       />
+      <AdSlot slot="inline" countyKey={countyKey} />
       <NewsFeedSection
         title="Local sports"
         kicker="Scores & highlights"
@@ -1248,7 +1247,6 @@ function CountyPage() {
         loadEnabled={countyBackgroundLoader.isEnabled(4)}
         onLoadSettled={() => countyBackgroundLoader.markSettled(4)}
       />
-      <AdSlot slot="inline" countyKey={countyKey} />
       <NewsFeedSection
         title="Opinion & op-eds"
         kicker="Local voices"
