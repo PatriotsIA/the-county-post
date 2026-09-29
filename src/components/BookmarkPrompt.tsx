@@ -17,7 +17,9 @@ function rememberDismissal(key: string) {
   try { window.localStorage.setItem(key, "true"); } catch { /* Closing still works when storage is blocked. */ }
 }
 
-export function BookmarkPrompt({ county, autoShow }: { county?: CountySite; autoShow: boolean }) {
+// The reminder opens on its own only on a county homepage. The national and
+// state editions reach it from the footer link.
+export function BookmarkPrompt({ county, autoShow, onEditionHome }: { county?: CountySite; autoShow: boolean; onEditionHome: boolean }) {
   const editionPath = county ? `/${county.state.slug}/${county.slug}` : "/";
   const storageKey = `county-post:bookmark-dismissed:${editionPath}`;
   const headingId = useId();
@@ -33,7 +35,7 @@ export function BookmarkPrompt({ county, autoShow }: { county?: CountySite; auto
   }, [autoShow, storageKey]);
 
   useEffect(() => {
-    if (!autoShow) return;
+    if (!onEditionHome) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key.toLowerCase() !== "d" || !(event.ctrlKey || event.metaKey) || event.altKey) return;
       rememberDismissal(storageKey);
@@ -41,7 +43,7 @@ export function BookmarkPrompt({ county, autoShow }: { county?: CountySite; auto
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [autoShow, storageKey]);
+  }, [onEditionHome, storageKey]);
 
   function dismiss() {
     rememberDismissal(storageKey);
@@ -62,7 +64,7 @@ export function BookmarkPrompt({ county, autoShow }: { county?: CountySite; auto
           <h2 id={headingId}>Bookmark {pageName}</h2>
           <p>{county ? "Save your county for quick access to local news, weather, and updates." : "Save the nationwide homepage for news from across America."}</p>
           <div className="bookmark-toast-instructions">
-            {!autoShow ? (
+            {!onEditionHome ? (
               <p><a href={editionPath}>Open {county ? `the ${county.displayName} homepage` : "the nationwide homepage"}</a> first, then:</p>
             ) : null}
             {isIOS ? (
