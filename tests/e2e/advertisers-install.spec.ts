@@ -242,7 +242,7 @@ test("video carousel waits during playback and stops an offscreen player", async
   await expect(video.locator("iframe")).toHaveCount(0);
 });
 
-test("bookmark reminder appears nationally and by county, dismisses for the session, and reopens", async ({ page }) => {
+test("bookmark reminder shows instructions without action buttons, stays closed on this device, and reopens", async ({ page }) => {
   await page.goto("/");
   const prompt = page.getByRole("complementary", { name: "Bookmark The County Post", exact: true });
   await expect(prompt).toBeVisible();
@@ -250,59 +250,60 @@ test("bookmark reminder appears nationally and by county, dismisses for the sess
     const bounds = element.getBoundingClientRect();
     return bounds.width <= 330 && innerWidth - bounds.right === 16 && innerHeight - bounds.bottom === 16;
   })).toBe(true);
+  await expect(prompt.getByText("Ctrl+D", { exact: true })).toBeVisible();
+  await expect(prompt.getByRole("button")).toHaveCount(1);
+  await expect(prompt.getByRole("link")).toHaveCount(0);
   await page.screenshot({ path: "test-results/bookmark-desktop.png" });
-  await prompt.getByRole("button", { name: "Bookmark nationwide homepage" }).click();
-  await expect(prompt.getByText("Press Ctrl+D", { exact: false })).toBeVisible();
   await prompt.getByRole("button", { name: "Dismiss bookmark reminder" }).click();
   await page.reload();
   await expect(prompt).toHaveCount(0);
+  // A later visit in a new tab shares the device's storage, not the session's.
+  const later = await page.context().newPage();
+  await mockNews(later);
+  await later.goto("/");
+  await expect(later.locator(".feed-card").first()).toBeVisible();
+  await expect(later.locator(".bookmark-toast")).toHaveCount(0);
+  await later.close();
   await page.getByRole("button", { name: "Bookmark / Add web app" }).click();
   await expect(prompt).toBeVisible();
-  await prompt.getByRole("button", { name: "Not now" }).click();
   await page.goto("/texas/randall");
-  await expect(page.getByRole("complementary", { name: "Bookmark Randall County", exact: true })).toBeVisible();
+  const countyPrompt = page.getByRole("complementary", { name: "Bookmark Randall County", exact: true });
+  await expect(countyPrompt).toBeVisible();
+  await page.keyboard.press("Control+D");
+  await expect(countyPrompt).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator(".feed-card").first()).toBeVisible();
+  await expect(countyPrompt).toHaveCount(0);
+  await page.goto("/texas/randall/weather");
+  await page.getByRole("button", { name: "Bookmark / Add web app" }).click();
+  await expect(countyPrompt.getByRole("link", { name: "Open the Randall County homepage" })).toHaveAttribute("href", "/texas/randall");
 });
 
-test("iPhone Home Screen instructions and county reminder fit a narrow phone", async ({ browser, baseURL }) => {
+test("phone reminders show that device's bookmark and Home Screen steps and fit a narrow screen", async ({ browser, baseURL }) => {
   const context = await browser.newContext({ ...devices["iPhone 13"], viewport: { width: 320, height: 640 } });
   const page = await context.newPage();
   await mockNews(page);
-  await page.goto(baseURL!);
+  await page.goto(`${baseURL}/texas/randall`);
   const prompt = page.locator(".bookmark-toast");
-  await expect(prompt.getByRole("heading", { name: "Add Our Web App To Your Phone" })).toBeVisible();
-  await prompt.getByRole("button", { name: "Add to iPhone / iPad Home Screen" }).click();
-  await expect(prompt.getByText("Open as Web App", { exact: true })).toBeVisible();
-  await expect(prompt.getByRole("button", { name: "Add to Android Home Screen" })).toHaveCount(0);
+  await expect(prompt.getByText("Add Bookmark", { exact: true })).toBeVisible();
+  await expect(prompt.getByText("Add to Home Screen", { exact: true })).toBeVisible();
+  await expect(prompt.getByText(/Ctrl\+D|three dots/)).toHaveCount(0);
+  await expect(prompt.getByRole("button")).toHaveCount(1);
   expect(await prompt.evaluate((element) => {
     const bounds = element.getBoundingClientRect();
     return bounds.left >= 0 && bounds.right <= innerWidth && bounds.top >= 0 && bounds.bottom <= innerHeight && element.scrollWidth <= element.clientWidth;
   })).toBe(true);
   await page.screenshot({ path: "test-results/bookmark-iphone.png" });
   await context.close();
-});
 
-test("Android uses the browser install prompt once and handles cancellation", async ({ page }) => {
-  await page.addInitScript(() => Object.defineProperty(navigator, "userAgent", { value: "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/140.0 Mobile Safari/537.36" }));
-  await page.goto("/");
-  await page.evaluate(() => {
-    const event = new Event("beforeinstallprompt", { cancelable: true });
-    Object.assign(event, { prompt: async () => {
-      document.documentElement.dataset.installPromptCalls = String(Number(document.documentElement.dataset.installPromptCalls || 0) + 1);
-      return { outcome: "dismissed" };
-    } });
-    window.dispatchEvent(event);
-    document.documentElement.dataset.installPromptPrevented = String(event.defaultPrevented);
-  });
-  const prompt = page.locator(".bookmark-toast");
-  await prompt.getByRole("button", { name: "Add to Android Home Screen" }).click();
-  await expect(prompt.getByRole("status")).toContainText("Installation canceled");
-  await expect(page.locator("html")).toHaveAttribute("data-install-prompt-calls", "1");
-  await expect(page.locator("html")).toHaveAttribute("data-install-prompt-prevented", "true");
-  await prompt.getByRole("button", { name: "Add to Android Home Screen" }).click();
-  await expect(prompt.getByText("On your Android phone:", { exact: true })).toBeVisible();
-  await expect(page.locator("html")).toHaveAttribute("data-install-prompt-calls", "1");
-  await page.evaluate(() => window.dispatchEvent(new Event("appinstalled")));
-  await expect(prompt.getByRole("heading", { name: "Add Our Web App To Your Phone" })).toHaveCount(0);
+  const android = await browser.newContext({ ...devices["Pixel 7"] });
+  const androidPage = await android.newPage();
+  await mockNews(androidPage);
+  await androidPage.goto(`${baseURL}/texas/randall`);
+  const androidPrompt = androidPage.locator(".bookmark-toast");
+  await expect(androidPrompt.getByText("Add to Home screen", { exact: true })).toBeVisible();
+  await expect(androidPrompt.getByText(/Ctrl\+D|Add Bookmark/)).toHaveCount(0);
+  await android.close();
 });
 
 test("installed mode suppresses the automatic prompt and blocked storage still allows dismissal", async ({ page }) => {
@@ -311,9 +312,9 @@ test("installed mode suppresses the automatic prompt and blocked storage still a
   await expect(page.getByRole("button", { name: "Bookmark / Add web app" })).toBeAttached();
   await expect(page.locator(".bookmark-toast")).toHaveCount(0);
   await page.getByRole("button", { name: "Bookmark / Add web app" }).click();
-  await expect(page.getByText("County Post is installed on this device.", { exact: true })).toBeVisible();
+  await expect(page.locator(".bookmark-toast")).toBeVisible();
   await page.evaluate(() => {
-    Object.defineProperty(window, "sessionStorage", { get() { throw new Error("Storage unavailable"); } });
+    Object.defineProperty(window, "localStorage", { get() { throw new Error("Storage unavailable"); } });
   });
   await page.getByRole("button", { name: "Dismiss bookmark reminder" }).click();
   await expect(page.locator(".bookmark-toast")).toHaveCount(0);
