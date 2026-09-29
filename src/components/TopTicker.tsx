@@ -182,7 +182,7 @@ function PreciousMetalsTicker() {
           {ticker?.stale ? "Last verified LBMA daily benchmark" : `LBMA daily benchmark via ${ticker?.provider.name || "Minted Metal"}`} · Not spot prices
         </a>
         <a className="precious-metals-sponsor" href={itmTradingUrl} target="_blank" rel="noreferrer sponsored">
-          <span>For spot prices, visit ITM Trading</span>
+          <span>Presented by ITM Trading · For spot prices, visit ITM Trading</span>
           <img src={itmTradingAd} alt="ITM Trading" width="56" height="35" />
         </a>
       </div>

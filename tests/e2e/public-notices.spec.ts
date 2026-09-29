@@ -182,7 +182,7 @@ test("the mobile notice row and ITM logo fit without overflow", async ({ page })
   expect((await cta.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await expect(page.locator(".precious-metals-attribution")).toContainText("Not spot prices");
-  await expect(page.getByRole("link", { name: "For spot prices, visit ITM Trading" })).toHaveAttribute("href", "https://www.itmtrading.com/");
+  await expect(page.getByRole("link", { name: "Presented by ITM Trading · For spot prices, visit ITM Trading" })).toHaveAttribute("href", "https://www.itmtrading.com/");
   const logo = page.locator(".precious-metals-sponsor img");
   await expect(logo).toHaveAttribute("src", /itm-trading-logo\.jpg/);
   expect(await logo.evaluate(async (img: HTMLImageElement) => { await img.decode(); return img.naturalWidth > 0 && img.naturalHeight > 0; })).toBe(true);
