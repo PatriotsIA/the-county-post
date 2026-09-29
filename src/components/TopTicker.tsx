@@ -167,7 +167,7 @@ function PreciousMetalsTicker() {
                 href={itmTradingUrl}
                 target="_blank"
                 rel="noreferrer sponsored"
-                aria-label={`${quote.label} price, presented by ITM Trading`}
+                aria-label={`${quote.label} benchmark price, not a spot price. Visit ITM Trading for spot prices`}
               >
                 <span className={`metal-symbol metal-symbol-${quote.key}`}>{metalSymbols[quote.key]}</span>
                 <span className="precious-metal-label">{quote.label}</span>
@@ -179,10 +179,10 @@ function PreciousMetalsTicker() {
       )}
       <div className="precious-metals-attribution">
         <a href={ticker?.provider.url || mintedMetalUrl} target="_blank" rel="noreferrer">
-          {ticker?.stale ? "Last verified LBMA benchmark" : `LBMA benchmark via ${ticker?.provider.name || "Minted Metal"}`}
+          {ticker?.stale ? "Last verified LBMA daily benchmark" : `LBMA daily benchmark via ${ticker?.provider.name || "Minted Metal"}`} · Not spot prices
         </a>
         <a className="precious-metals-sponsor" href={itmTradingUrl} target="_blank" rel="noreferrer sponsored">
-          <span>Presented by ITM Trading</span>
+          <span>For spot prices, visit ITM Trading</span>
           <img src={itmTradingAd} alt="ITM Trading" width="56" height="35" />
         </a>
       </div>
