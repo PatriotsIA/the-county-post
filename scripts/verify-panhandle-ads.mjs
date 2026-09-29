@@ -104,7 +104,7 @@ try {
   }
 
   await page.goto(baseURL, { waitUntil: "domcontentloaded" });
-  await page.getByRole("button", { name: "Bookmark nationwide homepage" }).waitFor();
+  await page.getByRole("complementary", { name: "Bookmark The County Post", exact: true }).waitFor();
   result.nationalBookmark = true;
   result.bookmarkPopup = await page.locator(".bookmark-toast").evaluate((element) => {
     const bounds = element.getBoundingClientRect();
