@@ -103,9 +103,9 @@ try {
     result.partners.push({ path, panhandle, gear });
   }
 
-  await page.goto(baseURL, { waitUntil: "domcontentloaded" });
-  await page.getByRole("complementary", { name: "Bookmark The County Post", exact: true }).waitFor();
-  result.nationalBookmark = true;
+  await page.goto(`${baseURL}/texas/randall`, { waitUntil: "domcontentloaded" });
+  await page.getByRole("complementary", { name: "Bookmark Randall County", exact: true }).waitFor();
+  result.countyBookmark = true;
   result.bookmarkPopup = await page.locator(".bookmark-toast").evaluate((element) => {
     const bounds = element.getBoundingClientRect();
     return { width: bounds.width, right: innerWidth - bounds.right, bottom: innerHeight - bounds.bottom };
@@ -113,7 +113,7 @@ try {
   if (result.bookmarkPopup.width > 330 || result.bookmarkPopup.right !== 16 || result.bookmarkPopup.bottom !== 16) {
     throw new Error("The compact bottom-right popup is not being served");
   }
-  await page.screenshot({ path: `${outputDirectory}/national-popup.png` });
+  await page.screenshot({ path: `${outputDirectory}/county-popup.png` });
   const cdp = await page.context().newCDPSession(page);
   result.installability = await cdp.send("Page.getInstallabilityErrors");
   result.manifest = await cdp.send("Page.getAppManifest").then(({ url, errors }) => ({ url, errors }));

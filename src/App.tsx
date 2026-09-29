@@ -372,7 +372,7 @@ function App() {
           <Link to="/partners">Partners</Link>
           <Link to="/privacy">Privacy</Link>
           <Link to="/terms">Terms</Link>
-          <BookmarkPrompt county={activeCounty} autoShow={pathname === "/" || isCountyHomePath(pathname, activeCounty)} />
+          <BookmarkPrompt county={activeCounty} autoShow={isCountyHomePath(pathname, activeCounty)} onEditionHome={pathname === "/" || isCountyHomePath(pathname, activeCounty)} />
         </div>
       </footer>
     </div>

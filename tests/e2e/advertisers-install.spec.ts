@@ -242,9 +242,21 @@ test("video carousel waits during playback and stops an offscreen player", async
   await expect(video.locator("iframe")).toHaveCount(0);
 });
 
-test("bookmark reminder shows instructions without action buttons, stays closed on this device, and reopens", async ({ page }) => {
+test("bookmark reminder opens only on county homepages, shows instructions without action buttons, and stays closed on this device", async ({ page }) => {
+  for (const path of ["/", "/texas", "/texas/randall/weather"]) {
+    await page.goto(path);
+    await expect(page.getByRole("button", { name: "Bookmark / Add web app" })).toBeAttached();
+    await expect(page.locator(".feed-card, .weather-page").first()).toBeVisible();
+    await expect(page.locator(".bookmark-toast")).toHaveCount(0);
+  }
   await page.goto("/");
-  const prompt = page.getByRole("complementary", { name: "Bookmark The County Post", exact: true });
+  await page.getByRole("button", { name: "Bookmark / Add web app" }).click();
+  const national = page.getByRole("complementary", { name: "Bookmark The County Post", exact: true });
+  await expect(national.getByText("Ctrl+D", { exact: true })).toBeVisible();
+  await expect(national.getByRole("link")).toHaveCount(0);
+
+  await page.goto("/texas/randall");
+  const prompt = page.getByRole("complementary", { name: "Bookmark Randall County", exact: true });
   await expect(prompt).toBeVisible();
   expect(await prompt.evaluate((element) => {
     const bounds = element.getBoundingClientRect();
@@ -256,27 +268,27 @@ test("bookmark reminder shows instructions without action buttons, stays closed 
   await page.screenshot({ path: "test-results/bookmark-desktop.png" });
   await prompt.getByRole("button", { name: "Dismiss bookmark reminder" }).click();
   await page.reload();
+  await expect(page.locator(".feed-card").first()).toBeVisible();
   await expect(prompt).toHaveCount(0);
   // A later visit in a new tab shares the device's storage, not the session's.
   const later = await page.context().newPage();
   await mockNews(later);
-  await later.goto("/");
+  await later.goto("/texas/randall");
   await expect(later.locator(".feed-card").first()).toBeVisible();
   await expect(later.locator(".bookmark-toast")).toHaveCount(0);
   await later.close();
-  await page.getByRole("button", { name: "Bookmark / Add web app" }).click();
-  await expect(prompt).toBeVisible();
-  await page.goto("/texas/randall");
-  const countyPrompt = page.getByRole("complementary", { name: "Bookmark Randall County", exact: true });
-  await expect(countyPrompt).toBeVisible();
+
+  await page.goto("/texas/harris");
+  const harris = page.getByRole("complementary", { name: "Bookmark Harris County", exact: true });
+  await expect(harris).toBeVisible();
   await page.keyboard.press("Control+D");
-  await expect(countyPrompt).toHaveCount(0);
+  await expect(harris).toHaveCount(0);
   await page.reload();
   await expect(page.locator(".feed-card").first()).toBeVisible();
-  await expect(countyPrompt).toHaveCount(0);
+  await expect(harris).toHaveCount(0);
   await page.goto("/texas/randall/weather");
   await page.getByRole("button", { name: "Bookmark / Add web app" }).click();
-  await expect(countyPrompt.getByRole("link", { name: "Open the Randall County homepage" })).toHaveAttribute("href", "/texas/randall");
+  await expect(prompt.getByRole("link", { name: "Open the Randall County homepage" })).toHaveAttribute("href", "/texas/randall");
 });
 
 test("phone reminders show that device's bookmark and Home Screen steps and fit a narrow screen", async ({ browser, baseURL }) => {
@@ -308,7 +320,7 @@ test("phone reminders show that device's bookmark and Home Screen steps and fit 
 
 test("installed mode suppresses the automatic prompt and blocked storage still allows dismissal", async ({ page }) => {
   await page.addInitScript(() => Object.defineProperty(navigator, "standalone", { value: true }));
-  await page.goto("/");
+  await page.goto("/texas/randall");
   await expect(page.getByRole("button", { name: "Bookmark / Add web app" })).toBeAttached();
   await expect(page.locator(".bookmark-toast")).toHaveCount(0);
   await page.getByRole("button", { name: "Bookmark / Add web app" }).click();
