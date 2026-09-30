@@ -665,6 +665,9 @@ test("market navigation and county layouts remain usable at 320px and desktop wi
   await expect(page.locator(".market-panel-content")).toBeVisible();
   await expect(page.locator(".county-edition-hero")).toBeVisible();
   await expect(page.getByLabel("Polk County pages")).toBeVisible();
+  const polkNav = page.getByLabel("Polk County pages");
+  await expect(polkNav.getByRole("link", { name: "White House News" })).toHaveAttribute("href", "https://www.whitehouse.gov/live/");
+  await expect(polkNav.getByRole("link", { name: "Elections" }).locator("xpath=following-sibling::a[1]")).toHaveText("White House News");
   await expect.poll(() =>
     page.evaluate(() => {
       const masthead = document.querySelector(".masthead");
