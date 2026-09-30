@@ -457,16 +457,24 @@ function ContextNav({ county, state }: { county?: NonNullable<ReturnType<typeof 
 
   return (
     <nav className="context-nav" aria-label={label}>
-      {links.map((link) => (
-        <NavLink key={link.to} to={link.to} end={link.end} className={({ isActive }) => (isActive ? "context-link active" : "context-link")}>
-          {link.label}
-        </NavLink>
-      ))}
+      {links.map((link) =>
+        link.external ? (
+          <a key={link.to} className="context-link" href={link.to} target="_blank" rel="noopener">
+            {link.label}
+          </a>
+        ) : (
+          <NavLink key={link.to} to={link.to} end={link.end} className={({ isActive }) => (isActive ? "context-link active" : "context-link")}>
+            {link.label}
+          </NavLink>
+        ),
+      )}
     </nav>
   );
 }
 
-type ContextLink = { to: string; label: string; end?: boolean };
+type ContextLink = { to: string; label: string; end?: boolean; external?: boolean };
+
+const WHITE_HOUSE_NEWS_LINK: ContextLink = { to: "https://www.whitehouse.gov/live/", label: "White House News", external: true };
 
 function contextLinks(county?: NonNullable<ReturnType<typeof getCounty>>, state?: ReturnType<typeof getStateBySlug>): ContextLink[] {
   if (county) {
@@ -476,7 +484,11 @@ function contextLinks(county?: NonNullable<ReturnType<typeof getCounty>>, state?
       { to: `${base}/weather`, label: "Weather" },
       { to: `${base}/data`, label: "County Data" },
       { to: `${base}/economic-data`, label: "Economic Data" },
-      ...subjectGroups.map((group) => ({ to: `${base}/${group.slug}`, label: group.title })),
+      // White House News sits beside the Elections desk in the county nav.
+      ...subjectGroups.flatMap((group) => [
+        { to: `${base}/${group.slug}`, label: group.title },
+        ...(group.slug === "elections-transparency" ? [WHITE_HOUSE_NEWS_LINK] : []),
+      ]),
       { to: `${base}/op-eds`, label: "County Op-Eds" },
       { to: `${base}/public-notices`, label: "Public Notices" },
       { to: `${base}/local-sources`, label: "Local Sources" },
