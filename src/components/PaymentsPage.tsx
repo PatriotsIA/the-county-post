@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   ANNUAL_BILLED_MONTHS,
@@ -20,6 +20,7 @@ import {
 import { advertiserContact } from "../data/advertiser-contact";
 import { getCountiesForState, searchCounties, type CountySite } from "../data/counties";
 import { searchStates, type StateSite } from "../data/states";
+import { artworkSizeLabel, artworkSpecs, readArtwork, type Artwork, type ArtworkKind } from "../lib/ad-artwork";
 import { fetchCountyPopulation, startAdvertiserCheckout, uploadAdCreative } from "../lib/checkout-api";
 import { AdvertiserPlacementShowcase } from "./AdvertiserPlacementShowcase";
 import { sendStoryFormEmail } from "../lib/email";
@@ -49,8 +50,8 @@ export function PaymentsPage() {
   const [counties, setCounties] = useState<SelectedCounty[]>([]);
   const [selectedStates, setSelectedStates] = useState<SelectedState[]>([]);
   const [selectedFeeds, setSelectedFeeds] = useState<SponsorableFeed[]>(["general"]);
-  const [creative, setCreative] = useState<File>();
-  const [creativeUrl, setCreativeUrl] = useState<string>();
+  const [artwork, setArtwork] = useState<Partial<Record<ArtworkKind, Artwork>>>({});
+  const [artworkError, setArtworkError] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [message, setMessage] = useState("");
 
@@ -78,16 +79,37 @@ export function PaymentsPage() {
   const hasSelection = scope === "county" ? counties.length > 0 : selectedStates.length > 0 && (!needsFeeds || selectedFeeds.length > 0);
   const checkoutResult = searchParams.get("checkout");
 
-  useEffect(() => {
-    if (!creative) {
-      setCreativeUrl(undefined);
-      return;
-    }
+  const artworkRef = useRef(artwork);
+  artworkRef.current = artwork;
+  useEffect(() => () => Object.values(artworkRef.current).forEach((item) => URL.revokeObjectURL(item.url)), []);
 
-    const url = URL.createObjectURL(creative);
-    setCreativeUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [creative]);
+  const updateArtwork = (kind: ArtworkKind, value?: Artwork) => {
+    setArtwork((current) => {
+      const previous = current[kind];
+      if (previous && previous !== value) URL.revokeObjectURL(previous.url);
+      const next = { ...current };
+      if (value) next[kind] = value;
+      else delete next[kind];
+      return next;
+    });
+  };
+
+  const chooseArtwork = async (kind: ArtworkKind, input: HTMLInputElement) => {
+    const file = input.files?.[0];
+    if (!file) return;
+    try {
+      updateArtwork(kind, await readArtwork(file, kind));
+      setArtworkError("");
+    } catch (error) {
+      setArtworkError(error instanceof Error ? error.message : "This image could not be used.");
+    }
+    input.value = "";
+  };
+
+  const describeArtwork = (kind: ArtworkKind, assetKey?: string) => {
+    const chosen = artwork[kind];
+    return chosen && assetKey ? `${assetKey} (${chosen.width}×${chosen.height}, ${chosen.file.name})` : "Not uploaded; to be sent after checkout";
+  };
 
   const addCounty = async (county: CountySite) => {
     if (counties.some(({ county: selected }) => selected.fips === county.fips)) return;
@@ -123,15 +145,20 @@ export function PaymentsPage() {
     }
 
     setStatus("loading");
-    setMessage(creative ? "Uploading your creative, then opening secure checkout…" : "Opening secure checkout…");
+    setMessage(Object.keys(artwork).length ? "Uploading your artwork, then opening secure checkout…" : "Opening secure checkout…");
     try {
-      const creativeAssetKey = creative ? await uploadAdCreative(creative) : undefined;
+      const assetKeys: Partial<Record<ArtworkKind, string>> = {};
+      for (const kind of Object.keys(artworkSpecs) as ArtworkKind[]) {
+        const file = artwork[kind]?.file;
+        if (file) assetKeys[kind] = await uploadAdCreative(file);
+      }
       const contact = {
         billing,
         customerEmail,
         businessName,
         ...(referredBy.trim() ? { referredBy: referredBy.trim() } : {}),
-        creativeAssetKey,
+        ...(assetKeys.square ? { creativeAssetKey: assetKeys.square } : {}),
+        ...(assetKeys.banner ? { bannerCreativeAssetKey: assetKeys.banner } : {}),
       };
       const checkoutSession =
         scope === "county"
@@ -164,7 +191,8 @@ export function PaymentsPage() {
           counties: scope === "county" ? counties.map(({ county }) => `${county.displayName}, ${county.state.name} (${county.fips})`).join("; ") : undefined,
           states: scope === "state" ? selectedStates.map(({ state }) => state.name).join("; ") : undefined,
           feeds: needsFeeds ? selectedFeeds.join(", ") : undefined,
-          creativeAssetKey,
+          squareArtwork: describeArtwork("square", assetKeys.square),
+          bannerArtwork: describeArtwork("banner", assetKeys.banner),
           paymentStatus: "Checkout requested; payment has not been confirmed.",
         },
       });
@@ -300,13 +328,31 @@ export function PaymentsPage() {
             <li><strong>County expansion:</strong> the highest-priced county is full rate; additional counties are 50% of their tier.</li>
           </ul>
 
-          <label>
-            Upload ad creative (JPG or PNG, up to 10 MB)
-            <input type="file" accept="image/jpeg,image/png" onChange={(event) => setCreative(event.target.files?.[0])} />
-            <span className="checkout-input-help">
-              Creative is uploaded privately before Stripe checkout and previewed in the examples below. You may also provide it after payment.
-            </span>
-          </label>
+          <div className="artwork-fields" role="group" aria-label="Ad artwork">
+            <strong>Ad artwork <span>(optional)</span></strong>
+            <p>
+              PNG or JPG up to 10 MB; larger images with the same proportions are fine. Artwork is uploaded privately when you submit,
+              or you can send it after checkout to <a href={`mailto:${advertiserContact.artworkEmail}`}>{advertiserContact.artworkEmail}</a>.
+            </p>
+            <p>Exclusive feed sponsor ad assets should be 250×250 px.</p>
+            {(Object.keys(artworkSpecs) as ArtworkKind[]).map((kind) => (
+              <div className="artwork-field" key={kind}>
+                <label>
+                  {artworkSpecs[kind].label} — {artworkSizeLabel(kind)} px
+                  <small>{artworkSpecs[kind].use}</small>
+                  <input type="file" accept="image/png,image/jpeg" onChange={(event) => void chooseArtwork(kind, event.currentTarget)} />
+                </label>
+                {artwork[kind] ? (
+                  <span className="artwork-chosen">
+                    <img src={artwork[kind].url} alt={`${artworkSpecs[kind].label} preview`} />
+                    <small>{artwork[kind].file.name} · {artwork[kind].width}×{artwork[kind].height}</small>
+                    <button type="button" aria-label={`Remove ${artworkSpecs[kind].label.toLowerCase()}`} onClick={() => updateArtwork(kind)}>Remove</button>
+                  </span>
+                ) : null}
+              </div>
+            ))}
+            {artworkError ? <p className="error" role="alert">{artworkError}</p> : null}
+          </div>
 
           <Link className="button pricing-information-button" to="/#pricing">
             Pricing Information
@@ -353,7 +399,7 @@ export function PaymentsPage() {
 
       <PricingInformation />
 
-      <AdvertiserPlacementShowcase businessName={businessName} creativeUrl={creativeUrl} />
+      <AdvertiserPlacementShowcase businessName={businessName} creativeUrl={artwork.square?.url} bannerUrl={artwork.banner?.url} />
     </div>
   );
 }

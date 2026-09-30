@@ -1,3 +1,4 @@
+import { crc32, deflateSync } from "node:zlib";
 import { expect, test } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
@@ -45,11 +46,16 @@ test("renders checkout first, national contact next, and consolidated pricing", 
   const nationalExample = page.getByRole("img", { name: /Full-page example of The County Post national edition/ });
   await nationalExample.scrollIntoViewIfNeeded();
   await expect(nationalExample).toBeVisible();
-  await expect(page.locator(".creative-specs + label")).toContainText("Upload ad creative");
+  const artworkFields = page.getByRole("group", { name: "Ad artwork" });
+  await expect(artworkFields).toContainText("or you can send it after checkout to erik@patriotsinaction.com");
+  await expect(artworkFields.getByRole("link", { name: "erik@patriotsinaction.com" })).toHaveAttribute("href", "mailto:erik@patriotsinaction.com");
+  await expect(artworkFields).toContainText("Exclusive feed sponsor ad assets should be 250×250 px.");
+  await expect(artworkFields.getByLabel("Square ad — 250×250 px")).toHaveAttribute("type", "file");
+  await expect(artworkFields.getByLabel("Wide banner — 980×300 px")).toHaveAttribute("type", "file");
   await expect(page.locator(".creative-specs")).toContainText("Color card: 250×250 full-color JPG or PNG");
   await expect(page.locator(".creative-specs")).toContainText("Network band: 980×300 JPG or PNG");
   await expect(page.locator(".creative-specs")).toContainText("County expansion:");
-  const pricingButton = page.locator(".creative-specs + label + .pricing-information-button");
+  const pricingButton = page.locator(".creative-specs + .artwork-fields + .pricing-information-button");
   await expect(pricingButton).toHaveText("Pricing Information");
   await expect(pricingButton).toHaveAttribute("href", "/#pricing");
   await pricingButton.click();
@@ -88,7 +94,7 @@ test("calculates state and per-feed pricing and submits state fulfillment detail
   await page.getByRole("button", { name: "Texas (TX)" }).click();
   await expect(page.locator(".checkout-summary strong")).toHaveText("$2,540/month");
 
-  await page.getByLabel("Placement").selectOption("state-feed-sponsorship");
+  await page.getByLabel(/^Placement/).selectOption("state-feed-sponsorship");
   await expect(page.locator(".checkout-summary strong")).toHaveText("$5,080/month");
   await page.getByLabel("Sports").check();
   await expect(page.locator(".checkout-summary strong")).toHaveText("$10,160/month");
@@ -161,21 +167,76 @@ test("preserves county population-tier checkout", async ({ page }) => {
   });
 });
 
-test("uses an uploaded creative throughout the placement showcase", async ({ page }) => {
+/** Minimal valid RGB PNG, so artwork dimension checks run against real decodable images. */
+function png(width: number, height: number) {
+  const chunk = (type: string, data: Buffer) => {
+    const body = Buffer.concat([Buffer.from(type), data]);
+    const out = Buffer.alloc(body.length + 8);
+    out.writeUInt32BE(data.length);
+    body.copy(out, 4);
+    out.writeUInt32BE(crc32(body), body.length + 4);
+    return out;
+  };
+  const header = Buffer.alloc(13);
+  header.writeUInt32BE(width);
+  header.writeUInt32BE(height, 4);
+  header.set([8, 2, 0, 0, 0], 8);
+  const rows = Buffer.alloc((width * 3 + 1) * height, 0xcc);
+  for (let y = 0; y < height; y++) rows[y * (width * 3 + 1)] = 0;
+  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk("IHDR", header), chunk("IDAT", deflateSync(rows)), chunk("IEND", Buffer.alloc(0))]);
+}
+
+test("validates, previews and uploads square and banner artwork before checkout", async ({ page }) => {
+  const uploads: string[] = [];
+  let checkoutPayload: Record<string, unknown> | undefined;
+  let notification: { template_params: Record<string, string> } | undefined;
+  await page.route("http://localhost:8787/v1/advertising/creatives/upload", async (route) => {
+    const { fileName } = route.request().postDataJSON() as { fileName: string };
+    await route.fulfill({
+      status: 201,
+      contentType: "application/json",
+      body: JSON.stringify({ assetKey: `ad-creatives/2026-09-30/${fileName}`, upload: { url: "https://uploads.fixture/", fields: { key: fileName } } }),
+    });
+  });
+  await page.route("https://uploads.fixture/", async (route) => {
+    uploads.push(route.request().method());
+    await route.fulfill({ status: 204 });
+  });
+  await page.route("https://api.emailjs.com/**", async (route) => {
+    notification = route.request().postDataJSON();
+    await route.fulfill({ status: 200, contentType: "text/plain", body: "OK" });
+  });
+  await page.route("http://localhost:8787/v1/checkout/sessions", async (route) => {
+    checkoutPayload = route.request().postDataJSON() as Record<string, unknown>;
+    await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ url: "/?checkout=success" }) });
+  });
   await page.goto("/");
   await page.getByLabel("Business name").fill("Acme County Supply");
-  await page.getByLabel(/Upload ad creative/).setInputFiles({
-    name: "acme.png",
-    mimeType: "image/png",
-    buffer: Buffer.from(
-      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
-      "base64",
-    ),
-  });
+  await page.getByLabel("Contact email").fill("acme@example.com");
+  await page.getByLabel("Add a county").fill("Potter");
+  await page.getByRole("button", { name: "Potter County, TX" }).click();
 
+  const square = page.getByLabel("Square ad — 250×250 px");
+  const banner = page.getByLabel("Wide banner — 980×300 px");
+  await square.setInputFiles({ name: "wrong.png", mimeType: "image/png", buffer: png(300, 250) });
+  await expect(page.getByRole("alert")).toContainText("must be 250×250 pixels");
+  await square.setInputFiles({ name: "square.png", mimeType: "image/png", buffer: png(500, 500) });
+  await expect(page.getByAltText("Square ad preview")).toBeVisible();
   const previews = page.getByRole("img", { name: "Acme County Supply advertisement preview" });
   await expect.poll(() => previews.count()).toBeGreaterThanOrEqual(4);
-  await expect(previews.first()).toBeVisible();
+  await banner.setInputFiles({ name: "banner.png", mimeType: "image/png", buffer: png(980, 300) });
+  await expect(page.getByAltText("Wide banner preview")).toBeVisible();
+  await expect.poll(() => previews.count()).toBeGreaterThanOrEqual(5);
+
+  await page.getByRole("button", { name: "Continue to secure Stripe checkout" }).click();
+  await expect(page.getByText("Payment received.")).toBeVisible();
+  expect(uploads).toEqual(["POST", "POST"]);
+  expect(checkoutPayload).toMatchObject({
+    creativeAssetKey: "ad-creatives/2026-09-30/square.png",
+    bannerCreativeAssetKey: "ad-creatives/2026-09-30/banner.png",
+  });
+  expect(notification?.template_params.message).toContain("squareArtwork: ad-creatives/2026-09-30/square.png (500×500, square.png)");
+  expect(notification?.template_params.message).toContain("bannerArtwork: ad-creatives/2026-09-30/banner.png (980×300, banner.png)");
 });
 
 test("keeps legal statements and redirects legacy advertiser routes", async ({ page }) => {

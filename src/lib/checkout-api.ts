@@ -34,6 +34,7 @@ type CheckoutContact = {
   businessName: string;
   referredBy?: string;
   creativeAssetKey?: string;
+  bannerCreativeAssetKey?: string;
 };
 
 export type AdvertiserCheckoutInput = CheckoutContact &

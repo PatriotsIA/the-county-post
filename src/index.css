@@ -653,6 +653,74 @@ body::before {
   font-weight: 400;
 }
 
+.artwork-fields {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  background: var(--white);
+}
+
+.artwork-fields > strong span {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.artwork-fields > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.artwork-fields > p a {
+  color: inherit;
+}
+
+.artwork-field label small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.artwork-field input[type="file"] {
+  max-width: 100%;
+}
+
+.artwork-chosen {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  min-width: 0;
+  font-size: 12px;
+}
+
+.artwork-chosen img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  border: 1px solid var(--border);
+  background: var(--white);
+  flex: none;
+}
+
+.artwork-chosen small {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+}
+
+.artwork-chosen button {
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
 .county-picker {
   position: relative;
 }

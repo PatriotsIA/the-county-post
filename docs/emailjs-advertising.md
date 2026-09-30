@@ -7,8 +7,10 @@ The template fixes To Email to `erik@patriotsinaction.com`, Cc to
 
 After creating a checkout session, the form emails its submitted campaign details
 before navigating to Stripe. The email records coverage, placement, cadence,
-quoted amount, contact details, referral, and the private creative asset key when
-present. It states that payment is not confirmed. Email failure retains the form
+quoted amount, contact details, referral, and the private square (250×250) and
+wide banner (980×300) artwork asset keys when uploaded; artwork not uploaded is
+noted as to be sent after checkout to erik@patriotsinaction.com. It states that
+payment is not confirmed. Email failure retains the form
 and allows retry without navigating to checkout. Public contact links and Stripe
 pricing are independent of this routing.
 

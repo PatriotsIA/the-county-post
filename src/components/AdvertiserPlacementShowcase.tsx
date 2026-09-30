@@ -3,12 +3,15 @@ import nationalExample from "../../national-example.png";
 
 type Props = {
   businessName: string;
+  /** Square 250×250 artwork, shown in cards, carousels and sponsor credits. */
   creativeUrl?: string;
+  /** Wide 980×300 artwork for the section-break carousel. */
+  bannerUrl?: string;
 };
 
 const carouselLabels = ["Your Business", "Community Partner", "Local Sponsor"];
 
-export function AdvertiserPlacementShowcase({ businessName, creativeUrl }: Props) {
+export function AdvertiserPlacementShowcase({ businessName, creativeUrl, bannerUrl }: Props) {
   const displayName = businessName.trim() || "Your Business";
 
   return (
@@ -63,7 +66,7 @@ export function AdvertiserPlacementShowcase({ businessName, creativeUrl }: Props
         </article>
 
         <article className="ad-showcase-card">
-          <PreviewCarousel businessName={displayName} creativeUrl={creativeUrl} variant="banner" />
+          <PreviewCarousel businessName={displayName} creativeUrl={bannerUrl} variant="banner" />
           <div>
             <h3>Section-break carousel</h3>
             <p className="ad-showcase-spec">Wide creative · between news sections</p>
