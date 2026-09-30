@@ -305,6 +305,9 @@ function App() {
         >
           Submit A Story
         </NavLink>
+        <a className="nav-link nav-link-advertise" href="https://www.advertise.thecountypost.com/" onClick={() => setMobileMenuOpen(false)}>
+          Advertise
+        </a>
         </nav>
       </header>
       {!isLegendsPage ? <ContextNav county={activeCounty} state={activeState} /> : null}
