@@ -1273,3 +1273,12 @@ function makeItems({
     };
   });
 }
+
+test("White House News follows Elections in the national and state navs", async ({ page }) => {
+  for (const [path, label] of [["/op-eds", "National pages"], ["/texas/op-eds", "Texas pages"]]) {
+    await page.goto(path);
+    const nav = page.getByRole("navigation", { name: label });
+    await expect(nav.getByRole("link", { name: "White House News" })).toHaveAttribute("href", "https://www.whitehouse.gov/live/");
+    await expect(nav.getByRole("link", { name: "Elections" }).locator("xpath=following-sibling::a[1]")).toHaveText("White House News");
+  }
+});

@@ -476,6 +476,14 @@ type ContextLink = { to: string; label: string; end?: boolean; external?: boolea
 
 const WHITE_HOUSE_NEWS_LINK: ContextLink = { to: "https://www.whitehouse.gov/live/", label: "White House News", external: true };
 
+/** Subject desk links under `base`, with White House News beside the Elections desk at every level. */
+function subjectLinks(base: string): ContextLink[] {
+  return subjectGroups.flatMap((group) => [
+    { to: `${base}/${group.slug}`, label: group.title },
+    ...(group.slug === "elections-transparency" ? [WHITE_HOUSE_NEWS_LINK] : []),
+  ]);
+}
+
 function contextLinks(county?: NonNullable<ReturnType<typeof getCounty>>, state?: ReturnType<typeof getStateBySlug>): ContextLink[] {
   if (county) {
     const base = `/${county.state.slug}/${county.slug}`;
@@ -484,11 +492,7 @@ function contextLinks(county?: NonNullable<ReturnType<typeof getCounty>>, state?
       { to: `${base}/weather`, label: "Weather" },
       { to: `${base}/data`, label: "County Data" },
       { to: `${base}/economic-data`, label: "Economic Data" },
-      // White House News sits beside the Elections desk in the county nav.
-      ...subjectGroups.flatMap((group) => [
-        { to: `${base}/${group.slug}`, label: group.title },
-        ...(group.slug === "elections-transparency" ? [WHITE_HOUSE_NEWS_LINK] : []),
-      ]),
+      ...subjectLinks(base),
       { to: `${base}/op-eds`, label: "County Op-Eds" },
       { to: `${base}/public-notices`, label: "Public Notices" },
       { to: `${base}/local-sources`, label: "Local Sources" },
@@ -503,7 +507,7 @@ function contextLinks(county?: NonNullable<ReturnType<typeof getCounty>>, state?
     const base = stateHomePath(state);
     return [
       { to: base, label: "State Home", end: true },
-      ...subjectGroups.map((group) => ({ to: `${base}/${group.slug}`, label: group.title })),
+      ...subjectLinks(base),
       { to: `${base}/op-eds`, label: "State Op-Eds" },
       ...(state.slug === "texas" ? [{ to: PANHANDLE_LEGENDS_PATH, label: "Panhandle Legends" }] : []),
       { to: `${base}/submit`, label: "Submit A Story" },
@@ -512,7 +516,7 @@ function contextLinks(county?: NonNullable<ReturnType<typeof getCounty>>, state?
 
   return [
     { to: "/", label: "National Home", end: true },
-    ...subjectGroups.map((group) => ({ to: `/topics/${group.slug}`, label: group.title })),
+    ...subjectLinks("/topics"),
     { to: "/op-eds", label: "National Op-Eds" },
     { to: "/submit", label: "Submit A Story" },
   ];
