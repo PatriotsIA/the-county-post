@@ -75,7 +75,7 @@ export function MetalsTracker() {
           const change = item?.previousPrice ? item.price - item.previousPrice : undefined;
           const percent = change !== undefined && item?.previousPrice ? change / item.previousPrice * 100 : undefined;
           const oldFix = item?.fixedAt && Date.now() - Date.parse(item.fixedAt) > 96 * 60 * 60 * 1000;
-          return <article className={`itm-quote itm-quote-${metal.key}`} key={metal.key} aria-label={`${metal.name} benchmark`}>
+          return <article className="card itm-quote" key={metal.key} aria-label={`${metal.name} benchmark`}>
             <div className="itm-quote-heading"><h3>{metal.name}</h3><span className="itm-element" aria-hidden="true">{metal.symbol}</span></div>
             <p className="itm-price">{item ? money(item.price * factor) : "Unavailable"}</p><p className="itm-unit">USD / {units[unit].short}</p>
             <p className={`itm-change ${change === undefined || change === 0 ? "" : change < 0 ? "itm-down" : "itm-up"}`}>
@@ -89,7 +89,7 @@ export function MetalsTracker() {
       <p className="itm-provenance">Prices by <a href="https://mintedmetal.com" target="_blank" rel="noreferrer">Minted Metal</a> · <a href="https://www.lbma.org.uk/prices-and-data/lbma-precious-metal-prices" target="_blank" rel="noreferrer">LBMA benchmarks</a> · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a><br />Feed updated: <time dateTime={ticker?.updatedAt}>{date(ticker?.updatedAt)}</time>. Fixing dates above identify when each price was set. Checks every 15 minutes while this page is visible.</p>
 
       <div className="itm-analysis-grid">
-        <section className="itm-analysis" aria-labelledby="metals-compare-title">
+        <section className="card itm-analysis" aria-labelledby="metals-compare-title">
           <p className="kicker">Price comparison</p><h3 id="metals-compare-title">Previous &amp; latest</h3>
           <label>Metal<select value={selected} onChange={event => setSelected(event.target.value as Metal)}>{metals.map(metal => <option key={metal.key} value={metal.key}>{metal.name}</option>)}</select></label>
           {quote?.previousPrice ? <figure className="itm-comparison">
@@ -99,7 +99,7 @@ export function MetalsTracker() {
           </figure> : <p className="itm-small">A comparison will appear when both benchmarks are available.</p>}
           <div className="itm-ratio"><span>Gold / silver ratio</span><strong>{ratio ? `${ratio.toFixed(2)} : 1` : "Unavailable"}</strong><p className="itm-small">Troy ounces of silver equal in benchmark value to one troy ounce of gold. Calculated from the prices above; the two metals have different fixing times.</p></div>
         </section>
-        <section className="itm-analysis" aria-labelledby="metals-calc-title">
+        <section className="card itm-analysis" aria-labelledby="metals-calc-title">
           <p className="kicker">Explore a quantity</p><h3 id="metals-calc-title">Metal value calculator</h3>
           <p className="itm-small">Uses the selected metal and price unit. Estimates the value of the fine metal content.</p>
           <div className="itm-calculator-inputs"><label>Quantity ({units[unit].short})<input type="number" min="0.000001" max="1000000" step="any" value={quantity} onChange={event => setQuantity(event.target.value)} /></label><label>Purity (%)<input type="number" min="0.000001" max="100" step="any" value={purity} onChange={event => setPurity(event.target.value)} /></label></div>

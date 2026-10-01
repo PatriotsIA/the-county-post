@@ -5,6 +5,10 @@ Stan Roberts contact section, and ITM's video feed. Primary navigation, the foot
 and the Market desk link to the page with real anchors. The Market desk no longer
 loads metals prices on every edition. Other existing ITM video placements remain.
 
+The page uses The County Post's shared paper cards, typography, rules and color
+palette. A compact sponsor introduction leads into Stan's profile and contact
+details; the detailed price tracker, company background and videos follow below.
+
 ## Prices
 
 The same `/v1/markets/metals` API supplies USD per troy ounce. The API also passes
