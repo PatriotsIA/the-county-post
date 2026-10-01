@@ -530,145 +530,21 @@ body::before {
   border-bottom: 1px solid var(--rule);
 }
 
-.precious-metals-ticker {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+.metals-desk-link {
+  display: flex;
   align-items: center;
   gap: 14px;
-  position: relative;
-  z-index: 1;
-  margin-top: -5px;
-  padding: 5px 12px;
+  padding: 12px 16px;
+  background: #f3efe3;
   border-bottom: 1px solid var(--rule);
-  background: #fff;
   color: var(--ink);
-}
-
-.precious-metals-attribution {
-  display: grid;
-  justify-items: end;
-  gap: 3px;
-}
-
-.precious-metals-attribution > a {
-  color: var(--ink);
-  white-space: nowrap;
-  font-family: "Roboto Mono", monospace;
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
   text-decoration: none;
-  text-transform: uppercase;
 }
-
-.precious-metals-sponsor {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 9px !important;
-}
-
-.precious-metals-attribution > a:hover {
-  color: var(--news-blue);
-}
-
-.precious-metals-sponsor:hover {
-  color: var(--news-blue);
-}
-
-.precious-metals-sponsor img {
-  display: block;
-  width: 56px;
-  height: auto;
-}
-
-.precious-metals-quotes {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-  min-width: 0;
-}
-
-.precious-metal-quote {
-  display: grid;
-  grid-template-columns: 16px auto;
-  grid-template-rows: auto auto;
-  align-items: center;
-  justify-content: center;
-  column-gap: 6px;
-  color: var(--ink);
-  font-family: "Roboto Mono", monospace;
-  font-size: 12px;
-  line-height: 1.2;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.precious-metal-quote:hover strong {
-  color: var(--news-blue);
-  text-decoration: underline;
-}
-
-.precious-metal-label {
-  grid-column: 2;
-  grid-row: 1;
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.metal-symbol {
-  grid-column: 1;
-  grid-row: 1 / -1;
-  display: inline-grid;
-  width: 16px;
-  height: 16px;
-  place-items: center;
-  border-radius: 50%;
-  color: #fff;
-  font-size: 8px;
-  font-weight: 800;
-  letter-spacing: 0;
-  line-height: 1;
-  text-transform: none;
-}
-
-.metal-symbol-gold {
-  background: #b8860b;
-}
-
-.metal-symbol-silver {
-  background: #6e7781;
-}
-
-.metal-symbol-platinum {
-  background: #376b81;
-}
-
-.metal-symbol-palladium {
-  background: #765d50;
-}
-
-.precious-metal-quote strong {
-  grid-column: 2;
-  grid-row: 2;
-  font-size: 14px;
-}
-
-.precious-metal-quote small {
-  font-size: 10px;
-  font-weight: 700;
-}
-
-.precious-metal-quote .positive {
-  color: #26733a;
-}
-
-.precious-metal-quote .negative {
-  color: var(--news-red);
-}
+.metals-desk-link img { width: 56px; height: auto; flex: 0 0 56px; }
+.metals-desk-link strong { display: block; font-size: 14px; }
+.metals-desk-link small { display: block; font-size: 11px; color: var(--muted); }
+.metals-desk-link > span:last-child { margin-left: auto; }
+.metals-desk-link:hover strong { text-decoration: underline; }
 
 .cattle-ticker {
   border-bottom: 1px solid var(--rule);
@@ -1955,10 +1831,6 @@ h2 {
 
 .loading-indicator-label {
   line-height: 1.35;
-}
-
-.precious-metals-ticker > .loading-indicator {
-  justify-self: center;
 }
 
 .cattle-ticker > .loading-indicator {
@@ -3600,23 +3472,8 @@ button:disabled {
     justify-self: center;
   }
 
-  .precious-metals-ticker {
-    grid-template-columns: 1fr;
-    gap: 5px;
-    justify-items: center;
-  }
-
-  .precious-metals-quotes {
-    width: 100%;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .hard-assets-featured {
     grid-template-columns: 1fr;
-  }
-
-  .precious-metals-sponsor {
-    justify-content: center;
   }
 
   .cattle-ticker-summary {
@@ -4704,17 +4561,6 @@ main,
 
   .market-panel-toggle-state {
     font-size: 11px;
-  }
-
-  .precious-metals-attribution {
-    justify-items: center;
-    text-align: center;
-  }
-
-  .precious-metals-attribution > a {
-    white-space: normal;
-    font-size: 10px;
-    overflow-wrap: anywhere;
   }
 
   .cattle-ticker-label,

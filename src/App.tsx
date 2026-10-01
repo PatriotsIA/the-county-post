@@ -13,6 +13,8 @@ import { CountyShowUpMeter } from "./components/CountyShowUpMeter";
 import { CountyPartnerDirectory, GlobalPartnerDirectory } from "./components/PartnerDirectory";
 import { PanhandleLegends } from "./components/PanhandleLegends";
 import { PANHANDLE_LEGENDS_PATH } from "./data/panhandle-legends";
+import { ITM_TRADING_PATH } from "./data/itm-trading";
+import { ItmTrading } from "./components/ItmTrading";
 import { CountyPublicNotices } from "./components/CountyPublicNotices";
 import { CountyLocalSourcesDirectory } from "./components/LocalSourcesDirectory";
 import { DataCentersOpEdPage } from "./components/CountyPostOpEd";
@@ -250,11 +252,12 @@ function App() {
 
   const normalizedPath = pathname.replace(/\/+$/, "");
   const isLegendsPage = normalizedPath === PANHANDLE_LEGENDS_PATH || normalizedPath === "/texas/texas-legends" || Boolean(activeCounty?.state.slug === "texas" && normalizedPath === `/texas/${activeCounty.slug}/texas-legends`);
+  const isSponsorPage = isLegendsPage || normalizedPath === ITM_TRADING_PATH;
   const showEditionChrome = !isLegendsPage && isEditionChromePath(pathname, activeCounty, activeState);
   const isHomeEdition = isEditionHomePath(pathname, activeCounty, activeState);
 
   return (
-    <div className="page">
+    <div className={`page${normalizedPath === ITM_TRADING_PATH ? " itm-shell" : ""}`}>
       <header className={`masthead${showEditionChrome ? " masthead-has-hero" : ""}${isHomeEdition ? " masthead-home" : ""}`}>
         <p className="masthead-kicker masthead-kicker-row">
           <span>Established 2026</span>
@@ -295,6 +298,9 @@ function App() {
         <NavLink to="/partners" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")} onClick={() => setMobileMenuOpen(false)}>
           Partners
         </NavLink>
+        <NavLink to={ITM_TRADING_PATH} className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")} onClick={() => setMobileMenuOpen(false)}>
+          ITM Trading
+        </NavLink>
         <NavLink to="/about" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")} onClick={() => setMobileMenuOpen(false)}>
           About
         </NavLink>
@@ -310,14 +316,14 @@ function App() {
         </a>
         </nav>
       </header>
-      {!isLegendsPage ? <ContextNav county={activeCounty} state={activeState} /> : null}
+      {!isSponsorPage ? <ContextNav county={activeCounty} state={activeState} /> : null}
       {activeCounty && isCountyDataPath(pathname, activeCounty) ? <AtlasDomainNav county={activeCounty} /> : null}
       {pathname === "/" ? (
         <div className="top-county-finder">
           <CountyDirectorySearch id="find-a-county" />
         </div>
       ) : null}
-      {!isLegendsPage ? <TopTicker county={activeCounty} defaultOpen={isEditionHomePath(pathname, activeCounty, activeState)} /> : null}
+      {!isSponsorPage ? <TopTicker county={activeCounty} defaultOpen={isEditionHomePath(pathname, activeCounty, activeState)} /> : null}
       <button
         type="button"
         className={`scroll-top${showScrollTop ? " scroll-top-visible" : ""}`}
@@ -339,6 +345,7 @@ function App() {
           <Route path="/states/:stateSlug/*" element={<LegacyStateRedirect />} />
           <Route path="/partners" element={<GlobalPartnerDirectory />} />
           <Route path={PANHANDLE_LEGENDS_PATH} element={<PanhandleLegends />} />
+          <Route path={ITM_TRADING_PATH} element={<ItmTrading />} />
           <Route path="/texas/texas-legends" element={<LegacyLegendsRedirect />} />
           <Route path="/texas/:countySlug/texas-legends" element={<LegacyLegendsRedirect countyScoped />} />
           <Route path="/op-eds/the-data-centers-and-the-rest-of-us" element={<DataCentersOpEdPage />} />
@@ -364,7 +371,7 @@ function App() {
         </Routes>
       </main>
 
-      {!isLegendsPage ? <AdSlot slot="banner" limit={4} /> : null}
+      {!isSponsorPage ? <AdSlot slot="banner" limit={4} /> : null}
       <footer className="footer">
         <img className="footer-logo" src={countyPostLogo} alt={site.name} />
         <p>
@@ -373,6 +380,7 @@ function App() {
         </p>
         <div className="footer-links">
           <Link to="/partners">Partners</Link>
+          <Link to={ITM_TRADING_PATH}>ITM Trading &amp; metal prices</Link>
           <Link to="/privacy">Privacy</Link>
           <Link to="/terms">Terms</Link>
           <BookmarkPrompt county={activeCounty} autoShow={isCountyHomePath(pathname, activeCounty)} onEditionHome={pathname === "/" || isCountyHomePath(pathname, activeCounty)} />

@@ -23,6 +23,7 @@ import { site } from "../../src/data/site";
 import { subjectGroups, subjectPages } from "../../src/data/subjects";
 import { dataCentersOpEd } from "../../src/data/county-post-op-eds";
 import { PANHANDLE_LEGENDS_PATH, PANHANDLE_LEGENDS_TITLE, PANHANDLE_LEGENDS_DESCRIPTION } from "../../src/data/panhandle-legends";
+import { ITM_TRADING_PATH, ITM_TRADING_TITLE, ITM_TRADING_DESCRIPTION } from "../../src/data/itm-trading";
 import { clampDescription, pageTitle } from "../../src/lib/seo";
 
 const OUT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "../dist");
@@ -96,6 +97,7 @@ const corePaths = [
   "/about",
   "/partners",
   PANHANDLE_LEGENDS_PATH,
+  ITM_TRADING_PATH,
   "/op-eds",
   dataCentersOpEd.path,
   "/privacy",
@@ -114,27 +116,33 @@ const countyDataPaths = counties.flatMap((county) =>
 
 mkdirSync(OUT_DIR, { recursive: true });
 
-// The dedicated sponsor URL has its own initial metadata for link previews.
-// Amplify's exact /legends rewrite must precede the general SPA rewrite.
-const legendsTitle = pageTitle(PANHANDLE_LEGENDS_TITLE);
-const legendsDescription = clampDescription(PANHANDLE_LEGENDS_DESCRIPTION);
-const legendsCanonical = loc(PANHANDLE_LEGENDS_PATH);
-const legendsMeta: Record<string, string> = {
-  description: legendsDescription,
-  "og:title": legendsTitle,
-  "og:description": legendsDescription,
-  "og:url": legendsCanonical,
-  "twitter:title": legendsTitle,
-  "twitter:description": legendsDescription,
-};
-const legendsHtml = readFileSync(join(OUT_DIR, "index.html"), "utf8")
-  .replace(/<title data-seo-default>[^<]*<\/title>/, `<title data-seo-default>${escapeXml(legendsTitle)}</title>`)
-  .replace(/<meta\b[^>]*data-seo-default[^>]*>/g, (tag) => {
-    const key = tag.match(/\b(?:name|property)="([^"]+)"/)?.[1];
-    return key && legendsMeta[key] ? tag.replace(/\bcontent="[^"]*"/, `content="${escapeXml(legendsMeta[key])}"`) : tag;
-  })
-  .replace(/<link\b[^>]*data-seo-default[^>]*rel="canonical"[^>]*>/, `<link data-seo-default rel="canonical" href="${escapeXml(legendsCanonical)}" />`);
-writeFileSync(join(OUT_DIR, "legends.html"), legendsHtml, "utf8");
+// Dedicated sponsor URLs have initial metadata for search and link previews.
+// Each exact Amplify rewrite must precede the general SPA rewrite.
+const sponsorPages = [
+  { path: PANHANDLE_LEGENDS_PATH, title: PANHANDLE_LEGENDS_TITLE, description: PANHANDLE_LEGENDS_DESCRIPTION, file: "legends.html" },
+  { path: ITM_TRADING_PATH, title: ITM_TRADING_TITLE, description: ITM_TRADING_DESCRIPTION, file: "itm-trading.html" },
+];
+for (const page of sponsorPages) {
+  const title = pageTitle(page.title);
+  const description = clampDescription(page.description);
+  const canonical = loc(page.path);
+  const metadata: Record<string, string> = {
+    description,
+    "og:title": title,
+    "og:description": description,
+    "og:url": canonical,
+    "twitter:title": title,
+    "twitter:description": description,
+  };
+  const html = readFileSync(join(OUT_DIR, "index.html"), "utf8")
+    .replace(/<title data-seo-default>[^<]*<\/title>/, `<title data-seo-default>${escapeXml(title)}</title>`)
+    .replace(/<meta\b[^>]*data-seo-default[^>]*>/g, (tag) => {
+      const key = tag.match(/\b(?:name|property)="([^"]+)"/)?.[1];
+      return key && metadata[key] ? tag.replace(/\bcontent="[^"]*"/, `content="${escapeXml(metadata[key])}"`) : tag;
+    })
+    .replace(/<link\b[^>]*data-seo-default[^>]*rel="canonical"[^>]*>/, `<link data-seo-default rel="canonical" href="${escapeXml(canonical)}" />`);
+  writeFileSync(join(OUT_DIR, page.file), html, "utf8");
+}
 
 const files = [
   ...writeUrlset("sitemap-core", corePaths),

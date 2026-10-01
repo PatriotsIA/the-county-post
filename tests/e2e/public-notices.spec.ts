@@ -181,9 +181,9 @@ test("the mobile notice row and ITM logo fit without overflow", async ({ page })
   await expect(cta).toBeVisible();
   expect((await cta.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await expect(page.locator(".precious-metals-attribution")).toContainText("Not spot prices");
-  await expect(page.getByRole("link", { name: "Presented by ITM Trading · For spot prices, visit ITM Trading" })).toHaveAttribute("href", "https://www.itmtrading.com/");
-  const logo = page.locator(".precious-metals-sponsor img");
+  await expect(page.locator(".metals-desk-link")).toContainText("Precious metals tracker");
+  await expect(page.locator(".metals-desk-link")).toHaveAttribute("href", "/itm-trading");
+  const logo = page.locator(".metals-desk-link img");
   await expect(logo).toHaveAttribute("src", /itm-trading-logo\.jpg/);
   expect(await logo.evaluate(async (img: HTMLImageElement) => { await img.decode(); return img.naturalWidth > 0 && img.naturalHeight > 0; })).toBe(true);
   await page.locator(".market-weather-stack").screenshot({ path: "coverage/public-notices/market-desk-mobile.png" });

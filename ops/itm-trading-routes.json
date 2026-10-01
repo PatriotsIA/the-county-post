@@ -1,0 +1,4 @@
+[
+  { "source": "/itm-trading/", "target": "/itm-trading", "status": "301" },
+  { "source": "/itm-trading", "target": "/itm-trading.html", "status": "200" }
+]

@@ -4,23 +4,14 @@ import { type CountySite } from "../data/counties";
 import {
   weatherSeverityClass,
 } from "../lib/county-weather-api";
-import { fetchCattleTicker, fetchMetalsTicker } from "../lib/markets-api";
+import { fetchCattleTicker } from "../lib/markets-api";
 import { useCountyWeather } from "../lib/useCountyWeather";
 import itmTradingAd from "../../ad-assets/itm-trading-logo.jpg";
 import { LoadingIndicator } from "./LoadingIndicator";
 import { CountyNoticeTicker } from "./CountyNoticeTicker";
 
-const itmTradingUrl = "https://www.itmtrading.com/";
-const mintedMetalUrl = "https://mintedmetal.com";
 const stockTickerSymbols =
   "FOREXCOM:SPXUSD,FOREXCOM:NSXUSD,FOREXCOM:DJI,FX:EURUSD,BITSTAMP:BTCUSD,BITSTAMP:ETHUSD,CMCMARKETS:GOLD,NASDAQ:NVDA,EASYMARKETS:OILUSD,NASDAQ:AAPL,NASDAQ:AMZN,NASDAQ:MSFT,NASDAQ:META,NASDAQ:AMD,NASDAQ:PLTR,NASDAQ:GOOGL,NASDAQ:NFLX,NYSE:DELL,NYSE:XOM,NYSE:JPM,NYSE:BAC";
-const metalSymbols = {
-  gold: "Au",
-  silver: "Ag",
-  platinum: "Pt",
-  palladium: "Pd",
-} as const;
-
 export function TopTicker({
   county,
   defaultOpen = false,
@@ -55,7 +46,11 @@ export function TopTicker({
           <div className="market-weather-bar">
             <TradingViewTicker />
           </div>
-          <PreciousMetalsTicker />
+          <Link className="metals-desk-link" to="/itm-trading">
+            <img src={itmTradingAd} alt="ITM Trading" width="56" height="35" />
+            <span><strong>Precious metals tracker</strong><small>Gold, silver, platinum &amp; palladium · Meet our sponsor ITM Trading</small></span>
+            <span aria-hidden="true">→</span>
+          </Link>
           <CattleTicker />
           {county ? <CountyWeather county={county} /> : null}
           {county ? <CountyNoticeTicker key={county.fips} county={county} active={isOpen} /> : null}
@@ -120,84 +115,6 @@ function loadTickerTape() {
   });
 }
 
-function PreciousMetalsTicker() {
-  const [ticker, setTicker] = useState<Awaited<ReturnType<typeof fetchMetalsTicker>>>();
-  const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
-
-  useEffect(() => {
-    const controller = new AbortController();
-    const loadQuotes = () => {
-      fetchMetalsTicker(controller.signal)
-        .then((data) => {
-          setTicker(data);
-          setStatus("loaded");
-        })
-        .catch(() => {
-          if (!controller.signal.aborted) setStatus("error");
-        });
-    };
-
-    loadQuotes();
-    const refresh = window.setInterval(loadQuotes, 15 * 60 * 1000);
-
-    return () => {
-      controller.abort();
-      window.clearInterval(refresh);
-    };
-  }, []);
-
-  const metals = ticker?.items || [
-    { key: "gold", label: "Gold" },
-    { key: "silver", label: "Silver" },
-    { key: "platinum", label: "Platinum" },
-    { key: "palladium", label: "Palladium" },
-  ];
-
-  return (
-    <aside className="precious-metals-ticker" aria-label="Precious metals prices">
-      {status === "loading" ? (
-        <LoadingIndicator label="Loading precious metal prices…" size="inline" />
-      ) : (
-        <div className="precious-metals-quotes">
-          {metals.map((quote) => {
-            return (
-              <a
-                key={quote.key}
-                className="precious-metal-quote"
-                href={itmTradingUrl}
-                target="_blank"
-                rel="noreferrer sponsored"
-                aria-label={`${quote.label} benchmark price, not a spot price. Visit ITM Trading for spot prices`}
-              >
-                <span className={`metal-symbol metal-symbol-${quote.key}`}>{metalSymbols[quote.key]}</span>
-                <span className="precious-metal-label">{quote.label}</span>
-                <strong>{"price" in quote ? formatMetalPrice(quote.price) : "Unavailable"}</strong>
-              </a>
-            );
-          })}
-        </div>
-      )}
-      <div className="precious-metals-attribution">
-        <a href={ticker?.provider.url || mintedMetalUrl} target="_blank" rel="noreferrer">
-          {ticker?.stale ? "Last verified LBMA daily benchmark" : `LBMA daily benchmark via ${ticker?.provider.name || "Minted Metal"}`} · Not spot prices
-        </a>
-        <a className="precious-metals-sponsor" href={itmTradingUrl} target="_blank" rel="noreferrer sponsored">
-          <span>Presented by ITM Trading · For spot prices, visit ITM Trading</span>
-          <img src={itmTradingAd} alt="ITM Trading" width="56" height="35" />
-        </a>
-      </div>
-    </aside>
-  );
-}
-
-function formatMetalPrice(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 2,
-  }).format(value);
-}
-
 function CattleTicker() {
   const [ticker, setTicker] = useState<Awaited<ReturnType<typeof fetchCattleTicker>>>();
   const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
@@ -254,7 +171,8 @@ function CattleTicker() {
 }
 
 function formatCattlePrice(value: number, unit: string) {
-  return `${formatMetalPrice(value)} ${unit}`;
+  const price = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(value);
+  return `${price} ${unit}`;
 }
 
 function CountyWeather({ county }: { county: CountySite }) {

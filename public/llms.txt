@@ -60,3 +60,7 @@ The County Post.
 ## Contact
 
 submissions@thecountypost.com
+
+## Sponsor resources
+
+- [ITM Trading and metal prices](https://thecountypost.com/itm-trading): Sponsor profile, contact ITM Gold & Silver Analyst Stan Roberts, and dated precious-metal benchmarks from Minted Metal. Prices are benchmarks, not executable spot or retail quotes.
