@@ -24,6 +24,7 @@ import eskimoHut from "../../ad-assets/eskimo-hut-inline.jpg";
 import parallelRoofing from "../../ad-assets/parallel-roofing.png";
 import parallelBuilders from "../../ad-assets/parallel-builders.png";
 import gopConnect from "../../ad-assets/gopconnect-be-informed.png";
+import darrylBergstresserBanner from "../../ad-assets/darryl-bergstresser-banner.png";
 import { panhandleLegendsAds } from "./panhandle-legends";
 
 export type AdSlotId = "inline" | "banner";
@@ -348,5 +349,22 @@ export const ads: AdCreative[] = [
     name: "Patriots in Action",
     alt: "Patriots in Action",
     href: "https://community.patriotsinaction.com/",
+  },
+  {
+    id: "darryl-bergstresser-banner",
+    slot: "banner",
+    image: darrylBergstresserBanner,
+    name: "Darryl Bergstresser — Barrett Financial Group",
+    alt: "Darryl Bergstresser, Mr. Mortgage — Barrett Financial Group. Call (918) 313-3851. NMLS #224307.",
+    href: "https://www.barrettfinancial.com/",
+    countyKeys: [
+      "oklahoma/tulsa",
+      "oklahoma/rogers",
+      "oklahoma/oklahoma",
+      "texas/potter",
+      "texas/randall",
+      "texas/midland",
+      "texas/ector",
+    ],
   },
 ];

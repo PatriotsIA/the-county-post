@@ -371,7 +371,7 @@ function App() {
         </Routes>
       </main>
 
-      {!isSponsorPage ? <AdSlot slot="banner" limit={4} /> : null}
+      {!isSponsorPage ? <AdSlot slot="banner" /> : null}
       <footer className="footer">
         <img className="footer-logo" src={countyPostLogo} alt={site.name} />
         <p>
