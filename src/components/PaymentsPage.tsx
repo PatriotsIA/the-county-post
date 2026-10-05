@@ -382,6 +382,27 @@ export function PaymentsPage() {
             <Link to="/terms">terms</Link> and <Link to="/privacy">privacy statement</Link>.
           </p>
         </form>
+
+        <figure className="advertiser-guide">
+          <img
+            src="/the-county-post-advertising-guide.png"
+            alt="The County Post advertising guide: county rates, section sponsorships, multi-county discounts, and network and TV advertising options."
+            width={1024}
+            height={1536}
+            loading="lazy"
+            decoding="async"
+          />
+          <figcaption>
+            <a
+              className="button advertiser-guide-download"
+              href="/the-county-post-advertising-guide.png"
+              download="the-county-post-advertising-guide.png"
+            >
+              Download advertising guide
+            </a>
+            <small>Full-resolution PNG · 1024 × 1536 pixels</small>
+          </figcaption>
+        </figure>
       </section>
 
       <section id="national-advertising" className="card national-advertising">

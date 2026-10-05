@@ -5110,6 +5110,37 @@ main,
   gap: 20px;
 }
 
+.advertiser-guide {
+  width: 100%;
+  max-width: 1024px;
+  margin: 28px auto 0;
+  border-top: 1px solid var(--rule);
+  padding-top: 24px;
+}
+
+.advertiser-guide > img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.advertiser-guide figcaption {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  text-align: center;
+}
+
+.advertiser-guide small {
+  color: var(--muted);
+}
+
+.advertiser-guide-download:focus-visible {
+  outline: 3px solid var(--news-blue);
+  outline-offset: 3px;
+}
+
 #checkout,
 #placement-examples,
 #pricing,
@@ -5281,7 +5312,8 @@ main,
 }
 
 .main-site-button,
-.pricing-information-button {
+.pricing-information-button,
+.advertiser-guide-download {
   display: inline-grid;
   place-items: center;
   min-height: 42px;
@@ -5298,7 +5330,8 @@ main,
 }
 
 .main-site-button:hover,
-.pricing-information-button:hover {
+.pricing-information-button:hover,
+.advertiser-guide-download:hover {
   background: var(--news-red-dark);
 }
 
