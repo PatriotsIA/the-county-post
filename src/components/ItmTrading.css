@@ -1,4 +1,3 @@
-.itm-shell .masthead { position: static; }
 .itm-page { max-width: 1440px; margin: 0 auto; color: var(--ink); }
 .itm-page h1, .itm-page h2, .itm-page h3 { line-height: 1.3; }
 .itm-page h2 { margin: 6px 0 16px; }

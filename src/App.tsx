@@ -252,12 +252,13 @@ function App() {
 
   const normalizedPath = pathname.replace(/\/+$/, "");
   const isLegendsPage = normalizedPath === PANHANDLE_LEGENDS_PATH || normalizedPath === "/texas/texas-legends" || Boolean(activeCounty?.state.slug === "texas" && normalizedPath === `/texas/${activeCounty.slug}/texas-legends`);
-  const isSponsorPage = isLegendsPage || normalizedPath === ITM_TRADING_PATH;
-  const showEditionChrome = !isLegendsPage && isEditionChromePath(pathname, activeCounty, activeState);
+  const isItmTradingPage = normalizedPath === ITM_TRADING_PATH;
+  const isSponsorPage = isLegendsPage || isItmTradingPage;
+  const showEditionChrome = !isLegendsPage && (isItmTradingPage || isEditionChromePath(pathname, activeCounty, activeState));
   const isHomeEdition = isEditionHomePath(pathname, activeCounty, activeState);
 
   return (
-    <div className={`page${normalizedPath === ITM_TRADING_PATH ? " itm-shell" : ""}`}>
+    <div className="page">
       <header className={`masthead${showEditionChrome ? " masthead-has-hero" : ""}${isHomeEdition ? " masthead-home" : ""}`}>
         <p className="masthead-kicker masthead-kicker-row">
           <span>Established 2026</span>
@@ -316,7 +317,7 @@ function App() {
         </a>
         </nav>
       </header>
-      {!isSponsorPage ? <ContextNav county={activeCounty} state={activeState} /> : null}
+      {!isLegendsPage ? <ContextNav county={activeCounty} state={activeState} /> : null}
       {activeCounty && isCountyDataPath(pathname, activeCounty) ? <AtlasDomainNav county={activeCounty} /> : null}
       {pathname === "/" ? (
         <div className="top-county-finder">

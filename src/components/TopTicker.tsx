@@ -12,6 +12,7 @@ import { CountyNoticeTicker } from "./CountyNoticeTicker";
 
 const stockTickerSymbols =
   "FOREXCOM:SPXUSD,FOREXCOM:NSXUSD,FOREXCOM:DJI,FX:EURUSD,BITSTAMP:BTCUSD,BITSTAMP:ETHUSD,CMCMARKETS:GOLD,NASDAQ:NVDA,EASYMARKETS:OILUSD,NASDAQ:AAPL,NASDAQ:AMZN,NASDAQ:MSFT,NASDAQ:META,NASDAQ:AMD,NASDAQ:PLTR,NASDAQ:GOOGL,NASDAQ:NFLX,NYSE:DELL,NYSE:XOM,NYSE:JPM,NYSE:BAC";
+const metalTickerSymbols = "OANDA:XAUUSD,OANDA:XAGUSD,OANDA:XPTUSD,OANDA:XPDUSD";
 export function TopTicker({
   county,
   defaultOpen = false,
@@ -44,13 +45,18 @@ export function TopTicker({
       <div id={panelId} className="market-panel-content" hidden={!isOpen}>
         <div className="market-weather-stack">
           <div className="market-weather-bar">
-            <TradingViewTicker />
+            <TradingViewTicker active={isOpen} />
           </div>
-          <Link className="metals-desk-link" to="/itm-trading">
-            <img src={itmTradingAd} alt="ITM Trading" width="56" height="35" />
-            <span><strong>Precious metals tracker</strong><small>Gold, silver, platinum &amp; palladium · Meet our sponsor ITM Trading</small></span>
-            <span aria-hidden="true">→</span>
-          </Link>
+          <aside className="precious-metals-ticker" aria-label="Metal spot prices">
+            <div className="metals-ticker-heading">
+              <div><strong>Metals spot prices</strong><small>Gold, silver, platinum &amp; palladium · USD / troy oz</small></div>
+              <Link className="metals-desk-link" to="/itm-trading">
+                <img src={itmTradingAd} alt="ITM Trading" width="40" height="25" />
+                <span>Meet our sponsor <span aria-hidden="true">→</span></span>
+              </Link>
+            </div>
+            <TradingViewTicker active={isOpen} symbols={metalTickerSymbols} label="Metal spot prices" />
+          </aside>
           <CattleTicker />
           {county ? <CountyWeather county={county} /> : null}
           {county ? <CountyNoticeTicker key={county.fips} county={county} active={isOpen} /> : null}
@@ -60,59 +66,76 @@ export function TopTicker({
   );
 }
 
-function TradingViewTicker() {
+function TradingViewTicker({ active, symbols = stockTickerSymbols, label = "Market prices" }: { active: boolean; symbols?: string; label?: string }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
-    let active = true;
+    if (!container || !active) return;
+    let mounted = true;
     container.textContent = "";
     setStatus("loading");
 
     void loadTickerTape().then(() => {
-      if (!active) return;
+      if (!mounted) return;
       const ticker = document.createElement("tv-ticker-tape");
-      ticker.setAttribute("symbols", stockTickerSymbols);
+      ticker.setAttribute("symbols", symbols);
       container.append(ticker);
       setStatus("loaded");
     }).catch(() => {
-      if (active) setStatus("error");
+      if (mounted) setStatus("error");
     });
 
     return () => {
-      active = false;
+      mounted = false;
       container.textContent = "";
     };
-  }, []);
+  }, [active, symbols]);
 
   return (
     <div className="tradingview-widget-container market-ticker-widget">
-      {status === "loading" ? <LoadingIndicator label="Loading market prices…" size="inline" /> : null}
-      {status === "error" ? <span className="muted">Market prices unavailable.</span> : null}
+      {status === "loading" ? <LoadingIndicator label={`Loading ${label.toLowerCase()}…`} size="inline" /> : null}
+      {status === "error" ? <span className="muted" role="status">{label} unavailable.</span> : null}
       <div className="market-ticker-widget-content" ref={containerRef} />
     </div>
   );
 }
 
+let tickerTapePromise: Promise<void> | undefined;
+let tickerTapeAttempt = 0;
+
 function loadTickerTape() {
   if (customElements.get("tv-ticker-tape")) return Promise.resolve();
+  if (tickerTapePromise) return tickerTapePromise;
 
-  const existing = document.getElementById("tradingview-ticker-tape-script") as HTMLScriptElement | null;
-  if (existing) return customElements.whenDefined("tv-ticker-tape").then(() => undefined);
-
-  return new Promise<void>((resolve, reject) => {
+  tickerTapePromise = new Promise<void>((resolve, reject) => {
     const script = document.createElement("script");
     script.id = "tradingview-ticker-tape-script";
     script.type = "module";
-    script.src = "https://widgets.tradingview-widget.com/w/en/tv-ticker-tape.js";
+    const url = "https://widgets.tradingview-widget.com/w/en/tv-ticker-tape.js";
+    const attempt = tickerTapeAttempt++;
+    // Browsers remember failed module loads. A fresh entry URL permits a retry.
+    script.src = attempt ? `${url}?retry=${attempt}` : url;
+    const fail = () => {
+      window.clearTimeout(timeout);
+      script.remove();
+      reject(new Error("TradingView ticker tape failed to load."));
+    };
+    const timeout = window.setTimeout(fail, 15_000);
     script.addEventListener("load", () => {
-      customElements.whenDefined("tv-ticker-tape").then(() => resolve());
+      customElements.whenDefined("tv-ticker-tape").then(() => {
+        window.clearTimeout(timeout);
+        resolve();
+      });
     }, { once: true });
-    script.addEventListener("error", () => reject(new Error("TradingView ticker tape failed to load.")), { once: true });
+    script.addEventListener("error", fail, { once: true });
     document.head.append(script);
+  }).catch((error) => {
+    tickerTapePromise = undefined;
+    throw error;
   });
+  return tickerTapePromise;
 }
 
 function CattleTicker() {
