@@ -6,6 +6,10 @@ and the Market desk link to the page with real anchors. The Market desk displays
 a separate TradingView spot-price ticker and retains a compact ITM sponsor link.
 Other existing ITM video placements remain.
 
+The sponsor page uses the full County Post masthead, global primary navigation,
+and national desk navigation, including the shared mobile menu. Its sponsor
+content and benchmark tools remain below the global header.
+
 ## Market desk spot ticker
 
 The edition ticker uses TradingView's `tv-ticker-tape` with OANDA's XAUUSD,

@@ -36,6 +36,11 @@ test("editions show a spot ticker and sponsor link without requesting daily benc
   expect(requests).toBe(0);
   await page.locator('.nav a[href="/itm-trading"]').click();
   await expect(page.getByRole("heading", { level: 1, name: "ITM Trading", exact: true })).toBeVisible();
+  await expect(page.locator('.masthead-stage')).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Primary navigation', exact: true })).toBeVisible();
+  await expect(page.locator('.nav a[href="/itm-trading"]')).toHaveAttribute('aria-current', 'page');
+  await expect(page.getByRole('navigation', { name: 'National pages', exact: true })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'National pages', exact: true }).getByRole('link', { name: 'Elections', exact: true })).toHaveAttribute('href', '/topics/elections-transparency');
   await expect(page.getByRole("article", { name: "Gold benchmark", exact: true })).toContainText("$3,000.00");
   expect(requests).toBeGreaterThan(0);
   await expect(page.locator('.market-panel')).toHaveCount(0);
@@ -135,6 +140,14 @@ test("the phone layout shows sponsor contacts and flags older or stale benchmark
   await page.route("**/v1/markets/metals", route => route.fulfill({ json: old }));
   await page.goto("/itm-trading");
   await expect(page.locator('.itm-fixing').first()).toContainText("Older benchmark");
+  await expect(page.locator('.masthead-stage')).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'National pages', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Menu', exact: true }).click();
+  const primaryNav = page.getByRole('navigation', { name: 'Primary navigation', exact: true });
+  await expect(primaryNav).toBeVisible();
+  await expect(primaryNav.getByRole('link', { name: 'Front Page', exact: true })).toHaveAttribute('href', '/');
+  await primaryNav.getByRole('link', { name: 'ITM Trading', exact: true }).click();
+  await expect(primaryNav).toBeHidden();
   await expect(page.getByRole("status").filter({ hasText: "last received benchmarks" })).toBeAttached();
   await expect(page.locator('.itm-hero-brand img')).toBeVisible();
   expect(await page.locator('.itm-hero-brand img').evaluate(async (image: HTMLImageElement) => { await image.decode(); return image.naturalWidth > 0; })).toBe(true);
