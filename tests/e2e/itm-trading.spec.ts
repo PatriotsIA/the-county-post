@@ -47,9 +47,10 @@ test("editions show a spot ticker and sponsor link without requesting daily benc
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", "https://thecountypost.com/itm-trading");
   await expect(page).toHaveTitle("ITM Trading & Metal Prices | The County Post");
   await expect(page.locator('.itm-disclosure').first()).toContainText("ITM Trading is a sponsor of The County Post");
-  await expect(page.locator('#stan-roberts a[href="tel:+18886964653"]')).toHaveText("888-696-4653");
-  await expect(page.getByRole("link", { name: "services@itmtrading.com", exact: true })).toHaveAttribute("href", /mailto:services@itmtrading.com\?subject=For%20Stan%20Roberts/);
-  await expect(page.getByRole("link", { name: "Contact Stan through ITM" })).toHaveAttribute("href", "https://www.itmtrading.com/contactus");
+  await expect(page.locator('.itm-role')).toHaveText("Senior Analyst · ITM Trading");
+  await expect(page.locator('#stan-roberts a[href="tel:+16232087493"]')).toHaveText("623-208-7493");
+  await expect(page.getByRole("link", { name: "stanr@itmtrading.com", exact: true })).toHaveAttribute("href", "mailto:stanr@itmtrading.com?subject=The%20County%20Post%20inquiry");
+  await expect(page.getByRole("link", { name: "Book 30 minutes with Stan" })).toHaveAttribute("href", "https://calendly.com/stanr-pt_i/30min?utm_source=countypost");
   const graph = JSON.parse(await page.locator('script[type="application/ld+json"]').textContent() || "{}");
   expect(graph["@graph"][0].sponsor.name).toBe("ITM Trading");
   expect(graph["@graph"][0].about.name).toBe("Stan Roberts");
@@ -131,7 +132,7 @@ test("malformed data never becomes a price or a calculation", async ({ page }) =
   await expect(page.getByRole("alert")).toContainText("Prices are unavailable");
   await expect(page.locator('.itm-price').first()).toHaveText("Unavailable");
   await expect(page.locator('.itm-estimate strong')).toHaveText("Unavailable");
-  await expect(page.getByRole("link", { name: "Contact Stan through ITM" })).toBeAttached();
+  await expect(page.getByRole("link", { name: "Book 30 minutes with Stan" })).toBeAttached();
 });
 
 test("the phone layout shows sponsor contacts and flags older or stale benchmarks", async ({ page }) => {
@@ -155,6 +156,6 @@ test("the phone layout shows sponsor contacts and flags older or stale benchmark
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.getByRole("link", { name: "Meet Stan Roberts", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Stan Roberts", exact: true })).toBeInViewport();
-  await expect(page.getByRole("link", { name: "Contact Stan through ITM" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Book 30 minutes with Stan" })).toBeVisible();
   await page.locator('#stan-roberts').screenshot({ path: "test-results/itm-contact-mobile.png" });
 });

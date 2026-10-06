@@ -10,6 +10,23 @@ The sponsor page uses the full County Post masthead, global primary navigation,
 and national desk navigation, including the shared mobile menu. Its sponsor
 content and benchmark tools remain below the global header.
 
+## Sponsor contacts and referral tracking — October 6, 2026
+
+The sponsor brief supplies Stan Roberts' title (Senior Analyst), direct phone
+(`623-208-7493`), email (`stanr@itmtrading.com`), and appointment page
+(`https://calendly.com/stanr-pt_i/30min`). The primary contact button opens that
+30-minute booking page. Stan's Team lists Fernando Grijalva, Keely Caul, and Nate
+Batiste, with a link to ITM's analyst directory. The other analysts' direct phone
+numbers could not be verified on ITM's site; its analyst emails are behind a
+CAPTCHA. Omit those unverified contacts. Stan's card uses the direct contacts
+supplied by the user in place of the former general business contacts.
+
+All reader links to ITM's website use the shared URLs in `src/data/itm-trading.ts`
+with `utm_source=countypost`, including the Hard Assets sponsor logo and metals
+benchmark notice. Stan's Calendly URL also carries that parameter. Organization
+identity URLs in JSON-LD, internal routes, email/phone protocols, and YouTube
+media links are not campaign links.
+
 ## Market desk spot ticker
 
 The edition ticker uses TradingView's `tv-ticker-tape` with OANDA's XAUUSD,
@@ -64,7 +81,8 @@ limited to 10/minute from October 6, 2026; keep this behind the existing API cac
 - https://www.itmtrading.com/international-bullion — Phoenix location and 1995 founding.
 - https://www.itmtrading.com/contactus — 888-696-4653, services@itmtrading.com,
   business hours as published (PST), and appointment-only Phoenix office.
-  These are labeled ITM business contacts; readers are told to ask for Stan Roberts.
+  These were the original general business contacts, superseded in Stan's card
+  by the October 6 sponsor brief above.
   Stan's full name is supplied by the project brief and also matches his public
   professional profile at https://www.linkedin.com/in/stan-roberts-513b7715.
 - https://www.itmtrading.com/products, /strategy, /ira — resource summaries.

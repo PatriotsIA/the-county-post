@@ -3,6 +3,7 @@ import type { NewsFeedItem } from "../lib/news-api";
 import { fetchNewsFeed } from "../lib/rss";
 import itmTradingAd from "../../ad-assets/itm-trading-logo.jpg";
 import { LoadingIndicator } from "./LoadingIndicator";
+import { itmTrading } from "../data/itm-trading";
 
 const itmTradingFeedUrl = "https://www.youtube.com/feeds/videos.xml?channel_id=UCom1i7_NVeSUNyJyuR_NbMQ";
 const rssToJsonUrl = "https://api.rss2json.com/v1/api.json";
@@ -50,7 +51,7 @@ export function HardAssetsFeed({ featuredVideoIds = evergreenVideoIds }: Props) 
           >
             {isOpen ? "Hide stories" : "Show stories"} <span aria-hidden="true">{isOpen ? "−" : "+"}</span>
           </button>
-          <a className="hard-assets-sponsor" href="https://www.itmtrading.com/" target="_blank" rel="noreferrer sponsored">
+          <a className="hard-assets-sponsor" href={itmTrading.websiteUrl} target="_blank" rel="noreferrer sponsored">
             <span>Presented by</span>
             <img src={itmTradingAd} alt="ITM Trading" />
           </a>
