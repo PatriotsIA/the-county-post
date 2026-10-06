@@ -2,8 +2,29 @@
 
 `/itm-trading` combines the existing precious-metals feed with a sponsor profile,
 Stan Roberts contact section, and ITM's video feed. Primary navigation, the footer,
-and the Market desk link to the page with real anchors. The Market desk no longer
-loads metals prices on every edition. Other existing ITM video placements remain.
+and the Market desk link to the page with real anchors. The Market desk displays
+a separate TradingView spot-price ticker and retains a compact ITM sponsor link.
+Other existing ITM video placements remain.
+
+## Market desk spot ticker
+
+The edition ticker uses TradingView's `tv-ticker-tape` with OANDA's XAUUSD,
+XAGUSD, XPTUSD, and XPDUSD cash-metal quotes (gold, silver, platinum, and
+palladium in USD per troy ounce). Prices and changes are rendered by TradingView,
+with its attribution and market status. These are broker spot-market quotes,
+separate from the daily LBMA benchmarks on the sponsor page and from retail
+coin/bar prices.
+
+The stock and metals tickers share one provider script. Both mount only while
+the Market desk is expanded and are removed when it closes. A failed or timed-out
+script load reports unavailable prices for both widgets; reopening the panel
+retries. This ticker uses no County Post API requests, provider key, or paid API
+subscription. The sponsor page's benchmark endpoint is unchanged.
+
+TradingView's [widget setup guide](https://www.tradingview.com/widget-docs/tutorials/web-components/configuring/)
+documents multiple tickers sharing one script. Its [available worldwide markets](https://www.tradingview.com/widget-docs/markets/worldwide/)
+lists OANDA's currency/commodity quotes as real-time. Actual gold, silver,
+platinum, and palladium widget quotes were visually verified on October 6, 2026.
 
 The page uses The County Post's shared paper cards, typography, rules and color
 palette. A compact sponsor introduction leads into Stan's profile and contact
@@ -62,8 +83,9 @@ branch environment update is required. AI crawler permissions are unchanged.
 
 ## Checks
 
-The Playwright ITM suite covers navigation and the removal of edition metal
-requests; verified contacts and sponsor metadata; conversion, comparison and
+The Playwright ITM suite covers the edition spot ticker without benchmark API
+requests, deferred loading and shared script failure/recovery; navigation,
+verified contacts and sponsor metadata; conversion, comparison and
 calculator behavior; malformed/unavailable/stale data; refresh recovery; and
 320px layout. The API suite pins provider metadata, numeric validation and stale
 fallback dates. Build and lint are local; release checks should remain a brief

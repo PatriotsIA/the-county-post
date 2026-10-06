@@ -11,6 +11,9 @@ const fixture = {
   ],
 };
 
+const tickerScriptUrl = "https://widgets.tradingview-widget.com/w/en/tv-ticker-tape.js";
+const tickerModule = 'customElements.define("tv-ticker-tape", class extends HTMLElement {});';
+
 test.beforeEach(async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-10-01T18:00:00Z"));
   await page.route("https://**", route => route.abort());
@@ -18,14 +21,17 @@ test.beforeEach(async ({ page }) => {
   await page.route("http://localhost:8787/v1/markets/metals", route => route.fulfill({ json: fixture }));
 });
 
-test("editions link to the sponsor page without fetching metals on every page", async ({ page }) => {
+test("editions show a spot ticker and sponsor link without requesting daily benchmarks", async ({ page }) => {
+  await page.route(tickerScriptUrl, route => route.fulfill({ contentType: "application/javascript", body: tickerModule }));
   let requests = 0;
   page.on("request", request => { if (request.url().includes("/markets/metals")) requests++; });
   for (const path of ["/", "/texas", "/texas/randall"]) {
     await page.goto(path);
     await expect(page.locator('.nav a[href="/itm-trading"]')).toHaveText("ITM Trading");
     await expect(page.locator('.metals-desk-link')).toHaveAttribute("href", "/itm-trading");
-    await expect(page.locator('.precious-metals-ticker')).toHaveCount(0);
+    await expect(page.getByRole('complementary', { name: 'Metal spot prices', exact: true })).toBeVisible();
+    await expect(page.locator('.precious-metals-ticker tv-ticker-tape')).toHaveAttribute('symbols', 'OANDA:XAUUSD,OANDA:XAGUSD,OANDA:XPTUSD,OANDA:XPDUSD');
+    await expect(page.locator('#tradingview-ticker-tape-script')).toHaveCount(1);
   }
   expect(requests).toBe(0);
   await page.locator('.nav a[href="/itm-trading"]').click();
@@ -44,6 +50,33 @@ test("editions link to the sponsor page without fetching metals on every page", 
   expect(graph["@graph"][0].about.name).toBe("Stan Roberts");
   await page.locator('.itm-hero').screenshot({ path: "test-results/itm-hero-desktop.png" });
   await page.locator('.itm-tracker').screenshot({ path: "test-results/itm-tracker-desktop.png" });
+});
+
+test("mobile tickers defer loading and recover together after a provider script failure", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 740 });
+  await page.route(tickerScriptUrl, route => route.abort());
+  let scriptRequests = 0;
+  page.on('request', request => { if (request.url().startsWith(tickerScriptUrl)) scriptRequests++; });
+  await page.goto('/texas/randall');
+  const toggle = page.getByRole('button', { name: /Market desk/ });
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  expect(scriptRequests).toBe(0);
+  await toggle.click();
+  await expect(page.getByRole('status').filter({ hasText: 'Metal spot prices unavailable.' })).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: /^Market prices unavailable\.$/ })).toBeVisible();
+  expect(scriptRequests).toBe(1);
+  await toggle.click();
+  await page.route(`${tickerScriptUrl}*`, route => route.fulfill({ contentType: 'application/javascript', body: tickerModule }));
+  await toggle.click();
+  await expect(page.locator('tv-ticker-tape')).toHaveCount(2);
+  expect(scriptRequests).toBe(2);
+  await expect(page.getByText('Metal spot prices unavailable.', { exact: true })).toHaveCount(0);
+  await toggle.click();
+  await expect(page.locator('tv-ticker-tape')).toHaveCount(0);
+  await toggle.click();
+  await expect(page.locator('tv-ticker-tape')).toHaveCount(2);
+  expect(scriptRequests).toBe(2);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
 test("benchmark comparisons and unit/purity calculations use verified values", async ({ page }) => {

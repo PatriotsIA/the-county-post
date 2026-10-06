@@ -530,21 +530,36 @@ body::before {
   border-bottom: 1px solid var(--rule);
 }
 
-.metals-desk-link {
+.precious-metals-ticker {
+  min-width: 0;
+  border-bottom: 1px solid var(--rule);
+  background: #fff;
+}
+
+.metals-ticker-heading {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px 16px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 8px 12px;
   background: #f3efe3;
-  border-bottom: 1px solid var(--rule);
+}
+
+.metals-ticker-heading strong { display: block; font-size: 14px; }
+.metals-ticker-heading small { display: block; font-size: 11px; color: var(--muted); }
+
+.metals-desk-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
   color: var(--ink);
+  font-size: 12px;
   text-decoration: none;
 }
-.metals-desk-link img { width: 56px; height: auto; flex: 0 0 56px; }
-.metals-desk-link strong { display: block; font-size: 14px; }
-.metals-desk-link small { display: block; font-size: 11px; color: var(--muted); }
-.metals-desk-link > span:last-child { margin-left: auto; }
-.metals-desk-link:hover strong { text-decoration: underline; }
+.metals-desk-link img { width: 40px; height: auto; flex: 0 0 40px; }
+.metals-desk-link:hover { text-decoration: underline; }
 
 .cattle-ticker {
   border-bottom: 1px solid var(--rule);
@@ -651,6 +666,13 @@ body::before {
   display: block;
   width: 100%;
   height: var(--tradingview-ticker-height);
+}
+
+.precious-metals-ticker .market-ticker-widget,
+.precious-metals-ticker .market-ticker-widget-content,
+.precious-metals-ticker tv-ticker-tape {
+  height: auto;
+  min-height: 110px;
 }
 
 .crypto-ticker-widget {

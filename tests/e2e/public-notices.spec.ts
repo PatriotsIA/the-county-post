@@ -181,7 +181,8 @@ test("the mobile notice row and ITM logo fit without overflow", async ({ page })
   await expect(cta).toBeVisible();
   expect((await cta.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await expect(page.locator(".metals-desk-link")).toContainText("Precious metals tracker");
+  await expect(page.locator(".precious-metals-ticker")).toContainText("Metals spot prices");
+  await expect(page.locator(".metals-desk-link")).toContainText("Meet our sponsor");
   await expect(page.locator(".metals-desk-link")).toHaveAttribute("href", "/itm-trading");
   const logo = page.locator(".metals-desk-link img");
   await expect(logo).toHaveAttribute("src", /itm-trading-logo\.jpg/);
