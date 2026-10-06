@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { fetchMetalsTicker, type MetalsTickerResponse } from "../lib/markets-api";
 import { LoadingIndicator } from "./LoadingIndicator";
+import { itmTrading } from "../data/itm-trading";
 
 const metals = [
   { key: "gold", symbol: "Au", name: "Gold" },
@@ -64,7 +65,7 @@ export function MetalsTracker() {
           <button className="itm-button itm-button-light" type="button" disabled={status === "loading"} onClick={() => setRefresh(value => value + 1)}>{status === "loading" ? "Checking…" : "Refresh prices"}</button>
         </div>
       </header>
-      <p className="itm-price-notice"><strong>Daily benchmarks · Not spot prices.</strong> These reference prices are separate from ITM’s retail quotes. For current spot prices and product availability, <a href="https://www.itmtrading.com/" target="_blank" rel="noreferrer sponsored">visit ITM Trading</a>.</p>
+      <p className="itm-price-notice"><strong>Daily benchmarks · Not spot prices.</strong> These reference prices are separate from ITM’s retail quotes. For current spot prices and product availability, <a href={itmTrading.websiteUrl} target="_blank" rel="noreferrer sponsored">visit ITM Trading</a>.</p>
       {status === "loading" && !ticker ? <LoadingIndicator label="Loading precious metal benchmarks…" /> : null}
       {status === "error" && !ticker ? <p role="alert" className="itm-status">Prices are unavailable right now. Try Refresh prices, or contact ITM for a quote.</p> : null}
       {cached ? <p role="status" className="itm-status">The latest refresh is unavailable. Showing the last received benchmarks with their original dates.</p> : null}
