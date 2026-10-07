@@ -372,7 +372,8 @@ function App() {
         </Routes>
       </main>
 
-      {!isSponsorPage ? <AdSlot slot="banner" /> : null}
+      {/* Edition home pages show the banner below their lead feed, so the square carousel takes this spot. */}
+      {!isSponsorPage ? <AdSlot slot={isHomeEdition ? "inline" : "banner"} /> : null}
       <footer className="footer">
         <img className="footer-logo" src={countyPostLogo} alt={site.name} />
         <p>
@@ -661,7 +662,7 @@ function HomePage() {
         fallbackFeedUrls={buildNationalFallbackFeedUrls("general")}
         {...pageSectionProps(nationalLeadPage, "general")}
       />
-      <AdSlot slot="inline" />
+      <AdSlot slot="banner" />
       {topicSections.map((section, index) => (
         <NewsFeedSection
           key={section.kind}
@@ -822,7 +823,7 @@ function StatePage() {
         {...pageSectionProps(stateLeadPage, "general")}
         locality={{ stateName: state.name, stateAbbr: state.abbr, strict: true }}
       />
-      <AdSlot slot="inline" />
+      <AdSlot slot="banner" />
       {topicSections.map((section, index) => (
         <NewsFeedSection
           key={section.kind}
@@ -1213,7 +1214,7 @@ function CountyPage() {
         kind="general"
         locality={locality}
       />
-      <AdSlot slot="inline" countyKey={countyKey} />
+      <AdSlot slot="banner" countyKey={countyKey} />
       <NewsFeedSection
         title="Local sports"
         kicker="Scores & highlights"
