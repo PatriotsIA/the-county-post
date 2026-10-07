@@ -2263,6 +2263,17 @@ button:disabled {
   max-width: 980px;
 }
 
+/* Banner below the lead feed: the grid gap already spaces it. */
+.layout-grid > .ad-slot-banner {
+  margin-top: 0;
+  width: 100%;
+}
+
+/* Square carousel in the bottom slot on edition home pages. */
+main + .ad-slot-inline {
+  margin-top: 24px;
+}
+
 .ad-link {
   display: block;
   flex: 0 0 270px;

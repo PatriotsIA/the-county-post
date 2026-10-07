@@ -331,3 +331,20 @@ test("installed mode suppresses the automatic prompt and blocked storage still a
   await page.getByRole("button", { name: "Dismiss bookmark reminder" }).click();
   await expect(page.locator(".bookmark-toast")).toHaveCount(0);
 });
+
+test("edition home pages show the banner below the lead feed and the square carousel at the bottom", async ({ page }) => {
+  for (const path of ["/", "/oklahoma", "/oklahoma/tulsa", "/oklahoma/rogers"]) {
+    await page.goto(path);
+    const banner = page.locator("main .layout-grid > .ad-slot-banner");
+    await expect(banner, path).toHaveCount(1);
+    await expect(page.locator("main + .ad-slot-inline"), path).toHaveCount(1);
+    await expect(page.locator("main + .ad-slot-banner"), path).toHaveCount(0);
+    await expect(page.locator("main .ad-slot-inline:not(.ad-slot-meter)"), path).toHaveCount(0);
+    if (path.startsWith("/oklahoma/")) {
+      await expect(banner.locator('a[href="https://www.barrettfinancial.com/"] img[src*="darryl-bergstresser-banner"]'), path).toHaveCount(1);
+    }
+  }
+  // Subpages keep the banner at the bottom.
+  await page.goto("/oklahoma/tulsa/partners");
+  await expect(page.locator("main + .ad-slot-banner")).toHaveCount(1);
+});
