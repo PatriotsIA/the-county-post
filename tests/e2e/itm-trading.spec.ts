@@ -159,3 +159,19 @@ test("the phone layout shows sponsor contacts and flags older or stale benchmark
   await expect(page.getByRole("link", { name: "Book 30 minutes with Stan" })).toBeVisible();
   await page.locator('#stan-roberts').screenshot({ path: "test-results/itm-contact-mobile.png" });
 });
+
+test("ITM videos appear only on the landing page, limited to the three supplied videos and a blog link", async ({ page }) => {
+  await page.goto("/itm-trading");
+  const videos = page.locator("#itm-videos iframe");
+  await expect(videos).toHaveCount(3);
+  expect(await videos.evaluateAll(frames => frames.map(frame => (frame as HTMLIFrameElement).src))).toEqual(
+    ["1CDpb0G3v2g", "pjlmcqWTPPg", "QZcVYmEJ9x4"].map(id => `https://www.youtube-nocookie.com/embed/${id}`),
+  );
+  await expect(page.getByRole("link", { name: "Read the ITM Trading blog" })).toHaveAttribute("href", "https://www.itmtrading.com/blog/?utm_source=countypost");
+  for (const path of ["/topics/economy-markets", "/texas/economy-markets", "/texas/randall/economy-markets"]) {
+    await page.goto(path);
+    await expect(page.locator("h1, h2").first()).toBeAttached();
+    await expect(page.locator('iframe[src*="youtube"]'), path).toHaveCount(0);
+    await expect(page.getByText("ITM Trading video desk"), path).toHaveCount(0);
+  }
+});

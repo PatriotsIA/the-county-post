@@ -1,7 +1,6 @@
 import itmLogo from "../../ad-assets/itm-trading-logo.jpg";
-import { itmTrading, stanTeam, ITM_TRADING_DESCRIPTION, ITM_TRADING_PATH, ITM_TRADING_TITLE } from "../data/itm-trading";
+import { itmTrading, itmVideoIds, stanTeam, ITM_TRADING_DESCRIPTION, ITM_TRADING_PATH, ITM_TRADING_TITLE } from "../data/itm-trading";
 import { crumbTrail, jsonLdGraph, webPageLd } from "../lib/seo";
-import { HardAssetsFeed } from "./HardAssetsFeed";
 import { MetalsTracker } from "./MetalsTracker";
 import { Seo } from "./Seo";
 import "./ItmTrading.css";
@@ -47,7 +46,12 @@ export function ItmTrading() {
       <a href={itmTrading.iraUrl} target="_blank" rel="noreferrer sponsored"><span className="kicker">Retirement accounts</span><h3>Precious-metals IRAs</h3><p>Learn how ITM describes self-directed account setup, funding and the selection of eligible products.</p><span>Explore IRA information ↗</span></a>
     </div>
 
-    <section id="itm-videos" className="itm-education" aria-label="ITM Trading videos and education"><p className="itm-disclosure">Sponsor education · The videos below are published by ITM Trading and reflect its views.</p><HardAssetsFeed featuredVideoIds={[]} /><a className="itm-text-link" href="https://www.youtube.com/@itmtrading/videos" target="_blank" rel="noreferrer sponsored">Visit ITM Trading’s video channel ↗</a></section>
+    <section id="itm-videos" className="itm-education" aria-labelledby="itm-videos-title">
+      <header className="itm-section-heading"><div><p className="kicker">ITM Trading video desk</p><h2 id="itm-videos-title">Videos &amp; education</h2></div></header>
+      <p className="itm-disclosure">Sponsor education · The videos below are published by ITM Trading and reflect its views.</p>
+      <div className="itm-videos">{itmVideoIds.map(videoId => <div key={videoId} className="itm-video"><iframe src={`https://www.youtube-nocookie.com/embed/${videoId}`} title="ITM Trading video" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div>)}</div>
+      <a className="itm-button" href={itmTrading.blogUrl} target="_blank" rel="noreferrer sponsored">Read the ITM Trading blog <span aria-hidden="true">↗</span></a>
+    </section>
     <p className="itm-page-note">Company information adapted from ITM Trading’s <a href={itmTrading.aboutUrl} target="_blank" rel="noreferrer sponsored">About page</a> and <a href={itmTrading.contactUrl} target="_blank" rel="noreferrer sponsored">Contact page</a>. Stan’s profile and team updated October 6, 2026. Educational information; prices and product values can change. Contact ITM for current terms and quotes.</p>
   </div>;
 }
