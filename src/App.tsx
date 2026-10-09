@@ -4,7 +4,6 @@ import { SubmissionForm } from "./components/SubmissionForm";
 import { ClassifiedSubmissionForm } from "./components/ClassifiedSubmissionForm";
 import { AdSlot } from "./components/AdSlot";
 import { BookmarkPrompt } from "./components/BookmarkPrompt";
-import { HardAssetsFeed } from "./components/HardAssetsFeed";
 import { NewsFeedSection } from "./components/NewsFeedSection";
 import { CountyEconomicData, CountyEconomicSnapshot } from "./components/CountyEconomicData";
 import { CountyWeatherPage } from "./components/CountyWeather";
@@ -913,7 +912,6 @@ function NationalSubjectGroupPage({ group }: { group: SubjectGroup }) {
           }),
         )}
       />
-      {group.slug === "economy-markets" ? <HardAssetsFeed /> : null}
       {group.subjects.map((subject, index) => (
         <NewsFeedSection
           key={subject.slug}
@@ -1008,7 +1006,6 @@ function StateSubjectGroupPage({ state, group }: { state: NonNullable<ReturnType
           }),
         )}
       />
-      {group.slug === "economy-markets" ? <HardAssetsFeed /> : null}
       {group.subjects.map((subject, index) => (
         <NewsFeedSection
           key={subject.slug}
@@ -1774,7 +1771,6 @@ function CountySubjectGroupPage({ county, group }: { county: NonNullable<ReturnT
         </aside>
       ) : null}
       {group.slug === "economy-markets" ? <CountyEconomicSnapshot county={county} /> : null}
-      {group.slug === "economy-markets" ? <HardAssetsFeed /> : null}
       {group.subjects.map((subject, index) => (
         <NewsFeedSection
           key={subject.slug}

@@ -12,6 +12,7 @@ export const itmTrading = {
   productsUrl: "https://www.itmtrading.com/products?utm_source=countypost",
   strategyUrl: "https://www.itmtrading.com/strategy?utm_source=countypost",
   iraUrl: "https://www.itmtrading.com/ira?utm_source=countypost",
+  blogUrl: "https://www.itmtrading.com/blog/?utm_source=countypost",
   appointmentUrl: "https://calendly.com/stanr-pt_i/30min?utm_source=countypost",
   title: "Senior Analyst",
   phone: "623-208-7493",
@@ -21,3 +22,6 @@ export const itmTrading = {
 };
 
 export const stanTeam = ["Fernando Grijalva", "Keely Caul", "Nate Batiste"];
+
+// The only ITM videos shown on The County Post, in the order the sponsor supplied them (October 9, 2026).
+export const itmVideoIds = ["1CDpb0G3v2g", "pjlmcqWTPPg", "QZcVYmEJ9x4"];

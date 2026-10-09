@@ -93,7 +93,10 @@
 .itm-resource-grid h3 { font-size: 23px; margin: 0; }
 .itm-resource-grid p { font-size: 14px; }
 .itm-resource-grid > a > span:last-child { margin-top: auto; color: var(--news-blue); font-size: 13px; text-decoration: underline; }
-.itm-education .hard-assets-feed { margin: 15px 0 24px; }
+.itm-videos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 15px 0 20px; }
+.itm-video { aspect-ratio: 16 / 9; overflow: hidden; background: var(--ink); }
+.itm-video iframe { display: block; width: 100%; height: 100%; border: 0; }
+@media (max-width: 760px) { .itm-videos { grid-template-columns: 1fr; } }
 .itm-page-note { border-top: 1px solid var(--rule); margin: 28px 0 0 !important; padding: 18px 0; font-size: 12px; color: var(--muted); }
 .itm-page-note a { color: inherit; }
 @media (max-width: 1000px) {
