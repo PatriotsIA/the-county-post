@@ -118,11 +118,6 @@ export function CountyEconomicData({ county }: { county: CountySite }) {
           <li>Changes compare the latest observation with the immediately preceding annual observation.</li>
           <li>FRED republishes data from the Bureau of Labor Statistics, Census Bureau, and Bureau of Economic Analysis.</li>
         </ul>
-        <p>
-          <a href="https://fred.stlouisfed.org/docs/api/fred/" target="_blank" rel="noreferrer">
-            Read the FRED API documentation
-          </a>
-        </p>
       </section>
     </div>
   );

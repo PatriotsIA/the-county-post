@@ -70,6 +70,7 @@ export function CountyWeatherPage({ county }: { county: CountySite }) {
 function WeatherReport({ weather, atlasPath }: { weather: CountyWeatherResponse; atlasPath: string }) {
   const observation = weather.currentObservation;
   const timeZone = weatherTimeZoneLabel(weather);
+  const forecastPageUrl = nwsForecastPageUrl(weather);
 
   return (
     <>
@@ -126,7 +127,7 @@ function WeatherReport({ weather, atlasPath }: { weather: CountyWeatherResponse;
         </header>
         {weather.alerts.length ? (
           <div className="weather-alert-card-grid">
-            {weather.alerts.map((alert) => <WeatherAlertCard key={alert.id} alert={alert} />)}
+            {weather.alerts.map((alert) => <WeatherAlertCard key={alert.id} alert={alert} forecastPageUrl={forecastPageUrl} />)}
           </div>
         ) : (
           <p className="weather-empty">No active National Weather Service alerts were returned for this county.</p>
@@ -160,7 +161,7 @@ function WeatherReport({ weather, atlasPath }: { weather: CountyWeatherResponse;
             <p className="kicker">Seven-day outlook</p>
             <h2 id="weather-forecast-heading">Forecast periods</h2>
           </div>
-          <OfficialLink href={weather.meta.source.links.forecast} label="Official NWS forecast data" />
+          <OfficialLink href={forecastPageUrl} label="Full NWS forecast" />
         </header>
         {weather.forecast.length ? (
           <div className="weather-forecast-grid">
@@ -177,7 +178,6 @@ function WeatherReport({ weather, atlasPath }: { weather: CountyWeatherResponse;
             <p className="kicker">Next 24 hours</p>
             <h2 id="weather-hourly-heading">Hourly forecast</h2>
           </div>
-          <OfficialLink href={weather.meta.source.links.hourly} label="Official NWS hourly data" />
         </header>
         {weather.hourly.length ? (
           <div className="weather-hourly-scroll" tabIndex={0} aria-label="Scrollable hourly forecast">
@@ -235,14 +235,7 @@ function WeatherReport({ weather, atlasPath }: { weather: CountyWeatherResponse;
           <WeatherDatum label="Coverage" value={weather.meta.partial ? "Partial response" : "Complete response"} />
         </dl>
         <div className="weather-official-links">
-          <OfficialLink href={weather.meta.source.documentation} label="NWS API documentation" />
-          <OfficialLink href={weather.meta.source.alertsDocumentation} label="NWS alerts documentation" />
-          <OfficialLink href={weather.meta.source.links.points} label="NWS location point" />
-          <OfficialLink href={weather.meta.source.links.latestObservation} label="Latest official observation" />
-          <OfficialLink href={weather.rainfallHistory?.source.url} label="NASA POWER precipitation data" />
-          <OfficialLink href={weather.rainfallHistory?.source.documentation} label="NASA POWER methodology" />
-          {weather.zones.forecast ? <OfficialLink href={weather.zones.forecast.link} label={`Forecast zone ${weather.zones.forecast.id}`} /> : null}
-          {weather.zones.county ? <OfficialLink href={weather.zones.county.link} label={`County zone ${weather.zones.county.id}`} /> : null}
+          <OfficialLink href={forecastPageUrl} label="NWS forecast for this location" />
           <Link to={atlasPath}>Environment &amp; disasters atlas</Link>
         </div>
       </section>
@@ -276,7 +269,6 @@ function DroughtConditionCard({
       </dl>
       <div className="weather-official-links">
         <OfficialLink href={condition.source.countyUrl} label="View official county drought conditions" />
-        <OfficialLink href={condition.source.url} label="Open U.S. Drought Monitor data" />
       </div>
     </article>
   );
@@ -358,15 +350,11 @@ function RainfallHistoryCard({
         NASA POWER PRECTOTCORR is a corrected gridded precipitation estimate, not a county-wide rain-gauge total.
         Values may include the liquid equivalent of frozen precipitation. {history.source.latencyNote}
       </p>
-      <div className="weather-official-links">
-        <OfficialLink href={history.source.url} label="Open NASA POWER precipitation data" />
-        <OfficialLink href={history.source.documentation} label="NASA POWER daily API documentation" />
-      </div>
     </article>
   );
 }
 
-function WeatherAlertCard({ alert }: { alert: WeatherAlert }) {
+function WeatherAlertCard({ alert, forecastPageUrl }: { alert: WeatherAlert; forecastPageUrl?: string }) {
   const severity = alert.severity || "Unknown";
   return (
     <article className={`weather-alert-card weather-severity-${weatherSeverityClass(alert.severity)}`}>
@@ -386,11 +374,7 @@ function WeatherAlertCard({ alert }: { alert: WeatherAlert }) {
       ) : null}
       {alert.description ? <p>{alert.description}</p> : null}
       {alert.instruction ? <p className="weather-alert-instruction"><strong>What to do:</strong> {alert.instruction}</p> : null}
-      {alert.link ? (
-        <a className="weather-official-link" href={alert.link} target="_blank" rel="noreferrer">
-          Open official NWS alert
-        </a>
-      ) : null}
+      <OfficialLink href={forecastPageUrl} label="View alerts on weather.gov" />
     </article>
   );
 }
@@ -399,7 +383,10 @@ function ForecastCard({ period }: { period: WeatherForecastPeriod }) {
   return (
     <article className={`weather-forecast-card${period.isDaytime ? " daytime" : " nighttime"}`}>
       <div className="weather-forecast-card-heading">
-        <h3>{period.name}</h3>
+        <div>
+          <h3>{period.name}</h3>
+          <p className="weather-forecast-date"><time dateTime={period.startTime}>{formatForecastDate(period.startTime)}</time></p>
+        </div>
         {period.icon ? <img src={period.icon} alt="" loading="lazy" /> : null}
       </div>
       <p className="weather-forecast-temperature">{formatTemperature(period.temperature)}</p>
@@ -509,6 +496,15 @@ function formatNwsLocalTime(value: string) {
   });
 }
 
+function formatForecastDate(value: string) {
+  return formatWallClock(value, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 function formatHourlyTime(value: string) {
   return formatWallClock(value, {
     weekday: "short",
@@ -522,6 +518,13 @@ function formatWallClock(value: string, options: Intl.DateTimeFormatOptions) {
   const [, year, month, day, hour, minute] = match;
   const wallClock = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute)));
   return new Intl.DateTimeFormat("en-US", { ...options, timeZone: "UTC" }).format(wallClock);
+}
+
+/** The weather.gov forecast webpage for the county's NWS point; its hazards banner lists active alerts. */
+function nwsForecastPageUrl(weather: CountyWeatherResponse) {
+  const { latitude, longitude } = weather.location;
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return undefined;
+  return `https://forecast.weather.gov/MapClick.php?lat=${latitude.toFixed(4)}&lon=${longitude.toFixed(4)}`;
 }
 
 function weatherTimeZoneLabel(weather: CountyWeatherResponse) {

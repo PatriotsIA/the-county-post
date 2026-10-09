@@ -444,22 +444,22 @@ test("county weather page shows alerts, forecasts, hourly data, sources, and sto
   await expect(rainfall).toContainText("7 above 0.01 in");
   await expect(rainfall).toContainText("Aug 25, 2026");
   await expect(rainfall.locator(".weather-rainfall-chart li")).toHaveCount(14);
-  await expect(rainfall.getByRole("link", { name: "Open NASA POWER precipitation data" })).toHaveAttribute(
-    "href",
-    /power\.larc\.nasa\.gov/,
-  );
+  await expect(rainfall.getByRole("link")).toHaveCount(0);
 
   const alerts = page.locator(".weather-alerts-section");
   await expect(alerts.getByRole("heading", { name: "Severe Thunderstorm Warning for Polk County" })).toBeVisible();
   const officialAlert = alerts
     .locator(".weather-alert-card", { has: page.getByRole("heading", { name: "Severe Thunderstorm Warning for Polk County" }) })
-    .getByRole("link", { name: "Open official NWS alert" });
-  await expect(officialAlert).toHaveAttribute("href", "https://api.weather.gov/alerts/test-alert");
+    .getByRole("link", { name: "View alerts on weather.gov" });
+  await expect(officialAlert).toHaveAttribute("href", /^https:\/\/forecast\.weather\.gov\/MapClick\.php\?lat=/);
   await expect(officialAlert).toHaveAttribute("target", "_blank");
 
   const forecast = page.locator(".weather-forecast-section");
   await expect(forecast.getByRole("heading", { name: "Today" })).toBeVisible();
   await expect(forecast.getByRole("heading", { name: "Tonight" })).toBeVisible();
+  await expect(forecast.locator(".weather-forecast-card").first().locator("time")).toHaveText("Wed, Aug 19, 2026");
+  await expect(forecast.locator(".weather-forecast-card").nth(2).locator("time")).toHaveText("Thu, Aug 20, 2026");
+  await expect(forecast.locator(".weather-forecast-card time")).toHaveCount(await forecast.locator(".weather-forecast-card").count());
   await expect(forecast.getByText("Sunny", { exact: true }).first()).toBeVisible();
 
   const hourlyTable = page.getByRole("table", { name: /Next-hours forecast/ });
@@ -473,7 +473,11 @@ test("county weather page shows alerts, forecasts, hourly data, sources, and sto
     "href",
     "/arkansas/polk/data/environment-disasters",
   );
-  await expect(page.getByRole("link", { name: "NWS API documentation" })).toHaveAttribute("target", "_blank");
+  // Buttons open complete webpages, never API endpoints or API documentation.
+  const outbound = await page.locator(".weather-page a[href^='http']").evaluateAll((links) => links.map((link) => (link as HTMLAnchorElement).href));
+  expect(outbound.length).toBeGreaterThan(0);
+  for (const href of outbound) expect(href).not.toMatch(/api\.weather\.gov|\/api\/|usdmdataservices|documentation|format=JSON/i);
+  await expect(page.getByRole("link", { name: "NWS forecast for this location" })).toHaveAttribute("target", "_blank");
   await expect(page.locator(".weather-source-details")).toContainText("America/Chicago");
   await expect.poll(() => weatherRequests.length).toBe(1);
 });
