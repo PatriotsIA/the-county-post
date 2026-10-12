@@ -15,7 +15,7 @@ export default defineConfig({
     launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || "/usr/bin/chromium", args: ["--no-sandbox"] },
   },
   webServer: {
-    command: `VITE_NEWS_API_URL=http://localhost:8787 npm run dev -- --host 127.0.0.1 --port ${port} --strictPort`,
+    command: `VITE_NEWS_API_URL=http://localhost:8787 VITE_NEWSLETTER_API_URL=http://localhost:8788 npm run dev -- --host 127.0.0.1 --port ${port} --strictPort`,
     url: baseURL,
     reuseExistingServer: false,
     timeout: 60_000,

@@ -65,7 +65,7 @@ export function Seo({
   jsonLd,
   canonicalPath,
 }: SeoProps) {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const path = canonicalPath ?? pathname;
   const canonical = canonicalUrl(path);
 
@@ -82,12 +82,18 @@ export function Seo({
   // index.html sets send_page_view:false so this is the only source of
   // pageviews; without it GA4 only ever saw landing pages.
   useEffect(() => {
+    const analyticsUrl = new URL(canonical);
+    const query = new URLSearchParams(search);
+    for (const key of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term']) {
+      const value = query.get(key);
+      if (value && /^[a-zA-Z0-9_.:/-]{1,150}$/.test(value)) analyticsUrl.searchParams.set(key, value);
+    }
     window.gtag?.("event", "page_view", {
       page_title: fullTitle,
-      page_location: canonical,
+      page_location: analyticsUrl.href,
       page_path: path,
     });
-  }, [canonical, fullTitle, path]);
+  }, [canonical, fullTitle, path, search]);
 
   return (
     <>

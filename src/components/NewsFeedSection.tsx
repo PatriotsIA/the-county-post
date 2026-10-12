@@ -310,7 +310,7 @@ export function NewsFeedSection({
   }, [canRequestMore, filteredItems.length, pageSize, pageStep, status]);
 
   return (
-    <section className="section">
+    <section className="section" id={`desk-${kind}`}>
       <header className="section-heading">
         <div className="section-heading-rule" aria-hidden />
         <div>

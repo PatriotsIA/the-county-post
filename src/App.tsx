@@ -22,6 +22,7 @@ import { atlasDomainLabels } from "./lib/atlas-domain-labels";
 import { EditionMap } from "./components/EditionMap";
 import { LoadingIndicator } from "./components/LoadingIndicator";
 import { TopTicker } from "./components/TopTicker";
+import { NewsletterPage, NewsletterSignup, NewsletterSponsorVisit } from "./components/Newsletter";
 import { canSponsorFeed, countyAdKey, getAdsForSlot, getSportsFeedSponsorId } from "./data/ads";
 import { getCounty, getCountiesForState } from "./data/counties";
 import { site } from "./data/site";
@@ -225,9 +226,10 @@ function App() {
   );
 
   useEffect(() => {
-    if (hash !== "#find-a-county") return;
-    requestAnimationFrame(() => document.getElementById("find-a-county")?.scrollIntoView({ behavior: "smooth", block: "start" }));
-  }, [hash]);
+    if (hash !== "#find-a-county" && !/^#desk-[a-z-]+$/.test(hash)) return;
+    const frame = requestAnimationFrame(() => document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    return () => cancelAnimationFrame(frame);
+  }, [hash, pathname]);
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -304,6 +306,9 @@ function App() {
         <NavLink to="/about" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")} onClick={() => setMobileMenuOpen(false)}>
           About
         </NavLink>
+        <NavLink to="/newsletter" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")} onClick={() => setMobileMenuOpen(false)}>
+          Newsletter
+        </NavLink>
         <NavLink
           to={submitStoryPath(activeCounty, activeState)}
           className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
@@ -337,8 +342,11 @@ function App() {
       <Breadcrumbs county={activeCounty} state={activeState} />
 
       <main>
+        {isHomeEdition ? <NewsletterSignup key={pathname} county={activeCounty} state={activeState} /> : null}
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/newsletter" element={<NewsletterPage />} />
+          <Route path="/newsletter/sponsor" element={<NewsletterSponsorVisit />} />
           <Route path="/topics/:subjectSlug" element={<NationalSubjectPage />} />
           <Route path="/submit" element={<SubmitPage />} />
           <Route path="/states" element={<StateDirectory />} />
@@ -381,6 +389,7 @@ function App() {
         </p>
         <div className="footer-links">
           <Link to="/partners">Partners</Link>
+          <Link to="/newsletter">Daily newsletter</Link>
           <Link to={ITM_TRADING_PATH}>ITM Trading &amp; metal prices</Link>
           <Link to="/privacy">Privacy</Link>
           <Link to="/terms">Terms</Link>
@@ -2079,6 +2088,9 @@ function PrivacyPage() {
           it. We do not add submitters to a mailing list without their request, and we do not sell reader information to
           anyone.
         </p>
+
+        <h2>Morning newsletter</h2>
+        <p>When you subscribe, we store your email address, selected edition, delivery timezone, and confirmation status using Amazon Web Services. We send a confirmation before starting daily delivery. Every newsletter includes links to manage its delivery timezone or unsubscribe. We retain subscription and suppression records to honor opt-outs and stop sending to addresses that bounce or report spam. Amazon SES uses an image and tracked links to estimate email opens and clicks. Google Analytics measures visits to our site from tagged newsletter links and clicks through our advertiser pages. Image blocking and privacy services can affect open counts. We do not send your email address or subscription-management tokens to Google Analytics.</p>
 
         <h2>Third-party content</h2>
         <p>

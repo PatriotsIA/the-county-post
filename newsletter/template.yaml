@@ -1,0 +1,302 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: The County Post confirmed morning newsletters, isolated from the news API.
+Parameters:
+  SendingEnabled:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+  MailingAddress:
+    Type: String
+    Default: ''
+    Description: Public business mailing address shown in every newsletter.
+  HostedZoneId:
+    Type: String
+    Default: Z0904388OYH87VF9BAVO
+  NewsApiUrl:
+    Type: String
+    Default: https://d2vo13idhuovzg.cloudfront.net
+  DailySendBudget:
+    Type: Number
+    Default: 5000
+    MinValue: 1
+    MaxValue: 10000
+  GaApiSecretArn:
+    Type: String
+    Default: ''
+    Description: Optional Secrets Manager ARN holding the GA4 Measurement Protocol secret as a plain string. Never pass the secret itself.
+Rules:
+  SenderReady:
+    Assertions:
+      - Assert: !Or [!Equals [!Ref SendingEnabled, 'false'], !Not [!Equals [!Ref MailingAddress, '']]]
+        AssertDescription: Supply the public mailing address before enabling sending.
+Conditions:
+  Enabled: !Equals [!Ref SendingEnabled, 'true']
+  HasGaSecret: !Not [!Equals [!Ref GaApiSecretArn, '']]
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Architectures: [arm64]
+    MemorySize: 512
+    Timeout: 30
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref Subscribers
+        QUEUE_URL: !Ref DeliveryQueue
+        SENDING_ENABLED: !Ref SendingEnabled
+        NEWSLETTER_ADDRESS: !Ref MailingAddress
+Resources:
+  Subscribers:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - {AttributeName: pk, AttributeType: S}
+        - {AttributeName: activeZone, AttributeType: S}
+      KeySchema: [{AttributeName: pk, KeyType: HASH}]
+      GlobalSecondaryIndexes:
+        - IndexName: active-zone
+          KeySchema: [{AttributeName: activeZone, KeyType: HASH}, {AttributeName: pk, KeyType: RANGE}]
+          Projection: {ProjectionType: KEYS_ONLY}
+      TimeToLiveSpecification: {AttributeName: expires, Enabled: true}
+      PointInTimeRecoverySpecification: {PointInTimeRecoveryEnabled: true}
+      SSESpecification: {SSEEnabled: true}
+  ContentBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: {SSEAlgorithm: AES256}
+      LifecycleConfiguration:
+        Rules: [{Id: ExpireEditions, Status: Enabled, ExpirationInDays: 14}]
+  DeadLetters:
+    Type: AWS::SQS::Queue
+    Properties: {MessageRetentionPeriod: 1209600, SqsManagedSseEnabled: true}
+  DeliveryQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 1800
+      MessageRetentionPeriod: 86400
+      SqsManagedSseEnabled: true
+      RedrivePolicy: {deadLetterTargetArn: !GetAtt DeadLetters.Arn, maxReceiveCount: 4}
+  Api:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: api.handler
+      ReservedConcurrentExecutions: 5
+      FunctionUrlConfig: {AuthType: NONE}
+      Policies:
+        - DynamoDBCrudPolicy: {TableName: !Ref Subscribers}
+        - SQSSendMessagePolicy: {QueueName: !GetAtt DeliveryQueue.QueueName}
+  Worker:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: worker.handler
+      Timeout: 300
+      ReservedConcurrentExecutions: 2
+      DeadLetterQueue: {Type: SQS, TargetArn: !GetAtt DeadLetters.Arn}
+      Environment:
+        Variables:
+          CONTENT_BUCKET: !Ref ContentBucket
+          NEWS_API_URL: !Ref NewsApiUrl
+          FROM_EMAIL: newsletters@thecountypost.com
+          PUBLIC_API_URL: !GetAtt ApiUrl.FunctionUrl
+          CONFIGURATION_SET: !Ref MailConfiguration
+          DAILY_SEND_BUDGET: !Ref DailySendBudget
+          GA_MEASUREMENT_ID: G-ZDZY8JLQKQ
+          GA_API_SECRET: !If [HasGaSecret, !Sub '{{resolve:secretsmanager:${GaApiSecretArn}:SecretString}}', '']
+      Policies:
+        - DynamoDBCrudPolicy: {TableName: !Ref Subscribers}
+        - S3CrudPolicy: {BucketName: !Ref ContentBucket}
+        - SQSSendMessagePolicy: {QueueName: !GetAtt DeliveryQueue.QueueName}
+        - SQSSendMessagePolicy: {QueueName: !GetAtt DeadLetters.QueueName}
+        - Statement:
+            - Effect: Allow
+              Action: ses:SendEmail
+              Resource:
+                - !Sub arn:${AWS::Partition}:ses:${AWS::Region}:${AWS::AccountId}:identity/thecountypost.com
+                - !Sub arn:${AWS::Partition}:ses:${AWS::Region}:${AWS::AccountId}:configuration-set/${MailConfiguration}
+              Condition:
+                StringEquals: {ses:FromAddress: newsletters@thecountypost.com}
+      Events:
+        Queue:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt DeliveryQueue.Arn
+            BatchSize: 1
+            FunctionResponseTypes: [ReportBatchItemFailures]
+            ScalingConfig: {MaximumConcurrency: 2}
+        EasternMorning:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: cron(15 6 * * ? *)
+            ScheduleExpressionTimezone: America/New_York
+            FlexibleTimeWindow: {Mode: 'OFF'}
+            State: !If [Enabled, ENABLED, DISABLED]
+            Input: '{"kind":"plan","timeZone":"America/New_York"}'
+            RetryPolicy: {MaximumRetryAttempts: 3, MaximumEventAgeInSeconds: 3600}
+            DeadLetterConfig: {Arn: !GetAtt DeadLetters.Arn}
+        CentralMorning:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: cron(15 6 * * ? *)
+            ScheduleExpressionTimezone: America/Chicago
+            FlexibleTimeWindow: {Mode: 'OFF'}
+            State: !If [Enabled, ENABLED, DISABLED]
+            Input: '{"kind":"plan","timeZone":"America/Chicago"}'
+            RetryPolicy: {MaximumRetryAttempts: 3, MaximumEventAgeInSeconds: 3600}
+            DeadLetterConfig: {Arn: !GetAtt DeadLetters.Arn}
+        MountainMorning:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: cron(15 6 * * ? *)
+            ScheduleExpressionTimezone: America/Denver
+            FlexibleTimeWindow: {Mode: 'OFF'}
+            State: !If [Enabled, ENABLED, DISABLED]
+            Input: '{"kind":"plan","timeZone":"America/Denver"}'
+            RetryPolicy: {MaximumRetryAttempts: 3, MaximumEventAgeInSeconds: 3600}
+            DeadLetterConfig: {Arn: !GetAtt DeadLetters.Arn}
+        ArizonaMorning:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: cron(15 6 * * ? *)
+            ScheduleExpressionTimezone: America/Phoenix
+            FlexibleTimeWindow: {Mode: 'OFF'}
+            State: !If [Enabled, ENABLED, DISABLED]
+            Input: '{"kind":"plan","timeZone":"America/Phoenix"}'
+            RetryPolicy: {MaximumRetryAttempts: 3, MaximumEventAgeInSeconds: 3600}
+            DeadLetterConfig: {Arn: !GetAtt DeadLetters.Arn}
+        PacificMorning:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: cron(15 6 * * ? *)
+            ScheduleExpressionTimezone: America/Los_Angeles
+            FlexibleTimeWindow: {Mode: 'OFF'}
+            State: !If [Enabled, ENABLED, DISABLED]
+            Input: '{"kind":"plan","timeZone":"America/Los_Angeles"}'
+            RetryPolicy: {MaximumRetryAttempts: 3, MaximumEventAgeInSeconds: 3600}
+            DeadLetterConfig: {Arn: !GetAtt DeadLetters.Arn}
+        AlaskaMorning:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: cron(15 6 * * ? *)
+            ScheduleExpressionTimezone: America/Anchorage
+            FlexibleTimeWindow: {Mode: 'OFF'}
+            State: !If [Enabled, ENABLED, DISABLED]
+            Input: '{"kind":"plan","timeZone":"America/Anchorage"}'
+            RetryPolicy: {MaximumRetryAttempts: 3, MaximumEventAgeInSeconds: 3600}
+            DeadLetterConfig: {Arn: !GetAtt DeadLetters.Arn}
+        AleutianMorning:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: cron(15 6 * * ? *)
+            ScheduleExpressionTimezone: America/Adak
+            FlexibleTimeWindow: {Mode: 'OFF'}
+            State: !If [Enabled, ENABLED, DISABLED]
+            Input: '{"kind":"plan","timeZone":"America/Adak"}'
+            RetryPolicy: {MaximumRetryAttempts: 3, MaximumEventAgeInSeconds: 3600}
+            DeadLetterConfig: {Arn: !GetAtt DeadLetters.Arn}
+        HawaiiMorning:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: cron(15 6 * * ? *)
+            ScheduleExpressionTimezone: Pacific/Honolulu
+            FlexibleTimeWindow: {Mode: 'OFF'}
+            State: !If [Enabled, ENABLED, DISABLED]
+            Input: '{"kind":"plan","timeZone":"Pacific/Honolulu"}'
+            RetryPolicy: {MaximumRetryAttempts: 3, MaximumEventAgeInSeconds: 3600}
+            DeadLetterConfig: {Arn: !GetAtt DeadLetters.Arn}
+        Feedback:
+          Type: EventBridgeRule
+          Properties:
+            Pattern:
+              source: [aws.ses]
+              detail:
+                eventType: [Bounce, Complaint, Open, Click, Delivery]
+                mail:
+                  tags:
+                    newsletter: [morning-post]
+            RetryPolicy: {MaximumRetryAttempts: 10, MaximumEventAgeInSeconds: 86400}
+            DeadLetterConfig: {Arn: !GetAtt DeadLetters.Arn}
+  MailIdentity:
+    Type: AWS::SES::EmailIdentity
+    Properties:
+      EmailIdentity: thecountypost.com
+      DkimAttributes: {SigningEnabled: true}
+      DkimSigningAttributes: {NextSigningKeyLength: RSA_2048_BIT}
+  DkimRecords:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      RecordSets:
+        - Name: !GetAtt MailIdentity.DkimDNSTokenName1
+          Type: CNAME
+          TTL: '300'
+          ResourceRecords: [!GetAtt MailIdentity.DkimDNSTokenValue1]
+        - Name: !GetAtt MailIdentity.DkimDNSTokenName2
+          Type: CNAME
+          TTL: '300'
+          ResourceRecords: [!GetAtt MailIdentity.DkimDNSTokenValue2]
+        - Name: !GetAtt MailIdentity.DkimDNSTokenName3
+          Type: CNAME
+          TTL: '300'
+          ResourceRecords: [!GetAtt MailIdentity.DkimDNSTokenValue3]
+  MailConfiguration:
+    Type: AWS::SES::ConfigurationSet
+    Properties:
+      SuppressionOptions: {SuppressedReasons: [BOUNCE, COMPLAINT]}
+      ReputationOptions: {ReputationMetricsEnabled: true}
+  DmarcRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: _dmarc.thecountypost.com.
+      Type: TXT
+      TTL: '300'
+      ResourceRecords: ['"v=DMARC1; p=none; adkim=r; aspf=r"']
+  FeedbackDestination:
+    Type: AWS::SES::ConfigurationSetEventDestination
+    Properties:
+      ConfigurationSetName: !Ref MailConfiguration
+      EventDestination:
+        Name: feedback
+        Enabled: true
+        MatchingEventTypes: [BOUNCE, COMPLAINT, OPEN, CLICK, DELIVERY]
+        EventBridgeDestination:
+          EventBusArn: !Sub arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:event-bus/default
+  ApiLogs:
+    Type: AWS::Logs::LogGroup
+    Properties: {LogGroupName: !Sub '/aws/lambda/${Api}', RetentionInDays: 14}
+  WorkerLogs:
+    Type: AWS::Logs::LogGroup
+    Properties: {LogGroupName: !Sub '/aws/lambda/${Worker}', RetentionInDays: 14}
+  FailedDeliveriesAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Newsletter jobs require review. Do not replay ambiguous SES sends blindly.
+      AlarmActions: [!Sub 'arn:${AWS::Partition}:sns:${AWS::Region}:${AWS::AccountId}:pia-operations-alerts']
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions: [{Name: QueueName, Value: !GetAtt DeadLetters.QueueName}]
+      Statistic: Maximum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+Outputs:
+  NewsletterApiUrl: {Value: !GetAtt ApiUrl.FunctionUrl}
+  SubscriberTable: {Value: !Ref Subscribers}
+  WorkerFunction: {Value: !Ref Worker}
+  DeadLetterQueue: {Value: !Ref DeadLetters}

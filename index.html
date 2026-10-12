@@ -67,7 +67,13 @@
       // send_page_view is off because this is a single-page app: src/components/Seo.tsx
       // sends one page_view per route, including the first. Leaving it on would
       // double-count the landing page and still miss every client-side navigation.
-      gtag("config", "G-ZDZY8JLQKQ", { send_page_view: false });
+      var analyticsUrl = new URL(location.origin + location.pathname);
+      var campaignQuery = new URLSearchParams(location.search);
+      ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"].forEach(function (key) {
+        var value = campaignQuery.get(key);
+        if (value && /^[a-zA-Z0-9_.:/-]{1,150}$/.test(value)) analyticsUrl.searchParams.set(key, value);
+      });
+      gtag("config", "G-ZDZY8JLQKQ", { send_page_view: false, page_location: analyticsUrl.href });
     </script>
   </head>
   <body>
