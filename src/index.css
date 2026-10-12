@@ -532,8 +532,9 @@ body::before {
 
 .precious-metals-ticker {
   min-width: 0;
+  border-top: 3px solid var(--ink);
   border-bottom: 1px solid var(--rule);
-  background: #fff;
+  background: linear-gradient(180deg, var(--panel), var(--page));
 }
 
 .metals-ticker-heading {
@@ -541,34 +542,89 @@ body::before {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 8px 16px;
-  padding: 8px 12px;
-  background: #f3efe3;
+  gap: 10px 20px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--panel-soft);
 }
 
-.metals-ticker-heading strong { display: block; font-size: 14px; }
-.metals-ticker-heading small { display: block; font-size: 11px; color: var(--muted); }
+.metals-ticker-heading strong {
+  display: block;
+  font: 700 21px/1.3 "Playfair Display", "Libre Baskerville", serif;
+}
+.metals-ticker-heading small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font: 400 10px/1.5 "Roboto Mono", monospace;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
 
-.metals-spot-content { padding: 10px 12px; }
-.metals-spot-quotes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; list-style: none; margin: 0; padding: 0; }
-.metals-spot-quotes li { display: grid; gap: 3px; }
-.metals-spot-quotes li > span { font-family: "Roboto Mono", monospace; font-size: 16px; font-weight: 600; }
-.metals-spot-quotes time, .metals-spot-source { font-size: 11px; color: var(--muted); }
-.metals-spot-source { margin: 8px 0 0; }
-.metals-spot-content > [role="status"] { font-size: 12px; }
-@media (max-width: 600px) { .metals-spot-quotes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.metals-spot-content { padding: 16px; }
+.metals-spot-quotes {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.metals-spot-quotes li { display: grid; min-width: 0; gap: 6px; padding: 0 20px; }
+.metals-spot-quotes li:first-child { padding-left: 0; }
+.metals-spot-quotes li + li { border-left: 1px solid var(--rule); }
+.metals-spot-quotes li > strong {
+  color: var(--news-blue);
+  font: 700 18px/1.4 "Playfair Display", "Libre Baskerville", serif;
+}
+.metals-spot-quotes li > span {
+  font: 600 clamp(18px, 1.8vw, 26px)/1.3 "Roboto Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.045em;
+}
+.metals-spot-quotes time {
+  color: var(--muted);
+  font: 400 10px/1.6 "Roboto Mono", monospace;
+}
+.metals-spot-source {
+  margin: 14px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--rule);
+  color: var(--muted);
+  font: 400 10px/1.7 "Roboto Mono", monospace;
+}
+.metals-spot-source a { color: var(--news-blue); text-underline-offset: 3px; }
+.metals-spot-content > [role="status"] {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--news-red);
+  background: var(--panel-soft);
+  font-size: 12px;
+}
+.metals-spot-quotes + [role="status"] { margin-top: 14px; }
+@media (max-width: 600px) {
+  .metals-ticker-heading { padding: 12px; }
+  .metals-spot-content { padding: 14px 12px; }
+  .metals-spot-quotes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .metals-spot-quotes li { padding: 0 12px 12px; }
+  .metals-spot-quotes li:nth-child(odd) { padding-left: 0; border-left: 0; }
+  .metals-spot-quotes li:nth-child(even) { padding-right: 0; }
+  .metals-spot-quotes li:nth-child(n + 3) { padding-top: 12px; padding-bottom: 0; border-top: 1px solid var(--rule); }
+}
 
 .metals-desk-link {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   min-height: 44px;
-  color: var(--ink);
-  font-size: 12px;
+  color: var(--news-blue);
+  font: 600 10px/1.5 "Roboto Mono", monospace;
+  letter-spacing: .03em;
+  text-transform: uppercase;
   text-decoration: none;
 }
-.metals-desk-link img { width: 40px; height: auto; flex: 0 0 40px; }
+.metals-desk-link img { width: 52px; height: auto; flex: 0 0 52px; }
 .metals-desk-link:hover { text-decoration: underline; }
+.precious-metals-ticker a:focus-visible { outline: 2px solid var(--news-blue); outline-offset: 4px; }
 
 .cattle-ticker {
   border-bottom: 1px solid var(--rule);
@@ -675,13 +731,6 @@ body::before {
   display: block;
   width: 100%;
   height: var(--tradingview-ticker-height);
-}
-
-.precious-metals-ticker .market-ticker-widget,
-.precious-metals-ticker .market-ticker-widget-content,
-.precious-metals-ticker tv-ticker-tape {
-  height: auto;
-  min-height: 110px;
 }
 
 .crypto-ticker-widget {

@@ -49,7 +49,7 @@ export function TopTicker({
           </div>
           <aside className="precious-metals-ticker" aria-label="Metal spot prices">
             <div className="metals-ticker-heading">
-              <div><strong>Metals spot prices</strong><small>Gold, silver, platinum &amp; palladium · USD / troy oz</small></div>
+              <div><strong>Metals spot prices</strong><small>USD per troy ounce</small></div>
               <Link className="metals-desk-link" to="/itm-trading">
                 <img src={itmTradingAd} alt="ITM Trading" width="40" height="25" />
                 <span>Meet our sponsor <span aria-hidden="true">→</span></span>
