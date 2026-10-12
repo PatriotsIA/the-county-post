@@ -1,10 +1,7 @@
 import amberwoodBrush from "../../ad-assets/amberwood-brush-square.png";
 import amberwoodBrushLogo from "../../ad-assets/amberwood-brush-logo.png";
-import brownGmc from "../../ad-assets/BrownGMC-250.jpg";
 import becomeAPatriot from "../../ad-assets/BecomeAPatriot.jpg";
 import becomeAPatriot2 from "../../ad-assets/BecomeAPatriot2.jpg";
-import dyers from "../../ad-assets/Dyers250.jpg";
-import hoffbrau from "../../ad-assets/Hoffbrau250.jpg";
 import guerrillaGear from "../../ad-assets/ad-guerilla-gear.png";
 import lemcInline from "../../ad-assets/LEMC250.jpg";
 import lemcBanner from "../../ad-assets/LEMC980.jpg";
@@ -93,9 +90,14 @@ export function getInFeedAdRotation(editionKey?: string) {
     inFeedAds.filter((ad) => !ad.video && (ad.inFeedWeight ?? DEFAULT_IN_FEED_AD_WEIGHT) > round),
   ).flat();
   if (!videoAds.length) return imageRotation;
+  if (!imageRotation.length) return videoAds;
+  // Repeat complete weighted image rounds so a smaller advertiser roster still
+  // leaves room for every video in the rotation.
+  const imageRounds = Math.ceil((videoAds.length * 4) / imageRotation.length);
+  const completeImageRotation = Array.from({ length: imageRounds }, () => imageRotation).flat();
   // Use one of the existing ad positions for video after four image ads.
   // Each feed starts at a different point, and the overall ad density is unchanged.
-  return imageRotation.flatMap((ad, index) => index % 4 === 3
+  return completeImageRotation.flatMap((ad, index) => index % 4 === 3
     ? [ad, videoAds[Math.floor(index / 4) % videoAds.length]]
     : [ad]);
 }
@@ -275,30 +277,6 @@ export const ads: AdCreative[] = [
     sponsorImage: amberwoodBrushLogo,
     name: "Amberwood Brush",
     alt: "Amberwood Brush Site — serving residential and commercial customers",
-    href: PARTNER_DIRECTORY_PATH,
-  },
-  {
-    id: "brown-gmc-inline",
-    slot: "inline",
-    image: brownGmc,
-    name: "Brown GMC",
-    alt: "Brown GMC",
-    href: PARTNER_DIRECTORY_PATH,
-  },
-  {
-    id: "dyers-inline",
-    slot: "inline",
-    image: dyers,
-    name: "Dyer's Bar-B-Que",
-    alt: "Dyer's Bar-B-Que",
-    href: PARTNER_DIRECTORY_PATH,
-  },
-  {
-    id: "hoffbrau-inline",
-    slot: "inline",
-    image: hoffbrau,
-    name: "Hoffbrau",
-    alt: "Hoffbrau",
     href: PARTNER_DIRECTORY_PATH,
   },
   {
