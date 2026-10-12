@@ -519,7 +519,6 @@ const feedSponsorIds: Partial<Record<FeedKind, string>> = {
   sports: "lemc-inline",
   economy: "plains-bank-inline",
   obituaries: "patriot-trailer-inline",
-  opinion: "cbt-inline",
   "monetary-policy": "brown-gmc-inline",
   "jobs-business": "plains-bank-inline",
   "property-taxes": "dyers-inline",

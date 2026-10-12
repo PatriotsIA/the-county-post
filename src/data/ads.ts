@@ -1,4 +1,3 @@
-import cbt from "../../ad-assets/CBT4.jpg";
 import amberwoodBrush from "../../ad-assets/amberwood-brush-square.png";
 import amberwoodBrushLogo from "../../ad-assets/amberwood-brush-logo.png";
 import brownGmc from "../../ad-assets/BrownGMC-250.jpg";
@@ -198,14 +197,6 @@ export const ads: AdCreative[] = [
     name: "LEMC Realty",
     alt: "LEMC Realty",
     href: "https://www.331-rent.com/",
-  },
-  {
-    id: "cbt-inline",
-    slot: "inline",
-    image: cbt,
-    name: "CBT Real Estate Services",
-    alt: "CBT Real Estate Services",
-    href: "https://www.facebook.com/CBTRealEstateServices/",
   },
   {
     id: "plains-bank-inline",
