@@ -16,10 +16,10 @@ export function ItmTrading() {
       <div className="itm-hero-copy">
         <p className="kicker">Sponsor spotlight · The County Post</p>
         <h1 id="itm-title">ITM Trading</h1>
-        <p>Connect with Stan Roberts at ITM Trading, explore physical gold and silver, and follow precious-metal benchmarks.</p>
+        <p>Connect with Stan Roberts at ITM Trading, explore physical gold and silver, and follow precious-metal spot prices.</p>
       </div>
       <div className="itm-hero-brand"><img src={itmLogo} alt="ITM Trading" width="250" height="156" /><a href={itmTrading.websiteUrl} target="_blank" rel="noreferrer sponsored">Visit ITM Trading <span aria-hidden="true">↗</span></a></div>
-      <p className="itm-disclosure"><strong>ITM Trading is a sponsor of The County Post.</strong> This page introduces our sponsor and its services. Price data is provided separately by Minted Metal.</p>
+      <p className="itm-disclosure"><strong>ITM Trading is a sponsor of The County Post.</strong> This page introduces our sponsor and its services. Price data is provided separately by Gold-API.com.</p>
     </section>
     <nav className="itm-page-nav" aria-label="ITM Trading page sections"><a href="#stan-roberts">Meet Stan Roberts</a><a href="#stan-team">Stan’s Team</a><a href="#metal-prices">Metal prices</a><a href="#about-itm">About ITM</a><a href="#itm-videos">Videos &amp; education</a></nav>
 

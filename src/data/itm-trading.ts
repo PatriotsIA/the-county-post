@@ -1,6 +1,6 @@
 export const ITM_TRADING_PATH = "/itm-trading";
 export const ITM_TRADING_TITLE = "ITM Trading & Metal Prices";
-export const ITM_TRADING_DESCRIPTION = "Connect with ITM Trading Senior Analyst Stan Roberts and his team, book an appointment, and follow gold, silver, platinum and palladium benchmarks.";
+export const ITM_TRADING_DESCRIPTION = "Connect with ITM Trading Senior Analyst Stan Roberts and his team, book an appointment, and follow gold, silver, platinum and palladium spot prices.";
 
 // Stan's title, direct contacts, appointment link, and team supplied by the sponsor brief, October 6, 2026.
 export const itmTrading = {

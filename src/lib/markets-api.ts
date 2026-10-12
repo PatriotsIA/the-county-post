@@ -1,6 +1,9 @@
 export type MetalsTickerResponse = {
   currency: string;
   unit: string;
+  priceType: "spot";
+  fetchedAt: string;
+  nextRefreshAt: string;
   updatedAt?: string;
   provider: {
     name: string;
@@ -12,8 +15,8 @@ export type MetalsTickerResponse = {
     label: string;
     price: number;
     previousPrice?: number;
-    fixedAt?: string;
-    sourceLabel?: string;
+    quotedAt: string;
+    previousQuotedAt?: string;
   }>;
 };
 
@@ -35,14 +38,31 @@ type CattleTickerResponse = {
   }>;
 };
 
-export async function fetchMetalsTicker(signal?: AbortSignal) {
-  const response = await fetch(marketApiUrl("metals"), { signal });
+let metalsRequest: Promise<MetalsTickerResponse> | undefined;
+let metalsCached: MetalsTickerResponse | undefined;
+let metalsCheckedAt = 0;
+
+export function fetchMetalsTicker() {
+  if (metalsRequest) return metalsRequest;
+  if (metalsCached && Date.now() - metalsCheckedAt < 15_000) return Promise.resolve(metalsCached);
+  metalsRequest = requestMetalsTicker().then(data => {
+    metalsCached = data;
+    metalsCheckedAt = Date.now();
+    return data;
+  }).finally(() => { metalsRequest = undefined; });
+  return metalsRequest;
+}
+
+async function requestMetalsTicker(): Promise<MetalsTickerResponse> {
+  const response = await fetch(marketApiUrl("metals"), { signal: AbortSignal.timeout(15_000) });
   if (!response.ok) throw new Error("Metals prices are unavailable.");
   const data = await response.json() as MetalsTickerResponse;
   const keys = ["gold", "silver", "platinum", "palladium"];
-  if (!data || data.currency !== "USD" || !["troy oz", "troy ounce"].includes(data.unit) || !Array.isArray(data.items) ||
+  if (!data || data.priceType !== "spot" || data.currency !== "USD" || !["troy oz", "troy ounce"].includes(data.unit) || !Array.isArray(data.items) ||
+      !validMarketDate(data.fetchedAt) || !validMarketDate(data.nextRefreshAt) ||
       data.items.length !== keys.length || keys.some(key => data.items.filter(item => item?.key === key).length !== 1) ||
-      data.items.some(item => !Number.isFinite(item.price) || item.price <= 0)) {
+      data.items.some(item => !Number.isFinite(item.price) || item.price <= 0 || !validMarketDate(item.quotedAt) ||
+        Date.parse(item.quotedAt) > Date.now() + 60_000 || Date.now() - Date.parse(item.quotedAt) > 4 * 86400_000)) {
     throw new Error("Metals prices could not be verified.");
   }
   return {
@@ -50,9 +70,9 @@ export async function fetchMetalsTicker(signal?: AbortSignal) {
     updatedAt: validMarketDate(data.updatedAt),
     items: data.items.map(item => ({
       ...item,
-      previousPrice: typeof item.previousPrice === "number" && Number.isFinite(item.previousPrice) && item.previousPrice > 0 ? item.previousPrice : undefined,
-      fixedAt: validMarketDate(item.fixedAt),
-      sourceLabel: typeof item.sourceLabel === "string" ? item.sourceLabel : undefined,
+      previousPrice: typeof item.previousPrice === "number" && Number.isFinite(item.previousPrice) && item.previousPrice > 0 &&
+        validMarketDate(item.previousQuotedAt) && Date.parse(item.previousQuotedAt!) < Date.parse(item.quotedAt) ? item.previousPrice : undefined,
+      previousQuotedAt: validMarketDate(item.previousQuotedAt),
     })),
   };
 }

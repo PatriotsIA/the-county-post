@@ -1,13 +1,14 @@
 import { expect, test } from "@playwright/test";
 
 const fixture = {
-  currency: "USD", unit: "troy oz", updatedAt: "2026-10-01T16:20:00Z",
-  provider: { name: "Minted Metal", url: "https://mintedmetal.com" },
+  currency: "USD", unit: "troy oz", priceType: "spot", updatedAt: "2026-10-01T17:59:00Z",
+  fetchedAt: "2026-10-01T18:00:00Z", nextRefreshAt: "2026-10-01T18:01:00Z",
+  provider: { name: "Gold-API.com", url: "https://gold-api.com" },
   items: [
-    { key: "gold", label: "Gold", price: 3000, previousPrice: 2900, fixedAt: "2026-09-30T15:00:00Z", sourceLabel: "London PM Fix" },
-    { key: "silver", label: "Silver", price: 30, previousPrice: 30, fixedAt: "2026-09-30T12:00:00Z" },
-    { key: "platinum", label: "Platinum", price: 1000, previousPrice: 1020 },
-    { key: "palladium", label: "Palladium", price: 900 },
+    { key: "gold", label: "Gold", price: 3000, previousPrice: 2900, quotedAt: "2026-10-01T17:59:00Z", previousQuotedAt: "2026-10-01T17:58:00Z" },
+    { key: "silver", label: "Silver", price: 30, previousPrice: 30, quotedAt: "2026-10-01T17:59:01Z", previousQuotedAt: "2026-10-01T17:58:01Z" },
+    { key: "platinum", label: "Platinum", price: 1000, previousPrice: 1020, quotedAt: "2026-10-01T17:59:02Z", previousQuotedAt: "2026-10-01T17:58:02Z" },
+    { key: "palladium", label: "Palladium", price: 900, quotedAt: "2026-10-01T17:59:03Z" },
   ],
 };
 
@@ -21,7 +22,7 @@ test.beforeEach(async ({ page }) => {
   await page.route("http://localhost:8787/v1/markets/metals", route => route.fulfill({ json: fixture }));
 });
 
-test("editions show a spot ticker and sponsor link without requesting daily benchmarks", async ({ page }) => {
+test("editions and ITM tools share the same spot prices and browser cache", async ({ page }) => {
   await page.route(tickerScriptUrl, route => route.fulfill({ contentType: "application/javascript", body: tickerModule }));
   let requests = 0;
   page.on("request", request => { if (request.url().includes("/markets/metals")) requests++; });
@@ -30,10 +31,12 @@ test("editions show a spot ticker and sponsor link without requesting daily benc
     await expect(page.locator('.nav a[href="/itm-trading"]')).toHaveText("ITM Trading");
     await expect(page.locator('.metals-desk-link')).toHaveAttribute("href", "/itm-trading");
     await expect(page.getByRole('complementary', { name: 'Metal spot prices', exact: true })).toBeVisible();
-    await expect(page.locator('.precious-metals-ticker tv-ticker-tape')).toHaveAttribute('symbols', 'OANDA:XAUUSD,OANDA:XAGUSD,OANDA:XPTUSD,OANDA:XPDUSD');
+    await expect(page.locator('.metals-spot-quotes li').first()).toContainText('$3,000.00');
+    await expect(page.locator('.metals-spot-quotes li')).toHaveCount(4);
+    await expect(page.locator('.precious-metals-ticker tv-ticker-tape')).toHaveCount(0);
     await expect(page.locator('#tradingview-ticker-tape-script')).toHaveCount(1);
   }
-  expect(requests).toBe(0);
+  expect(requests).toBe(3);
   await page.locator('.nav a[href="/itm-trading"]').click();
   await expect(page.getByRole("heading", { level: 1, name: "ITM Trading", exact: true })).toBeVisible();
   await expect(page.locator('.masthead-stage')).toBeVisible();
@@ -41,8 +44,8 @@ test("editions show a spot ticker and sponsor link without requesting daily benc
   await expect(page.locator('.nav a[href="/itm-trading"]')).toHaveAttribute('aria-current', 'page');
   await expect(page.getByRole('navigation', { name: 'National pages', exact: true })).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'National pages', exact: true }).getByRole('link', { name: 'Elections', exact: true })).toHaveAttribute('href', '/topics/elections-transparency');
-  await expect(page.getByRole("article", { name: "Gold benchmark", exact: true })).toContainText("$3,000.00");
-  expect(requests).toBeGreaterThan(0);
+  await expect(page.getByRole("article", { name: "Gold spot price", exact: true })).toContainText("$3,000.00");
+  expect(requests).toBe(3);
   await expect(page.locator('.market-panel')).toHaveCount(0);
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", "https://thecountypost.com/itm-trading");
   await expect(page).toHaveTitle("ITM Trading & Metal Prices | The County Post");
@@ -58,42 +61,44 @@ test("editions show a spot ticker and sponsor link without requesting daily benc
   await page.locator('.itm-tracker').screenshot({ path: "test-results/itm-tracker-desktop.png" });
 });
 
-test("mobile tickers defer loading and recover together after a provider script failure", async ({ page }) => {
+test("mobile defers both feeds and metals remain available during a TradingView outage", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 740 });
   await page.route(tickerScriptUrl, route => route.abort());
-  let scriptRequests = 0;
-  page.on('request', request => { if (request.url().startsWith(tickerScriptUrl)) scriptRequests++; });
+  let scriptRequests = 0, metalsRequests = 0;
+  page.on('request', request => {
+    if (request.url().startsWith(tickerScriptUrl)) scriptRequests++;
+    if (request.url().includes('/markets/metals')) metalsRequests++;
+  });
   await page.goto('/texas/randall');
   const toggle = page.getByRole('button', { name: /Market desk/ });
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   expect(scriptRequests).toBe(0);
+  expect(metalsRequests).toBe(0);
   await toggle.click();
-  await expect(page.getByRole('status').filter({ hasText: 'Metal spot prices unavailable.' })).toBeVisible();
+  await expect(page.locator('.metals-spot-quotes li').first()).toContainText('$3,000.00');
   await expect(page.getByRole('status').filter({ hasText: /^Market prices unavailable\.$/ })).toBeVisible();
   expect(scriptRequests).toBe(1);
+  expect(metalsRequests).toBe(1);
   await toggle.click();
   await page.route(`${tickerScriptUrl}*`, route => route.fulfill({ contentType: 'application/javascript', body: tickerModule }));
   await toggle.click();
-  await expect(page.locator('tv-ticker-tape')).toHaveCount(2);
+  await expect(page.locator('tv-ticker-tape')).toHaveCount(1);
   expect(scriptRequests).toBe(2);
-  await expect(page.getByText('Metal spot prices unavailable.', { exact: true })).toHaveCount(0);
+  expect(metalsRequests).toBe(1);
   await toggle.click();
   await expect(page.locator('tv-ticker-tape')).toHaveCount(0);
-  await toggle.click();
-  await expect(page.locator('tv-ticker-tape')).toHaveCount(2);
-  expect(scriptRequests).toBe(2);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
-test("benchmark comparisons and unit/purity calculations use verified values", async ({ page }) => {
+test("spot comparisons and unit/purity calculations use verified values", async ({ page }) => {
   await page.goto("/itm-trading");
-  const gold = page.getByRole("article", { name: "Gold benchmark", exact: true });
+  const gold = page.getByRole("article", { name: "Gold spot price", exact: true });
   await expect(gold).toContainText("+$100.00 (+3.45%)");
-  await expect(gold).toContainText("Sep 30, 2026");
+  await expect(gold).toContainText("Oct 1, 2026");
   await expect(page.locator('.itm-provenance')).toContainText("Oct 1, 2026");
   await expect(page.locator('.itm-ratio')).toContainText("100.00 : 1");
-  await expect(page.getByRole("article", { name: "Platinum benchmark" })).toContainText("−$20.00 (-1.96%)");
-  await expect(page.getByRole("article", { name: "Palladium benchmark" })).toContainText("Change unavailable");
+  await expect(page.getByRole("article", { name: "Platinum spot price" })).toContainText("−$20.00 (-1.96%)");
+  await expect(page.getByRole("article", { name: "Palladium spot price" })).toContainText("Change unavailable");
   await page.getByLabel("Quantity (troy oz)").fill("2");
   await expect(page.locator('.itm-estimate strong')).toHaveText("$6,000.00");
   await page.getByLabel("Purity (%)").fill("50");
@@ -116,14 +121,15 @@ test("benchmark comparisons and unit/purity calculations use verified values", a
 test("a failed refresh retains dated values and retry recovers", async ({ page }) => {
   await page.goto("/itm-trading");
   await expect(page.locator('.itm-price').first()).toHaveText("$3,000.00");
+  await page.clock.setFixedTime(new Date("2026-10-01T18:00:16Z"));
   await page.route("**/v1/markets/metals", route => route.fulfill({ status: 503 }));
   await page.getByRole("button", { name: "Refresh prices", exact: true }).click();
-  await expect(page.getByRole("status").filter({ hasText: "last received benchmarks" })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "last available spot quotes" })).toBeVisible();
   await expect(page.locator('.itm-price').first()).toHaveText("$3,000.00");
-  await expect(page.locator('.itm-fixing').first()).toContainText("Sep 30, 2026");
+  await expect(page.locator('.itm-fixing').first()).toContainText("Oct 1, 2026");
   await page.route("**/v1/markets/metals", route => route.fulfill({ json: fixture }));
   await page.getByRole("button", { name: "Refresh prices", exact: true }).click();
-  await expect(page.getByRole("status").filter({ hasText: "last received benchmarks" })).toHaveCount(0);
+  await expect(page.getByRole("status").filter({ hasText: "last available spot quotes" })).toHaveCount(0);
 });
 
 test("malformed data never becomes a price or a calculation", async ({ page }) => {
@@ -135,12 +141,36 @@ test("malformed data never becomes a price or a calculation", async ({ page }) =
   await expect(page.getByRole("link", { name: "Book 30 minutes with Stan" })).toBeAttached();
 });
 
-test("the phone layout shows sponsor contacts and flags older or stale benchmarks", async ({ page }) => {
+test("refresh clicks reuse the cached spot snapshot instead of multiplying requests", async ({ page }) => {
+  let requests = 0;
+  page.on("request", request => { if (request.url().includes("/markets/metals")) requests++; });
+  await page.goto("/itm-trading");
+  await expect(page.locator(".itm-price").first()).toHaveText("$3,000.00");
+  for (let i = 0; i < 5; i++) await page.getByRole("button", { name: "Refresh prices", exact: true }).click();
+  expect(requests).toBe(1);
+  await page.clock.setFixedTime(new Date("2026-10-01T18:00:16Z"));
+  await page.getByRole("button", { name: "Refresh prices", exact: true }).click();
+  await expect.poll(() => requests).toBe(2);
+});
+
+test("legacy benchmarks and expired spot quotes never power the calculator", async ({ page }) => {
+  for (const data of [
+    { ...fixture, priceType: undefined },
+    { ...fixture, items: fixture.items.map(item => ({ ...item, quotedAt: "2026-09-20T18:00:00Z" })) },
+  ]) {
+    await page.route("**/v1/markets/metals", route => route.fulfill({ json: data }));
+    await page.goto("/itm-trading");
+    await expect(page.getByRole("alert")).toContainText("Prices are unavailable");
+    await expect(page.locator(".itm-estimate strong")).toHaveText("Unavailable");
+  }
+});
+
+test("the phone layout shows sponsor contacts and flags older or stale spot quotes", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 740 });
-  const old = { ...fixture, stale: true, items: fixture.items.map(item => ({ ...item, fixedAt: "2026-09-21T15:00:00Z" })) };
+  const old = { ...fixture, stale: true, items: fixture.items.map(item => ({ ...item, quotedAt: "2026-09-29T15:00:00Z" })) };
   await page.route("**/v1/markets/metals", route => route.fulfill({ json: old }));
   await page.goto("/itm-trading");
-  await expect(page.locator('.itm-fixing').first()).toContainText("Older benchmark");
+  await expect(page.locator('.itm-fixing').first()).toContainText("Older quote");
   await expect(page.locator('.masthead-stage')).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'National pages', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Menu', exact: true }).click();
@@ -149,7 +179,7 @@ test("the phone layout shows sponsor contacts and flags older or stale benchmark
   await expect(primaryNav.getByRole('link', { name: 'Front Page', exact: true })).toHaveAttribute('href', '/');
   await primaryNav.getByRole('link', { name: 'ITM Trading', exact: true }).click();
   await expect(primaryNav).toBeHidden();
-  await expect(page.getByRole("status").filter({ hasText: "last received benchmarks" })).toBeAttached();
+  await expect(page.getByRole("status").filter({ hasText: "last available spot quotes" })).toBeAttached();
   await expect(page.locator('.itm-hero-brand img')).toBeVisible();
   expect(await page.locator('.itm-hero-brand img').evaluate(async (image: HTMLImageElement) => { await image.decode(); return image.naturalWidth > 0; })).toBe(true);
   await page.locator('.itm-hero').screenshot({ path: "test-results/itm-hero-mobile.png" });

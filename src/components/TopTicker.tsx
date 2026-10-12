@@ -9,10 +9,10 @@ import { useCountyWeather } from "../lib/useCountyWeather";
 import itmTradingAd from "../../ad-assets/itm-trading-logo.jpg";
 import { LoadingIndicator } from "./LoadingIndicator";
 import { CountyNoticeTicker } from "./CountyNoticeTicker";
+import { useMetalsPrices } from "../lib/useMetalsPrices";
 
 const stockTickerSymbols =
-  "FOREXCOM:SPXUSD,FOREXCOM:NSXUSD,FOREXCOM:DJI,FX:EURUSD,BITSTAMP:BTCUSD,BITSTAMP:ETHUSD,CMCMARKETS:GOLD,NASDAQ:NVDA,EASYMARKETS:OILUSD,NASDAQ:AAPL,NASDAQ:AMZN,NASDAQ:MSFT,NASDAQ:META,NASDAQ:AMD,NASDAQ:PLTR,NASDAQ:GOOGL,NASDAQ:NFLX,NYSE:DELL,NYSE:XOM,NYSE:JPM,NYSE:BAC";
-const metalTickerSymbols = "OANDA:XAUUSD,OANDA:XAGUSD,OANDA:XPTUSD,OANDA:XPDUSD";
+  "FOREXCOM:SPXUSD,FOREXCOM:NSXUSD,FOREXCOM:DJI,FX:EURUSD,BITSTAMP:BTCUSD,BITSTAMP:ETHUSD,NASDAQ:NVDA,EASYMARKETS:OILUSD,NASDAQ:AAPL,NASDAQ:AMZN,NASDAQ:MSFT,NASDAQ:META,NASDAQ:AMD,NASDAQ:PLTR,NASDAQ:GOOGL,NASDAQ:NFLX,NYSE:DELL,NYSE:XOM,NYSE:JPM,NYSE:BAC";
 export function TopTicker({
   county,
   defaultOpen = false,
@@ -55,7 +55,7 @@ export function TopTicker({
                 <span>Meet our sponsor <span aria-hidden="true">→</span></span>
               </Link>
             </div>
-            <TradingViewTicker active={isOpen} symbols={metalTickerSymbols} label="Metal spot prices" />
+            <MetalSpotTicker active={isOpen} />
           </aside>
           <CattleTicker />
           {county ? <CountyWeather county={county} /> : null}
@@ -64,6 +64,21 @@ export function TopTicker({
       </div>
     </section>
   );
+}
+
+function MetalSpotTicker({ active }: { active: boolean }) {
+  const { ticker, status, stale } = useMetalsPrices(active);
+  const money = (price: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(price);
+  return <div className="metals-spot-content">
+    {!ticker && status === "loading" ? <LoadingIndicator label="Loading metal spot prices…" size="inline" /> : null}
+    {!ticker && status === "error" ? <p role="status">Metal spot prices unavailable.</p> : null}
+    {ticker ? <ul className="metals-spot-quotes">{ticker.items.map(item => <li key={item.key}>
+      <strong>{item.label}</strong><span>{money(item.price)}</span>
+      <time dateTime={item.quotedAt}>{new Date(item.quotedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</time>
+    </li>)}</ul> : null}
+    {stale ? <p role="status">Last available quotes · prices may be delayed, or the market may be closed.</p> : null}
+    <p className="metals-spot-source">Spot reference prices by <a href="https://gold-api.com" target="_blank" rel="noreferrer">Gold-API.com</a> · Updates every minute</p>
+  </div>;
 }
 
 function TradingViewTicker({ active, symbols = stockTickerSymbols, label = "Market prices" }: { active: boolean; symbols?: string; label?: string }) {
