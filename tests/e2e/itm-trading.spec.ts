@@ -33,11 +33,12 @@ test("editions and ITM tools share the same spot prices and browser cache", asyn
     await expect(page.getByRole('complementary', { name: 'Metal spot prices', exact: true })).toBeVisible();
     await expect(page.locator('.metals-spot-quotes li').first()).toContainText('$3,000.00');
     await expect(page.locator('.metals-spot-quotes li')).toHaveCount(4);
+    await expect(page.locator('.metals-spot-quotes a[href="/itm-trading"]')).toHaveCount(4);
     await expect(page.locator('.precious-metals-ticker tv-ticker-tape')).toHaveCount(0);
     await expect(page.locator('#tradingview-ticker-tape-script')).toHaveCount(1);
   }
   expect(requests).toBe(3);
-  await page.locator('.nav a[href="/itm-trading"]').click();
+  await page.locator('.metals-spot-quotes a').first().click();
   await expect(page.getByRole("heading", { level: 1, name: "ITM Trading", exact: true })).toBeVisible();
   await expect(page.locator('.masthead-stage')).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Primary navigation', exact: true })).toBeVisible();
@@ -46,13 +47,18 @@ test("editions and ITM tools share the same spot prices and browser cache", asyn
   await expect(page.getByRole('navigation', { name: 'National pages', exact: true }).getByRole('link', { name: 'Elections', exact: true })).toHaveAttribute('href', '/topics/elections-transparency');
   await expect(page.getByRole("article", { name: "Gold spot price", exact: true })).toContainText("$3,000.00");
   expect(requests).toBe(3);
-  await expect(page.locator('.market-panel')).toHaveCount(0);
+  await expect(page.locator('.market-panel')).toBeVisible();
+  await expect(page.getByRole('button', { name: /Market desk/ })).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator('.metals-spot-quotes li').first()).toContainText('$3,000.00');
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", "https://thecountypost.com/itm-trading");
   await expect(page).toHaveTitle("ITM Trading & Metal Prices | The County Post");
   await expect(page.locator('.itm-disclosure').first()).toContainText("ITM Trading is a sponsor of The County Post");
   await expect(page.locator('.itm-role')).toHaveText("Senior Analyst · ITM Trading");
   await expect(page.locator('#stan-roberts a[href="tel:+16232087493"]')).toHaveText("623-208-7493");
   await expect(page.getByRole("link", { name: "stanr@itmtrading.com", exact: true })).toHaveAttribute("href", "mailto:stanr@itmtrading.com?subject=The%20County%20Post%20inquiry");
+  for (const [name, email] of [["Fernando Grijalva", "fernando@itmtrading.com"], ["Keely Caul", "keelyc@itmtrading.com"], ["Nate Batiste", "nathanb@itmtrading.com"]]) {
+    await expect(page.locator('.itm-team-grid li').filter({ hasText: name }).getByRole('link', { name: email, exact: true })).toHaveAttribute('href', `mailto:${email}?subject=The%20County%20Post%20inquiry`);
+  }
   await expect(page.getByRole("link", { name: "Book 30 minutes with Stan" })).toHaveAttribute("href", "https://calendly.com/stanr-pt_i/30min?utm_source=countypost");
   const graph = JSON.parse(await page.locator('script[type="application/ld+json"]').textContent() || "{}");
   expect(graph["@graph"][0].sponsor.name).toBe("ITM Trading");
@@ -171,6 +177,11 @@ test("the phone layout shows sponsor contacts and flags older or stale spot quot
   await page.route("**/v1/markets/metals", route => route.fulfill({ json: old }));
   await page.goto("/itm-trading");
   await expect(page.locator('.itm-fixing').first()).toContainText("Older quote");
+  const marketToggle = page.getByRole('button', { name: /Market desk/ });
+  await expect(marketToggle).toHaveAttribute('aria-expanded', 'false');
+  await marketToggle.click();
+  await expect(page.locator('.metals-spot-quotes li')).toHaveCount(4);
+  await marketToggle.click();
   await expect(page.locator('.masthead-stage')).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'National pages', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Menu', exact: true }).click();
@@ -190,12 +201,12 @@ test("the phone layout shows sponsor contacts and flags older or stale spot quot
   await page.locator('#stan-roberts').screenshot({ path: "test-results/itm-contact-mobile.png" });
 });
 
-test("ITM videos appear only on the landing page, limited to the three supplied videos and a blog link", async ({ page }) => {
+test("ITM videos appear only on the landing page, limited to the four supplied videos and a blog link", async ({ page }) => {
   await page.goto("/itm-trading");
   const videos = page.locator("#itm-videos iframe");
-  await expect(videos).toHaveCount(3);
+  await expect(videos).toHaveCount(4);
   expect(await videos.evaluateAll(frames => frames.map(frame => (frame as HTMLIFrameElement).src))).toEqual(
-    ["1CDpb0G3v2g", "pjlmcqWTPPg", "QZcVYmEJ9x4"].map(id => `https://www.youtube-nocookie.com/embed/${id}`),
+    ["1CDpb0G3v2g", "pjlmcqWTPPg", "QZcVYmEJ9x4", "BoT1tVXtE2A"].map(id => `https://www.youtube-nocookie.com/embed/${id}`),
   );
   await expect(page.getByRole("link", { name: "Read the ITM Trading blog" })).toHaveAttribute("href", "https://www.itmtrading.com/blog/?utm_source=countypost");
   for (const path of ["/topics/economy-markets", "/texas/economy-markets", "/texas/randall/economy-markets"]) {

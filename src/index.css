@@ -569,14 +569,16 @@ body::before {
   margin: 0;
   padding: 0;
 }
-.metals-spot-quotes li { display: grid; min-width: 0; gap: 6px; padding: 0 20px; }
+.metals-spot-quotes li { min-width: 0; padding: 0 20px; }
+.metals-spot-link { display: grid; gap: 6px; color: var(--ink); text-decoration: none; }
+.metals-spot-link:hover > span { color: var(--news-blue); text-decoration: underline; text-underline-offset: 4px; }
 .metals-spot-quotes li:first-child { padding-left: 0; }
 .metals-spot-quotes li + li { border-left: 1px solid var(--rule); }
-.metals-spot-quotes li > strong {
+.metals-spot-link > strong {
   color: var(--news-blue);
   font: 700 18px/1.4 "Playfair Display", "Libre Baskerville", serif;
 }
-.metals-spot-quotes li > span {
+.metals-spot-link > span {
   font: 600 clamp(18px, 1.8vw, 26px)/1.3 "Roboto Mono", monospace;
   font-variant-numeric: tabular-nums;
   letter-spacing: -.045em;

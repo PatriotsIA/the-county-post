@@ -30,7 +30,7 @@ export function ItmTrading() {
 
     <section id="stan-team" className="itm-team" aria-labelledby="itm-team-title">
       <header className="itm-section-heading"><div><p className="kicker">ITM Trading analysts</p><h2 id="itm-team-title">Stan’s Team</h2></div><a className="itm-text-link" href={itmTrading.aboutUrl} target="_blank" rel="noreferrer sponsored">View ITM’s analyst directory ↗</a></header>
-      <ul className="itm-team-grid">{stanTeam.map(name => <li className="card" key={name}><h3>{name}</h3><p className="itm-small">Analyst · ITM Trading</p></li>)}</ul>
+      <ul className="itm-team-grid">{stanTeam.map(({ name, email }) => <li className="card" key={name}><h3>{name}</h3><p className="itm-small">Analyst · ITM Trading</p><a className="itm-team-email" href={`mailto:${email}?subject=The%20County%20Post%20inquiry`}>{email}</a></li>)}</ul>
     </section>
 
     <MetalsTracker />
@@ -52,6 +52,6 @@ export function ItmTrading() {
       <div className="itm-videos">{itmVideoIds.map(videoId => <div key={videoId} className="itm-video"><iframe src={`https://www.youtube-nocookie.com/embed/${videoId}`} title="ITM Trading video" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div>)}</div>
       <a className="itm-button" href={itmTrading.blogUrl} target="_blank" rel="noreferrer sponsored">Read the ITM Trading blog <span aria-hidden="true">↗</span></a>
     </section>
-    <p className="itm-page-note">Company information adapted from ITM Trading’s <a href={itmTrading.aboutUrl} target="_blank" rel="noreferrer sponsored">About page</a> and <a href={itmTrading.contactUrl} target="_blank" rel="noreferrer sponsored">Contact page</a>. Stan’s profile and team updated October 6, 2026. Educational information; prices and product values can change. Contact ITM for current terms and quotes.</p>
+    <p className="itm-page-note">Company information adapted from ITM Trading’s <a href={itmTrading.aboutUrl} target="_blank" rel="noreferrer sponsored">About page</a> and <a href={itmTrading.contactUrl} target="_blank" rel="noreferrer sponsored">Contact page</a>. Stan’s profile updated October 6, 2026; team contacts updated October 12, 2026. Educational information; prices and product values can change. Contact ITM for current terms and quotes.</p>
   </div>;
 }

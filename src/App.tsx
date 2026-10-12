@@ -323,7 +323,7 @@ function App() {
           <CountyDirectorySearch id="find-a-county" />
         </div>
       ) : null}
-      {!isSponsorPage ? <TopTicker county={activeCounty} defaultOpen={isEditionHomePath(pathname, activeCounty, activeState)} /> : null}
+      {!isLegendsPage ? <TopTicker county={activeCounty} defaultOpen={isItmTradingPage || isEditionHomePath(pathname, activeCounty, activeState)} /> : null}
       <button
         type="button"
         className={`scroll-top${showScrollTop ? " scroll-top-visible" : ""}`}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { type CountySite } from "../data/counties";
+import { ITM_TRADING_PATH } from "../data/itm-trading";
 import {
   weatherSeverityClass,
 } from "../lib/county-weather-api";
@@ -50,7 +51,7 @@ export function TopTicker({
           <aside className="precious-metals-ticker" aria-label="Metal spot prices">
             <div className="metals-ticker-heading">
               <div><strong>Metals spot prices</strong><small>USD per troy ounce</small></div>
-              <Link className="metals-desk-link" to="/itm-trading">
+              <Link className="metals-desk-link" to={ITM_TRADING_PATH}>
                 <img src={itmTradingAd} alt="ITM Trading" width="40" height="25" />
                 <span>Meet our sponsor <span aria-hidden="true">→</span></span>
               </Link>
@@ -73,8 +74,10 @@ function MetalSpotTicker({ active }: { active: boolean }) {
     {!ticker && status === "loading" ? <LoadingIndicator label="Loading metal spot prices…" size="inline" /> : null}
     {!ticker && status === "error" ? <p role="status">Metal spot prices unavailable.</p> : null}
     {ticker ? <ul className="metals-spot-quotes">{ticker.items.map(item => <li key={item.key}>
+      <Link className="metals-spot-link" to={ITM_TRADING_PATH} title={`View ${item.label.toLowerCase()} prices and tools at ITM Trading`}>
       <strong>{item.label}</strong><span>{money(item.price)}</span>
       <time dateTime={item.quotedAt}>{new Date(item.quotedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</time>
+      </Link>
     </li>)}</ul> : null}
     {stale ? <p role="status">Last available quotes · prices may be delayed, or the market may be closed.</p> : null}
     <p className="metals-spot-source">Spot reference prices by <a href="https://gold-api.com" target="_blank" rel="noreferrer">Gold-API.com</a> · Updates every minute</p>

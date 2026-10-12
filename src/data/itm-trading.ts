@@ -21,7 +21,12 @@ export const itmTrading = {
   emailHref: "mailto:stanr@itmtrading.com?subject=The%20County%20Post%20inquiry",
 };
 
-export const stanTeam = ["Fernando Grijalva", "Keely Caul", "Nate Batiste"];
+// Team emails supplied October 12, 2026.
+export const stanTeam = [
+  { name: "Fernando Grijalva", email: "fernando@itmtrading.com" },
+  { name: "Keely Caul", email: "keelyc@itmtrading.com" },
+  { name: "Nate Batiste", email: "nathanb@itmtrading.com" },
+];
 
-// The only ITM videos shown on The County Post, in the order the sponsor supplied them (October 9, 2026).
-export const itmVideoIds = ["1CDpb0G3v2g", "pjlmcqWTPPg", "QZcVYmEJ9x4"];
+// The only ITM videos shown on The County Post, in the order supplied (updated October 12, 2026).
+export const itmVideoIds = ["1CDpb0G3v2g", "pjlmcqWTPPg", "QZcVYmEJ9x4", "BoT1tVXtE2A"];
