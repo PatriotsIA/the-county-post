@@ -6,27 +6,93 @@ test.beforeEach(async ({ page }) => {
   await page.route('http://localhost:8788/defaults?**', route => route.fulfill({ json: { timeZone: 'America/Chicago' } }));
 });
 
-test('every edition signup can choose national, state or county and requires confirmation', async ({ page }) => {
-  for (const [path, level, state, county] of [['/', 'national', '', ''], ['/texas', 'state', 'texas', ''], ['/texas/potter', 'county', 'texas', 'potter']]) {
-    await page.goto(path);
-    await expect(page.getByRole('combobox', { name: 'Newsletter edition', exact: true })).toHaveValue(level);
-    if (state) await expect(page.getByRole('combobox', { name: 'State', exact: true })).toHaveValue(state);
-    if (county) await expect(page.getByRole('combobox', { name: 'County', exact: true })).toHaveValue(county);
+test('compact live edition search supports county, state and national subscriptions', async ({ page }) => {
+  for (const [path, label] of [['/', 'National edition'], ['/texas', 'Texas edition'], ['/texas/potter', 'Potter County, Texas']]) {
+    await page.goto(path, { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('combobox', { name: 'Your edition', exact: true })).toHaveValue(label);
   }
-  await page.getByRole('combobox', { name: 'Newsletter edition', exact: true }).selectOption('state');
-  await page.getByRole('combobox', { name: 'State', exact: true }).selectOption('arizona');
-  await page.getByRole('combobox', { name: '6:15 a.m. delivery timezone', exact: true }).selectOption('America/Phoenix');
-  await page.getByLabel('Email address', { exact: true }).fill('reader@example.com');
-  await page.getByRole('checkbox', { name: /Email me this daily edition/ }).check();
+  const form = page.getByRole('form', { name: 'Morning Post signup', exact: true });
+  const search = form.getByRole('combobox', { name: 'Your edition' });
+  await search.fill('potter');
+  await expect(page.getByRole('option', { name: 'Potter County, Texas County', exact: true })).toBeVisible();
+  await expect(page.getByRole('option', { name: 'Potter County, Pennsylvania County', exact: true })).toBeVisible();
+  await search.fill('potter tx');
+  await search.press('ArrowDown');
+  await search.press('Enter');
+  await expect(search).toHaveValue('Potter County, Texas');
+  await search.fill('arizona');
+  await page.getByRole('option', { name: 'Arizona edition Statewide', exact: true }).click();
+  await form.getByText('Delivery time', { exact: true }).click();
+  await form.getByRole('combobox', { name: '6:15 a.m. delivery timezone' }).selectOption('America/Phoenix');
+  await form.getByLabel('Email address', { exact: true }).fill('reader@example.com');
+  await form.getByRole('checkbox').check();
   let sent: Record<string, unknown> | undefined;
   await page.route('http://localhost:8788/subscribe', async route => {
     sent = route.request().postDataJSON();
     await route.fulfill({ status: 202, json: { message: 'Check your inbox for a confirmation link.' } });
   });
-  await page.getByRole('button', { name: 'Subscribe free', exact: true }).click();
+  await form.getByRole('button', { name: 'Subscribe free' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Check your inbox' })).toBeVisible();
   expect(sent).toMatchObject({ consent: true, edition: { level: 'state', state: 'arizona', timeZone: 'America/Phoenix' } });
-  await expect(page.getByRole('button', { name: 'Subscribe to another edition' })).toBeVisible();
+  await page.getByRole('button', { name: 'Subscribe to another edition' }).click();
+  await search.fill('national');
+  await page.getByRole('option', { name: 'National edition Across the U.S.' }).click();
+  await expect(search).toHaveValue('National edition');
+});
+
+test('search never subscribes to a stale edition after unmatched typing', async ({ page }) => {
+  let posts = 0;
+  await page.route('http://localhost:8788/subscribe', route => { posts++; return route.fulfill({ json: {} }); });
+  await page.goto('/texas/potter');
+  const form = page.getByRole('form', { name: 'Morning Post signup', exact: true });
+  await form.getByRole('combobox', { name: 'Your edition' }).fill('zzzzzzzz');
+  await expect(page.getByRole('status').filter({ hasText: 'No matching editions' })).toBeVisible();
+  await form.getByLabel('Email address').fill('reader@example.com');
+  await form.getByRole('checkbox').check();
+  await form.getByRole('button', { name: 'Subscribe free' }).click();
+  await expect(form.getByRole('alert')).toContainText('Choose an edition');
+  expect(posts).toBe(0);
+});
+
+test('footer signup follows the current county, state or national page with no edition fields', async ({ page }) => {
+  const sent: Record<string, unknown>[] = [];
+  await page.route('http://localhost:8788/subscribe', async route => {
+    sent.push(route.request().postDataJSON());
+    await route.fulfill({ status: 202, json: { message: 'Check your inbox for a confirmation link.' } });
+  });
+  await page.goto('/texas/potter/weather');
+  for (const [path, expected] of [
+    ['/texas/potter/weather', { level: 'county', state: 'texas', county: 'potter' }],
+    ['/texas', { level: 'state', state: 'texas' }],
+    ['/', { level: 'national' }],
+  ] as const) {
+    if (path !== '/texas/potter/weather') {
+      // Follow the app's own breadcrumb links: context must update without a reload.
+      await page.locator(`.breadcrumbs a[href="${path}"]`).first().click();
+    }
+    const form = page.getByRole('form', { name: 'Footer Morning Post signup' });
+    await expect(form.getByRole('combobox')).toHaveCount(0);
+    await form.getByLabel('Email address').fill('reader@example.com');
+    await form.getByRole('checkbox').check();
+    await form.getByRole('button', { name: 'Subscribe free' }).click();
+    await expect(page.locator('footer').getByRole('status')).toContainText('Check your inbox');
+    expect(sent.at(-1)).toMatchObject({ consent: true, edition: expected });
+    if (expected.level !== 'national') expect((sent.at(-1)!.edition as Record<string, unknown>).timeZone).toBeUndefined();
+  }
+});
+
+test('Morning Post landing page explains the benefits and has its own navigation and metadata', async ({ page }) => {
+  await page.goto('/morning-post');
+  await expect(page.getByRole('heading', { name: 'The Morning Post', exact: true, level: 1 })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Morning Post', exact: true }).first()).toHaveClass(/active/);
+  await expect(page.getByRole('heading', { name: 'Weather before you head out' })).toBeVisible();
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://thecountypost.com/morning-post');
+  await expect(page.locator('meta[name="robots"]')).not.toHaveAttribute('content', /noindex/);
+  await page.locator('.morning-post-page').screenshot({ path: 'test-results/morning-post-desktop.png' });
+  const height = await page.locator('main .newsletter-signup').evaluate(el => el.getBoundingClientRect().height);
+  expect(height).toBeLessThan(260);
+  await page.goto('/newsletter?utm_source=the_county_post&utm_medium=email');
+  await expect(page).toHaveURL(/morning-post\?utm_source=the_county_post&utm_medium=email/);
 });
 
 test('confirmation and unsubscribe pages need deliberate actions, and tokens stay out of GA', async ({ page }) => {
@@ -56,16 +122,17 @@ test('newsletter campaign attribution survives clean SEO canonicals and anchors 
 test('signup errors are honest and mobile form fits small phones', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 900 });
   await page.route('http://localhost:8788/subscribe', route => route.fulfill({ status: 503, json: { error: 'Newsletter delivery is being prepared.' } }));
-  await page.goto('/newsletter');
-  await page.getByRole('combobox', { name: 'Newsletter edition', exact: true }).selectOption('county');
-  await page.getByRole('combobox', { name: 'State', exact: true }).selectOption('texas');
-  await page.getByRole('combobox', { name: 'County', exact: true }).selectOption('potter');
-  await page.getByLabel('Email address', { exact: true }).fill('reader@example.com');
-  await page.getByRole('checkbox', { name: /Email me this daily edition/ }).check();
-  await page.getByRole('button', { name: 'Subscribe free', exact: true }).click();
-  await expect(page.getByRole('alert')).toHaveText('Newsletter delivery is being prepared.');
+  await page.goto('/morning-post');
+  const form = page.getByRole('form', { name: 'Morning Post signup', exact: true });
+  await form.getByRole('combobox', { name: 'Your edition' }).fill('potter tx');
+  await page.getByRole('option', { name: 'Potter County, Texas County', exact: true }).click();
+  await form.getByLabel('Email address', { exact: true }).fill('reader@example.com');
+  await form.getByRole('checkbox').check();
+  await form.getByRole('button', { name: 'Subscribe free' }).click();
+  await expect(form.getByRole('alert')).toHaveText('Newsletter delivery is being prepared.');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page.locator('.newsletter').screenshot({ path: 'test-results/newsletter-mobile.png' });
+  await page.locator('.morning-post-page').screenshot({ path: 'test-results/morning-post-mobile.png' });
+  await page.locator('footer .newsletter').screenshot({ path: 'test-results/morning-post-footer-mobile.png' });
 });
 
 test('sponsor handoff records the edition and campaign and rejects ineligible advertisers', async ({ page }) => {

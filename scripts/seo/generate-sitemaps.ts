@@ -24,6 +24,7 @@ import { subjectGroups, subjectPages } from "../../src/data/subjects";
 import { dataCentersOpEd } from "../../src/data/county-post-op-eds";
 import { PANHANDLE_LEGENDS_PATH, PANHANDLE_LEGENDS_TITLE, PANHANDLE_LEGENDS_DESCRIPTION } from "../../src/data/panhandle-legends";
 import { ITM_TRADING_PATH, ITM_TRADING_TITLE, ITM_TRADING_DESCRIPTION } from "../../src/data/itm-trading";
+import { MORNING_POST_TITLE, MORNING_POST_DESCRIPTION } from "../../src/data/morning-post";
 import { clampDescription, pageTitle } from "../../src/lib/seo";
 
 const OUT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "../dist");
@@ -95,6 +96,7 @@ const corePaths = [
   "/",
   "/states",
   "/about",
+  "/morning-post",
   "/partners",
   PANHANDLE_LEGENDS_PATH,
   ITM_TRADING_PATH,
@@ -116,11 +118,12 @@ const countyDataPaths = counties.flatMap((county) =>
 
 mkdirSync(OUT_DIR, { recursive: true });
 
-// Dedicated sponsor URLs have initial metadata for search and link previews.
+// Dedicated landing pages have initial metadata for search and link previews.
 // Each exact Amplify rewrite must precede the general SPA rewrite.
 const sponsorPages = [
   { path: PANHANDLE_LEGENDS_PATH, title: PANHANDLE_LEGENDS_TITLE, description: PANHANDLE_LEGENDS_DESCRIPTION, file: "legends.html" },
   { path: ITM_TRADING_PATH, title: ITM_TRADING_TITLE, description: ITM_TRADING_DESCRIPTION, file: "itm-trading.html" },
+  { path: "/morning-post", title: MORNING_POST_TITLE, description: MORNING_POST_DESCRIPTION, file: "morning-post.html" },
 ];
 for (const page of sponsorPages) {
   const title = pageTitle(page.title);

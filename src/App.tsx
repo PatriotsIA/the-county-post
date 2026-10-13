@@ -22,7 +22,7 @@ import { atlasDomainLabels } from "./lib/atlas-domain-labels";
 import { EditionMap } from "./components/EditionMap";
 import { LoadingIndicator } from "./components/LoadingIndicator";
 import { TopTicker } from "./components/TopTicker";
-import { NewsletterPage, NewsletterSignup, NewsletterSponsorVisit } from "./components/Newsletter";
+import { MorningPostPage, NewsletterPage, NewsletterSignup, NewsletterSponsorVisit } from "./components/Newsletter";
 import { canSponsorFeed, countyAdKey, getAdsForSlot, getSportsFeedSponsorId } from "./data/ads";
 import { getCounty, getCountiesForState } from "./data/counties";
 import { site } from "./data/site";
@@ -306,8 +306,8 @@ function App() {
         <NavLink to="/about" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")} onClick={() => setMobileMenuOpen(false)}>
           About
         </NavLink>
-        <NavLink to="/newsletter" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")} onClick={() => setMobileMenuOpen(false)}>
-          Newsletter
+        <NavLink to="/morning-post" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")} onClick={() => setMobileMenuOpen(false)}>
+          Morning Post
         </NavLink>
         <NavLink
           to={submitStoryPath(activeCounty, activeState)}
@@ -346,6 +346,7 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/newsletter" element={<NewsletterPage />} />
+          <Route path="/morning-post" element={<MorningPostPage />} />
           <Route path="/newsletter/sponsor" element={<NewsletterSponsorVisit />} />
           <Route path="/topics/:subjectSlug" element={<NationalSubjectPage />} />
           <Route path="/submit" element={<SubmitPage />} />
@@ -382,6 +383,7 @@ function App() {
       {/* Edition home pages show the banner below their lead feed, so the square carousel takes this spot. */}
       {!isSponsorPage ? <AdSlot slot={isHomeEdition ? "inline" : "banner"} /> : null}
       <footer className="footer">
+        <NewsletterSignup key={`footer-${activeCounty?.fips || activeState?.slug || 'national'}`} county={activeCounty} state={activeState} footer />
         <img className="footer-logo" src={countyPostLogo} alt={site.name} />
         <p>
           {site.name} • County-by-county newswire • Contact the desk:{" "}
@@ -389,7 +391,7 @@ function App() {
         </p>
         <div className="footer-links">
           <Link to="/partners">Partners</Link>
-          <Link to="/newsletter">Daily newsletter</Link>
+          <Link to="/morning-post">Morning Post</Link>
           <Link to={ITM_TRADING_PATH}>ITM Trading &amp; metal prices</Link>
           <Link to="/privacy">Privacy</Link>
           <Link to="/terms">Terms</Link>

@@ -73,6 +73,7 @@ export const indexPolicy = {
   countyLocalSources: "sitemap",
   countyPublicNotices: "sitemap",
   editorial: "sitemap",
+  newsletter: "sitemap",
   sponsor: "sitemap",
   legal: "sitemap",
 
@@ -509,6 +510,8 @@ export function crumbTrail(pathname: string, county?: CountySite, state?: StateS
   // Standalone editorial and legal pages.
   const staticLabels: Record<string, string> = {
     about: "About",
+    "morning-post": "Morning Post",
+    newsletter: "Newsletter preferences",
     "itm-trading": "ITM Trading",
     legends: "Panhandle Legends",
     partners: "Partners",

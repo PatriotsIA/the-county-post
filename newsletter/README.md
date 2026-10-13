@@ -2,6 +2,10 @@
 
 Daily national, state and county newsletters for The County Post. This separate SAM stack lives alongside the frontend and reads the existing public news/weather API; it does not change the news API stack or feed filters.
 
+The public introduction is `/morning-post`. Edition-home signup forms use the existing local county/state search index, with delivery timezone settings under a disclosure. Footer forms use the current county or state context automatically and default to national elsewhere. All forms still require email confirmation. Existing `/newsletter#confirm=…`, management, unsubscribe and sponsor URLs remain supported; plain `/newsletter` redirects to the introduction and preserves campaign parameters.
+
+The build emits `morning-post.html` with initial landing-page metadata. Its exact Amplify rewrite (`/morning-post` → `/morning-post.html`, 200) must precede the general SPA rewrite; `/morning-post/` redirects to `/morning-post`.
+
 ## Delivery and consent
 
 - Eight EventBridge Scheduler timezone schedules start the daily run at 06:15 local time, with daylight-saving adjustment. County defaults use its centroid and `tz-lookup`; readers may override the timezone, including in split-zone states/counties. National readers select their timezone.

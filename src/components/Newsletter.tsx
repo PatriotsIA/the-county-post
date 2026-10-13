@@ -1,7 +1,9 @@
 import { useEffect, useId, useState, type FormEvent } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { getCountiesForState, type CountySite } from '../data/counties';
-import { states, type StateSite } from '../data/states';
+import { Link, Navigate, useLocation } from 'react-router-dom';
+import type { CountySite } from '../data/counties';
+import type { StateSite } from '../data/states';
+import { NewsletterEditionSearch } from './NewsletterEditionSearch';
+import { MORNING_POST_TITLE, MORNING_POST_DESCRIPTION, nationalEdition, type EditionChoice } from '../data/morning-post';
 import { newsletterRequest, newsletterZones, type NewsletterEdition } from '../lib/newsletter-api';
 import { Seo } from './Seo';
 import { ads, isAdVisibleInCounty } from '../data/ads';
@@ -11,52 +13,77 @@ function browserZone() {
   const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   return newsletterZones.some(([value]) => value === zone) ? zone : 'America/Chicago';
 }
-export function NewsletterSignup({ county, state }: { county?: CountySite; state?: StateSite }) {
+export function NewsletterSignup({ county, state, footer = false }: { county?: CountySite; state?: StateSite; footer?: boolean }) {
   const id = useId();
-  const [edition, setEdition] = useState<NewsletterEdition>({ level: county ? 'county' : state ? 'state' : 'national', state: county?.state.slug || state?.slug || '', county: county?.slug || '', timeZone: browserZone() });
+  const [choice, setChoice] = useState<EditionChoice | undefined>(() => county
+    ? { label: `${county.displayName}, ${county.state.name}`, edition: { level: 'county', state: county.state.slug, county: county.slug } }
+    : state ? { label: `${state.name} edition`, edition: { level: 'state', state: state.slug } } : nationalEdition);
+  const [timeZone, setTimeZone] = useState(browserZone);
   const [customZone, setCustomZone] = useState(false);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const edition = choice?.edition;
   useEffect(() => {
-    if (customZone || edition.level === 'national' || !edition.state || (edition.level === 'county' && !edition.county)) return;
+    if (footer || customZone || !edition || edition.level === 'national') return;
     const controller = new AbortController();
-    const query = new URLSearchParams({ level: edition.level, state: edition.state, ...(edition.level === 'county' ? { county: edition.county! } : {}) });
-    newsletterRequest<{ timeZone: string }>(`/defaults?${query}`, undefined, controller.signal).then(result => setEdition(current => ({ ...current, timeZone: result.timeZone }))).catch(() => {});
+    const query = new URLSearchParams({ level: edition.level, state: edition.state!, ...(edition.county ? { county: edition.county } : {}) });
+    newsletterRequest<{ timeZone: string }>(`/defaults?${query}`, undefined, controller.signal).then(result => { if (!controller.signal.aborted) setTimeZone(result.timeZone); }).catch(() => {});
     return () => controller.abort();
-  }, [edition.level, edition.state, edition.county, customZone]);
+  }, [edition, customZone, footer]);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setError('');
+    if (!edition) { setError('Choose an edition from the search results before subscribing.'); return; }
     const form = new FormData(event.currentTarget);
-    setPending(true); setError(''); setMessage('');
+    setPending(true); setMessage('');
     try {
-      const result = await newsletterRequest('/subscribe', { email: form.get('email'), consent: form.get('consent') === 'on', website: form.get('website'), edition: { ...edition, timeZone: customZone || edition.level === 'national' ? edition.timeZone : undefined } });
+      const result = await newsletterRequest('/subscribe', { email: form.get('email'), consent: form.get('consent') === 'on', website: form.get('website'), edition: { ...edition, timeZone: customZone || edition.level === 'national' ? timeZone : undefined } });
       setMessage(result.message); setSuccess(true);
     } catch (e) { setError((e as Error).message); }
     finally { setPending(false); }
   }
-  return <section className="newsletter card" aria-labelledby={`${id}-title`}>
-    <div className="newsletter-intro"><p className="kicker">The Morning Post · Free daily newsletter</p><h2 id={`${id}-title`}>Your edition. Every morning.</h2><p>Headlines, sports, obituaries, community news, and a weather &amp; precipitation preview. Delivered starting at 6:15 a.m. in your chosen timezone.</p></div>
-    {success ? <div role="status"><p>{message}</p><button className="newsletter-button" onClick={() => { setSuccess(false); setMessage(''); }}>Subscribe to another edition</button></div> : <form onSubmit={submit} className="newsletter-form">
+  return <section className={`newsletter newsletter-signup ${footer ? 'newsletter-footer' : 'card'}`} aria-labelledby={`${id}-title`}>
+    <div className="newsletter-intro"><h2 id={`${id}-title`}><Link to="/morning-post">The Morning Post</Link></h2>
+      <p>{footer ? `${choice?.label} · News & weather at 6:15 a.m.` : <>Your morning news & weather, free at 6:15 a.m. <Link to="/morning-post">Meet the Morning Post →</Link></>}</p>
+    </div>
+    {success ? <div role="status"><p>{message}</p>{footer ? <Link to="/morning-post">Explore other editions →</Link> : <button className="newsletter-button" onClick={() => { setSuccess(false); setMessage(''); }}>Subscribe to another edition</button>}</div> : <form onSubmit={submit} className="newsletter-form" aria-label={footer ? 'Footer Morning Post signup' : 'Morning Post signup'}>
       <div className="newsletter-fields">
-        <label htmlFor={`${id}-email`}>Email address<input id={`${id}-email`} name="email" type="email" autoComplete="email" required maxLength={254} /></label>
-        <label htmlFor={`${id}-edition`}>Newsletter edition<select id={`${id}-edition`} value={edition.level} onChange={e => { setCustomZone(false); setEdition(current => ({ ...current, level: e.target.value as NewsletterEdition['level'] })); }}><option value="national">National / home page</option><option value="state">State</option><option value="county">County</option></select></label>
-        {edition.level !== 'national' ? <label htmlFor={`${id}-state`}>State<select id={`${id}-state`} required value={edition.state} onChange={e => { setCustomZone(false); setEdition(current => ({ ...current, state: e.target.value, county: '' })); }}><option value="">Choose a state</option>{states.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}</select></label> : null}
-        {edition.level === 'county' ? <label htmlFor={`${id}-county`}>County<select id={`${id}-county`} required disabled={!edition.state} value={edition.county} onChange={e => { setCustomZone(false); setEdition(current => ({ ...current, county: e.target.value })); }}><option value="">Choose a county</option>{getCountiesForState(edition.state).map(c => <option key={c.fips} value={c.slug}>{c.displayName}</option>)}</select></label> : null}
-        <label htmlFor={`${id}-zone`}>6:15 a.m. delivery timezone<select id={`${id}-zone`} value={edition.timeZone} onChange={e => { setCustomZone(true); setEdition(current => ({ ...current, timeZone: e.target.value })); }}>{newsletterZones.map(([zone, label]) => <option key={zone} value={zone}>{label}</option>)}</select></label>
+        {!footer ? <NewsletterEditionSearch selected={choice} onChange={next => { setChoice(next); setCustomZone(false); setTimeZone(browserZone()); setError(''); }} /> : null}
+        <label htmlFor={`${id}-email`}>Email address<input id={`${id}-email`} name="email" type="email" autoComplete="email" placeholder="you@example.com" required maxLength={254} /></label>
+        <button className="newsletter-button" disabled={pending}>{pending ? 'Submitting…' : 'Subscribe free'}</button>
       </div>
       <div className="newsletter-trap" aria-hidden="true"><label>Website<input name="website" tabIndex={-1} autoComplete="off" /></label></div>
-      <label className="newsletter-consent"><input type="checkbox" name="consent" required /> <span>Email me this daily edition. I can unsubscribe at any time.</span></label>
-      <button className="newsletter-button" disabled={pending}>{pending ? 'Submitting…' : 'Subscribe free'}</button>
-      <p className="newsletter-note">Confirm your email to start delivery. You can subscribe to more than one edition. County weather is local; state and national editions show forecasts for named locations. We measure email opens and link clicks to improve the newsletter. <Link to="/privacy">Privacy policy</Link></p>
+      <label className="newsletter-consent"><input type="checkbox" name="consent" required /> <span>Email me this daily edition. Unsubscribe anytime.</span></label>
+      <div className="newsletter-meta">
+        <p className="newsletter-note">Confirm by email to start. <Link to="/privacy">Privacy</Link></p>
+        {!footer ? <details className="newsletter-delivery"><summary>Delivery time</summary><label>6:15 a.m. delivery timezone<select value={timeZone} onChange={e => { setCustomZone(true); setTimeZone(e.target.value); }}>{newsletterZones.map(([zone, label]) => <option key={zone} value={zone}>{label}</option>)}</select></label><p className="newsletter-note">Local time for your edition. National editions use your timezone; you can change it here.</p></details> : null}
+      </div>
       {error ? <p role="alert">{error}</p> : null}
     </form>}
   </section>;
 }
 
+export function MorningPostPage() {
+  return <div className="morning-post-page">
+    <Seo title={MORNING_POST_TITLE} description={MORNING_POST_DESCRIPTION} policy="newsletter" />
+    <header className="morning-post-hero">
+      <div><p className="kicker">From The County Post · Free daily email</p><h1>The Morning Post</h1><p className="morning-post-deck">Your community. Your morning. A little more informed.</p><p>A quick read of the latest stories and the weather ahead, ready for your first cup of coffee. Choose your county, follow your state, or catch up with the national edition.</p><a className="morning-post-jump" href="#morning-post-signup">Find your edition ↓</a></div>
+      <aside className="morning-post-time" aria-label="Delivery starts at 6:15 a.m. local time"><span>Start the day with</span><strong>6:15</strong><span>A.M. · Your local time</span><p>Fresh headlines.<br />A look at the forecast.<br />One morning email.</p></aside>
+    </header>
+    <div id="morning-post-signup"><NewsletterSignup /></div>
+    <section className="morning-post-benefits" aria-label="What is in the Morning Post">
+      <article><p className="kicker">01 · Get caught up</p><h2>The stories that shape your day</h2><p>A selection of recent headlines, sports, obituaries, politics, business, and community reporting. Open any story to keep reading at the relevant County Post desk.</p></article>
+      <article><p className="kicker">02 · Plan ahead</p><h2>Weather before you head out</h2><p>A weather and precipitation preview alongside your news. County editions show local forecasts; state and national editions identify the locations in their forecast roundup.</p></article>
+      <article><p className="kicker">03 · Make it yours</p><h2>As local as you like</h2><p>Follow your home county, your state, or the country. Subscribe to multiple editions to keep up with places that matter to you, and support the businesses featured in each edition.</p></article>
+    </section>
+    <section className="morning-post-details"><h2>A simple morning routine</h2><p>Choose an edition, enter your email, and confirm the link in your inbox. Delivery starts at 6:15 a.m. in your edition’s local timezone; national readers can choose their timezone. Mailbox arrival can vary.</p><p>Always free to subscribe. Every email includes links to manage your delivery timezone or unsubscribe. We measure email opens and link clicks to improve the newsletter. <Link to="/privacy">Read our privacy policy.</Link></p></section>
+  </div>;
+}
+
 export function NewsletterPage() {
-  const { hash } = useLocation();
+  const { hash, search } = useLocation();
   const params = new URLSearchParams(hash.slice(1));
   const mode = params.has('confirm') ? 'confirm' : params.has('unsubscribe') ? 'unsubscribe' : params.has('manage') ? 'manage' : undefined;
   const token = mode ? params.get(mode) || '' : '';
@@ -81,6 +108,7 @@ export function NewsletterPage() {
     } catch (e) { setError((e as Error).message); }
     finally { setBusy(false); }
   }
+  if (!mode) return <Navigate to={`/morning-post${search}${hash}`} replace />;
   return <div className="layout-grid">
     <Seo title="The Morning Post Newsletter" description="Choose a national, state, or county edition for your free 6:15 a.m. daily news and weather email." policy="submit" />
     {mode ? <section className="newsletter card"><p className="kicker">The Morning Post</p><h1>{mode === 'confirm' ? 'Confirm your subscription' : mode === 'unsubscribe' ? 'Unsubscribe from this edition' : 'Manage your newsletter'}</h1>
