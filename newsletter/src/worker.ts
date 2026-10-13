@@ -13,10 +13,11 @@ const sqs = new SQSClient({});
 const s3 = new S3Client({});
 // SES has no idempotency key. Do not let SDK retries duplicate an ambiguous send.
 const ses = new SESv2Client({ maxAttempts: 1 });
-type Job = { kind: 'plan' | 'daily' | 'confirm' | 'manage'; timeZone?: string; date?: string; cursor?: Record<string, unknown>; subscriber?: string; version?: string; request?: string };
+type Job = { kind: 'plan' | 'daily' | 'confirm' | 'manage'; trigger?: 'confirmation'; timeZone?: string; date?: string; cursor?: Record<string, unknown>; subscriber?: string; version?: string; request?: string };
 export async function enqueue(job: Job) { await sqs.send(new SendMessageCommand({ QueueUrl: process.env.QUEUE_URL!, MessageBody: JSON.stringify(job) })); }
-export async function snapshot(sub: Subscriber, date: string) {
-  const key = `editions/${date}/${hash(`${editionKey(sub)}|${sub.timeZone}`)}.json`;
+export async function snapshot(sub: Subscriber, date: string, beforeMorning = false) {
+  // A pre-6:15 confirmation must not freeze the scheduled morning's content early.
+  const key = `editions/${date}/${beforeMorning ? 'early/' : ''}${hash(`${editionKey(sub)}|${sub.timeZone}`)}.json`;
   const read = async () => {
     try { const r = await s3.send(new GetObjectCommand({ Bucket: process.env.CONTENT_BUCKET!, Key: key })); return JSON.parse((await r.Body?.transformToString()) || '{}') as Digest; }
     catch (error) { if (['NoSuchKey', 'NotFound'].includes((error as Error).name)) return undefined; throw error; }
@@ -35,13 +36,18 @@ export async function snapshot(sub: Subscriber, date: string) {
     return digest;
   } finally { await remove(lease); }
 }
-export function dailyJobIsCurrent(job: Job, sub: Subscriber, now = new Date()) {
-  if (job.date !== localDate(sub.timeZone, now) || job.timeZone !== sub.timeZone) return false;
-  const parts = new Intl.DateTimeFormat('en-US', { timeZone: sub.timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(now);
+function localMinutes(timeZone: string, now = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(now);
   const hour = Number(parts.find(p => p.type === 'hour')?.value);
   const minute = Number(parts.find(p => p.type === 'minute')?.value);
-  // Late retries must not deliver yesterday's news or surprise readers that evening.
-  return hour * 60 + minute >= 375 && hour * 60 + minute < 495;
+  return hour * 60 + minute;
+}
+export function dailyJobIsCurrent(job: Job, sub: Subscriber, now = new Date()) {
+  if (job.date !== localDate(sub.timeZone, now) || job.timeZone !== sub.timeZone) return false;
+  if (job.trigger === 'confirmation') return job.version === sub.confirmToken && job.date === sub.firstEditionDate && job.timeZone === sub.firstEditionTimeZone;
+  // Scheduled retries retain the morning cutoff. Only a matching first-edition
+  // request may deliver at another time, and never on a later local date.
+  return localMinutes(sub.timeZone, now) >= 375 && localMinutes(sub.timeZone, now) < 495;
 }
 async function processJob(job: Job) {
   if (process.env.SENDING_ENABLED !== 'true') return;
@@ -66,12 +72,12 @@ async function processJob(job: Job) {
   const unsubscribeApi = `${process.env.PUBLIC_API_URL!.replace(/\/$/, '')}/unsubscribe?token=${sub.manageToken}`;
   let content: { subject: string; html: string; text: string };
   if (job.kind === 'daily') {
-    content = renderDigest(await snapshot(sub, job.date!), { date: job.date!, timeZone: sub.timeZone, manageUrl, unsubscribeUrl: unsubscribePage, address: process.env.NEWSLETTER_ADDRESS });
+    content = renderDigest(await snapshot(sub, job.date!, localMinutes(sub.timeZone) < 375), { date: job.date!, timeZone: sub.timeZone, manageUrl, unsubscribeUrl: unsubscribePage, address: process.env.NEWSLETTER_ADDRESS });
   } else {
     const confirming = job.kind === 'confirm';
     const url = confirming ? `${SITE}/newsletter#confirm=${sub.confirmToken}` : manageUrl;
     const subject = `${confirming ? 'Confirm' : 'Manage'} your ${editionLabel(sub)} Morning Post`;
-    const message = `You requested the ${editionLabel(sub)} newsletter from The County Post. Delivery is daily at 6:15 a.m. ${sub.timeZone}. ${confirming ? 'Confirm below to start delivery. This link expires in 48 hours.' : 'Use the link below to manage your existing subscription.'}`;
+    const message = `You requested the ${editionLabel(sub)} newsletter from The County Post. Delivery is daily at 6:15 a.m. ${sub.timeZone}. ${confirming ? "Confirm below to receive today's edition now and start daily delivery. This link expires in 48 hours." : 'Use the link below to manage your existing subscription.'}`;
     content = { subject, text: `${message}\n\n${url}\n\nIf you did not request this, ignore this email.\nThe County Post\n${process.env.NEWSLETTER_ADDRESS}`, html: `<html lang="en"><body style="background:#fffdf7;color:#202020;font:16px/1.7 Georgia,serif;padding:24px;max-width:600px"><h1>The County Post</h1><h2>${escapeHtml(subject)}</h2><p>${escapeHtml(message)}</p><p><a href="${url}" style="color:#173e64">${confirming ? 'Confirm my subscription' : 'Manage my subscription'}</a></p><p>If you did not request this, ignore this email.</p><p style="font-size:12px">The County Post<br>${escapeHtml(process.env.NEWSLETTER_ADDRESS)}</p></body></html>` };
   }
   // Recheck consent after feed generation, immediately before the send claim.

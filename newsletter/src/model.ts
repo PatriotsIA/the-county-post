@@ -7,7 +7,7 @@ import { stateNewsHubs } from '../../src/data/state-news-hubs';
 export const SITE = 'https://thecountypost.com';
 export const ZONES = ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Phoenix', 'America/Los_Angeles', 'America/Anchorage', 'America/Adak', 'Pacific/Honolulu'] as const;
 export type Edition = { level: 'national' | 'state' | 'county'; state?: string; county?: string; timeZone: string };
-export type Subscriber = Edition & { pk: string; email: string; status: 'pending' | 'active' | 'unsubscribed'; createdAt: string; confirmedAt?: string; manageToken: string; confirmToken: string; confirmExpires: number; activeZone?: string; expires?: number };
+export type Subscriber = Edition & { pk: string; email: string; status: 'pending' | 'active' | 'unsubscribed'; createdAt: string; confirmedAt?: string; firstEditionDate?: string; firstEditionTimeZone?: string; manageToken: string; confirmToken: string; confirmExpires: number; activeZone?: string; expires?: number };
 export class InputError extends Error { constructor(message: string, public status = 400) { super(message); } }
 export const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 export const editionKey = (e: Edition) => [e.level, e.state, e.county].filter(Boolean).join('/');

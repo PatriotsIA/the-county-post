@@ -1,6 +1,6 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, PutCommand, UpdateCommand, DeleteCommand, QueryCommand, TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
-import { InputError, hash, type Subscriber } from './model';
+import { InputError, hash, localDate, type Subscriber } from './model';
 
 export const db = DynamoDBDocumentClient.from(new DynamoDBClient({}), { marshallOptions: { removeUndefinedValues: true } });
 export const table = () => process.env.TABLE_NAME!;
@@ -32,12 +32,18 @@ export async function createSubscriber(sub: Subscriber) {
 }
 export async function confirm(sub: Subscriber) {
   if (await get(`SUPPRESS#${hash(sub.email)}`)) throw new InputError('Delivery to this address has been stopped. Contact the desk for help.', 409);
-  if (sub.status === 'active') return;
+  if (sub.status === 'active') return sub;
   if (sub.confirmExpires < seconds()) throw new InputError('This confirmation has expired. Please subscribe again.');
   try {
-    await db.send(new UpdateCommand({ TableName: table(), Key: { pk: sub.pk }, UpdateExpression: 'SET #status = :active, activeZone = :zone, confirmedAt = :now REMOVE expires', ConditionExpression: 'confirmToken = :token AND #status = :pending AND confirmExpires >= :seconds', ExpressionAttributeNames: { '#status': 'status' }, ExpressionAttributeValues: { ':active': 'active', ':pending': 'pending', ':seconds': seconds(), ':zone': sub.timeZone, ':now': new Date().toISOString(), ':token': sub.confirmToken } }));
+    const now = new Date();
+    const result = await db.send(new UpdateCommand({ TableName: table(), Key: { pk: sub.pk }, UpdateExpression: 'SET #status = :active, activeZone = :zone, confirmedAt = :now, firstEditionDate = :date, firstEditionTimeZone = :zone REMOVE expires', ConditionExpression: 'confirmToken = :token AND #status = :pending AND confirmExpires >= :seconds AND #timeZone = :zone', ExpressionAttributeNames: { '#status': 'status', '#timeZone': 'timeZone' }, ExpressionAttributeValues: { ':active': 'active', ':pending': 'pending', ':seconds': seconds(), ':zone': sub.timeZone, ':now': now.toISOString(), ':date': localDate(sub.timeZone, now), ':token': sub.confirmToken }, ReturnValues: 'ALL_NEW' }));
+    return result.Attributes as Subscriber;
   } catch (error) {
-    if (conditional(error)) throw new InputError('This subscription changed. Please use your latest link or subscribe again.', 409);
+    if (conditional(error)) {
+      const current = await get<Subscriber>(sub.pk);
+      if (current?.status === 'active' && current.confirmToken === sub.confirmToken) return current;
+      throw new InputError('This subscription changed. Please use your latest link or subscribe again.', 409);
+    }
     throw error;
   }
 }

@@ -9,7 +9,7 @@ vi.mock('../src/store', () => ({
   rateLimit: mock.rate, activePage: mock.query, seconds: () => Math.floor(Date.now() / 1000), db: { send: mock.db }, table: () => 'test',
 }));
 vi.mock('@aws-sdk/client-sesv2', () => ({ SESv2Client: class { send = mock.ses; }, SendEmailCommand: class { constructor(public input: any) {} } }));
-vi.mock('@aws-sdk/client-s3', () => ({ S3Client: class { send = mock.s3; }, GetObjectCommand: class {}, PutObjectCommand: class {} }));
+vi.mock('@aws-sdk/client-s3', () => ({ S3Client: class { send = mock.s3; }, GetObjectCommand: class { constructor(public input: any) {} }, PutObjectCommand: class { constructor(public input: any) {} } }));
 vi.mock('@aws-sdk/client-sqs', () => ({ SQSClient: class { send = mock.sqs; }, SendMessageCommand: class { constructor(public input: any) {} } }));
 vi.mock('node:timers/promises', () => ({ setTimeout: async () => {} }));
 import { handler, dailyJobIsCurrent } from '../src/worker';
@@ -53,4 +53,52 @@ it('respects local 6:15 delivery with DST and refuses stale or wrong-timezone jo
 it('suppresses bounced recipients without sending further newsletters', async () => {
   await handler({ source: 'aws.ses', detail: { eventType: 'Bounce', bounce: { bounceType: 'Permanent', bouncedRecipients: [{ emailAddress: sub.email }] } } });
   await handler(queue()); expect(mock.ses).not.toHaveBeenCalled();
+});
+
+const firstSub = { ...sub, firstEditionDate: job.date, firstEditionTimeZone: sub.timeZone };
+const immediate = { ...job, trigger: 'confirmation' as const, version: sub.confirmToken };
+it('sends the confirmed edition in the afternoon and deduplicates repeated confirmations', async () => {
+  vi.setSystemTime(new Date('2026-10-12T20:00:00Z'));
+  mock.records.set(sub.pk, firstSub);
+  await handler(immediate); await handler(immediate);
+  expect(mock.ses).toHaveBeenCalledOnce();
+  expect(mock.records.get(`SEND#daily#${sub.pk}#2026-10-12`).status).toBe('sent');
+  expect(mock.ses.mock.calls[0][0].input.Content.Simple.Headers).toContainEqual({ Name: 'List-Unsubscribe-Post', Value: 'List-Unsubscribe=One-Click' });
+});
+it('a pre-morning confirmation does not freeze the scheduled snapshot or duplicate the morning send', async () => {
+  vi.setSystemTime(new Date('2026-10-12T09:00:00Z'));
+  mock.records.set(sub.pk, firstSub);
+  await handler(immediate);
+  expect(mock.s3.mock.calls[0][0].input.Key).toContain('/early/');
+  vi.setSystemTime(new Date('2026-10-12T11:15:00Z'));
+  await handler(job);
+  expect(mock.ses).toHaveBeenCalledOnce();
+});
+it('a scheduled send followed by confirmation cannot send the same edition twice', async () => {
+  mock.records.set(sub.pk, firstSub);
+  await handler(job);
+  vi.setSystemTime(new Date('2026-10-12T20:00:00Z'));
+  await handler(immediate);
+  expect(mock.ses).toHaveBeenCalledOnce();
+});
+it('immediate delivery requires the original confirmation date, timezone, token and active consent', async () => {
+  const now = new Date('2026-10-12T20:00:00Z');
+  expect(dailyJobIsCurrent(immediate, firstSub, now)).toBe(true);
+  expect(dailyJobIsCurrent(job, firstSub, now)).toBe(false);
+  expect(dailyJobIsCurrent({ ...immediate, version: 'old-token' }, firstSub, now)).toBe(false);
+  expect(dailyJobIsCurrent(immediate, { ...firstSub, firstEditionDate: '2026-10-11' }, now)).toBe(false);
+  expect(dailyJobIsCurrent(immediate, firstSub, new Date('2026-10-13T05:00:00Z'))).toBe(false);
+  expect(dailyJobIsCurrent(immediate, { ...firstSub, timeZone: 'America/Denver' }, now)).toBe(false);
+  vi.setSystemTime(now);
+  mock.records.set(sub.pk, { ...firstSub, status: 'unsubscribed' });
+  await handler(immediate);
+  expect(mock.ses).not.toHaveBeenCalled();
+});
+it('cancels immediate delivery if a reader unsubscribes while content is being prepared', async () => {
+  vi.setSystemTime(new Date('2026-10-12T20:00:00Z'));
+  mock.records.set(sub.pk, firstSub);
+  const content = await mock.s3();
+  mock.s3.mockImplementation(async () => { mock.records.set(sub.pk, { ...firstSub, status: 'unsubscribed' }); return content; });
+  await handler(immediate);
+  expect(mock.ses).not.toHaveBeenCalled();
 });

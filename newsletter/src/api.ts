@@ -3,7 +3,7 @@ import type { APIGatewayProxyEventV2 } from 'aws-lambda';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { db, get, table, findByToken, createSubscriber, confirm, unsubscribe, rateLimit, seconds } from './store';
 import { UpdateCommand, TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
-import { InputError, SITE, ZONES, validateEmail, validateEdition, editionKey, editionLabel, suggestedZone, hash, type Subscriber } from './model';
+import { InputError, SITE, ZONES, validateEmail, validateEdition, editionKey, editionLabel, suggestedZone, localDate, hash, type Subscriber } from './model';
 
 const sqs = new SQSClient({});
 const response = (statusCode: number, data: unknown, origin?: string) => ({ statusCode, headers: { 'content-type': 'application/json', 'cache-control': 'no-store', 'referrer-policy': 'no-referrer', ...(origin ? { 'access-control-allow-origin': origin, 'vary': 'Origin', 'access-control-allow-methods': 'GET, POST, OPTIONS', 'access-control-allow-headers': 'content-type' } : {}) }, body: JSON.stringify(data) });
@@ -40,8 +40,14 @@ export async function handler(event: APIGatewayProxyEventV2) {
     if (path === '/confirm') {
       if (process.env.SENDING_ENABLED !== 'true') throw new InputError('Newsletter delivery is not available yet.', 503);
       const sub = await findByToken(body.token, 'confirm');
-      await confirm(sub);
-      return response(200, { message: `Your ${editionLabel(sub)} newsletter is confirmed for 6:15 a.m. ${sub.timeZone}.`, manageToken: sub.manageToken }, origin);
+      const confirmed = await confirm(sub);
+      const firstEdition = confirmed.firstEditionDate === localDate(confirmed.timeZone) && confirmed.firstEditionTimeZone === confirmed.timeZone;
+      if (firstEdition) {
+        // Await the queue before acknowledging delivery. A retry uses the original
+        // confirmation day; the worker shares the scheduled edition's send claim.
+        await sqs.send(new SendMessageCommand({ QueueUrl: process.env.QUEUE_URL!, MessageBody: JSON.stringify({ kind: 'daily', trigger: 'confirmation', subscriber: confirmed.pk, date: confirmed.firstEditionDate, timeZone: confirmed.firstEditionTimeZone, version: confirmed.confirmToken }) }));
+      }
+      return response(200, { message: `Your ${editionLabel(confirmed)} newsletter is confirmed. ${firstEdition ? "Today's edition is on its way. " : ''}Daily delivery starts at 6:15 a.m. ${confirmed.timeZone}.`, manageToken: confirmed.manageToken }, origin);
     }
     if (path === '/preferences') {
       const sub = await findByToken(body.token, 'manage');
