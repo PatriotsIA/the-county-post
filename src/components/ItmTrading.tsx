@@ -16,7 +16,7 @@ export function ItmTrading() {
       <div className="itm-hero-copy">
         <p className="kicker">Sponsor spotlight · The County Post</p>
         <h1 id="itm-title">ITM Trading</h1>
-        <p>Connect with Stan Roberts at ITM Trading, explore physical gold and silver, and follow precious-metal spot prices.</p>
+        <p>Meet Stan Roberts, a Senior Analyst at ITM Trading, and build a plan to protect your purchasing power with physical gold and silver.</p>
       </div>
       <div className="itm-hero-brand"><img src={itmLogo} alt="ITM Trading" width="250" height="156" /><a href={itmTrading.websiteUrl} target="_blank" rel="noreferrer sponsored">Visit ITM Trading <span aria-hidden="true">↗</span></a></div>
       <p className="itm-disclosure"><strong>ITM Trading is a sponsor of The County Post.</strong> This page introduces our sponsor and its services. Price data is provided separately by Gold-API.com.</p>
@@ -24,13 +24,13 @@ export function ItmTrading() {
     <nav className="itm-page-nav" aria-label="ITM Trading page sections"><a href="#stan-roberts">Meet Stan Roberts</a><a href="#stan-team">Stan’s Team</a><a href="#metal-prices">Metal prices</a><a href="#about-itm">About ITM</a><a href="#itm-videos">Videos &amp; education</a></nav>
 
     <section id="stan-roberts" className="card itm-contact" aria-labelledby="itm-stan-title">
-      <div className="itm-profile"><p className="kicker">Your contact at ITM Trading</p><h2 id="itm-stan-title">Stan Roberts</h2><p className="itm-role">{itmTrading.title} · ITM Trading</p><p>Connect with Stan to discuss physical gold and silver, ask questions about the products, and explore how ITM works with its clients.</p><p>Call or email Stan directly, or choose a time for a 30-minute appointment. <strong>Mention The County Post when you connect.</strong></p><a href={itmTrading.aboutUrl} target="_blank" rel="noreferrer sponsored">Meet the team at ITM Trading ↗</a></div>
+      <div className="itm-profile"><p className="kicker">Your contact at ITM Trading</p><h2 id="itm-stan-title">Stan Roberts</h2><p className="itm-role">{itmTrading.title} · ITM Trading</p><p>Stan will walk through your savings and retirement picture with you, explain how physical gold and silver fit into a long-term protection plan, and answer your questions.</p><p>Call or email Stan directly, or choose a time for a 30-minute appointment. <strong>Mention The County Post when you connect.</strong></p><a href={itmTrading.aboutUrl} target="_blank" rel="noreferrer sponsored">Meet the team at ITM Trading ↗</a></div>
       <div className="itm-contact-details"><p className="kicker">Contact Stan directly</p><a className="itm-phone" href={itmTrading.phoneHref}>{itmTrading.phone}</a><a href={itmTrading.emailHref}>{itmTrading.email}</a><a className="itm-button" href={itmTrading.appointmentUrl} target="_blank" rel="noreferrer sponsored">Book 30 minutes with Stan <span aria-hidden="true">↗</span></a><p className="itm-small">Choose an appointment time online through Calendly.</p><p className="itm-small">ITM office hours: Monday–Friday, 8 a.m.–5 p.m. PST.<br />11201 N Tatum Blvd, Suite 250<br />Phoenix, AZ 85028 · By appointment.</p></div>
     </section>
 
     <section id="stan-team" className="itm-team" aria-labelledby="itm-team-title">
       <header className="itm-section-heading"><div><p className="kicker">ITM Trading analysts</p><h2 id="itm-team-title">Stan’s Team</h2></div><a className="itm-text-link" href={itmTrading.aboutUrl} target="_blank" rel="noreferrer sponsored">View ITM’s analyst directory ↗</a></header>
-      <ul className="itm-team-grid">{stanTeam.map(({ name, email }) => <li className="card" key={name}><h3>{name}</h3><p className="itm-small">Analyst · ITM Trading</p><a className="itm-team-email" href={`mailto:${email}?subject=The%20County%20Post%20inquiry`}>{email}</a></li>)}</ul>
+      <ul className="itm-team-grid">{stanTeam.map(({ name, email }) => <li className="card" key={name}><h3>{name}</h3><p className="itm-small">Senior Analyst · ITM Trading</p><a className="itm-team-email" href={`mailto:${email}?subject=The%20County%20Post%20inquiry`}>{email}</a></li>)}</ul>
     </section>
 
     <MetalsTracker />
@@ -52,6 +52,6 @@ export function ItmTrading() {
       <div className="itm-videos">{itmVideoIds.map(videoId => <div key={videoId} className="itm-video"><iframe src={`https://www.youtube-nocookie.com/embed/${videoId}`} title="ITM Trading video" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div>)}</div>
       <a className="itm-button" href={itmTrading.blogUrl} target="_blank" rel="noreferrer sponsored">Read the ITM Trading blog <span aria-hidden="true">↗</span></a>
     </section>
-    <p className="itm-page-note">Company information adapted from ITM Trading’s <a href={itmTrading.aboutUrl} target="_blank" rel="noreferrer sponsored">About page</a> and <a href={itmTrading.contactUrl} target="_blank" rel="noreferrer sponsored">Contact page</a>. Stan’s profile updated October 6, 2026; team contacts updated October 12, 2026. Educational information; prices and product values can change. Contact ITM for current terms and quotes.</p>
+    <p className="itm-page-note">Company information adapted from ITM Trading’s <a href={itmTrading.aboutUrl} target="_blank" rel="noreferrer sponsored">About page</a> and <a href={itmTrading.contactUrl} target="_blank" rel="noreferrer sponsored">Contact page</a>. Stan’s profile and team titles updated October 13, 2026; team contacts updated October 12, 2026. Educational information; prices and product values can change. Contact ITM for current terms and quotes.</p>
   </div>;
 }
