@@ -113,8 +113,8 @@ export function NewsletterSponsorVisit() {
     if (/^morning_post_\d{4}-\d{2}-\d{2}$/.test(campaign)) destination.searchParams.set('utm_campaign', campaign);
     let live = true;
     const go = () => { if (live) window.location.replace(destination.href); };
-    const timer = window.setTimeout(go, 1200);
-    window.gtag?.('event', 'newsletter_sponsor_click', { advertiser_id: ad.id, newsletter_edition: edition.slice(0, 100), campaign, transport_type: 'beacon', event_callback: go, event_timeout: 1000 });
+    const timer = window.setTimeout(go, 3500);
+    window.gtag?.('event', 'newsletter_sponsor_click', { advertiser_id: ad.id, newsletter_edition: edition.slice(0, 100), campaign, transport_type: 'beacon', event_callback: go, event_timeout: 3000 });
     return () => { live = false; window.clearTimeout(timer); };
   }, [ad, edition, campaign]);
   return <section className="card newsletter"><Seo title="Visit our newsletter sponsor" description="Continue to a County Post newsletter sponsor." policy="submit" /><p className="kicker">Advertisement</p><h1>{ad ? `Opening ${ad.name}…` : 'This sponsor is no longer available'}</h1>{ad ? <a href={ad.href} rel="sponsored">Continue to {ad.name} →</a> : <Link to="/partners">Browse current partners</Link>}</section>;
