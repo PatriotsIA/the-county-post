@@ -1,7 +1,7 @@
 import type { CountySite } from "../data/counties";
 import type { StateSite } from "../data/states";
 import { site } from "../data/site";
-import { dataCentersOpEd } from "../data/county-post-op-eds";
+import { countyPostOpEds } from "../data/county-post-op-eds";
 import { getSubjectGroup, getSubjectPage } from "../data/subjects";
 import { atlasDomainLabels } from "./atlas-domain-labels";
 
@@ -501,8 +501,9 @@ export function crumbTrail(pathname: string, county?: CountySite, state?: StateS
   // A published op-ed sits under the opinion desk.
   if (segments[0] === "op-eds" && segments[1]) {
     trail.push({ name: "Op-Eds", path: "/op-eds" });
-    if (segments[1] === dataCentersOpEd.slug) {
-      trail.push({ name: dataCentersOpEd.title, path: dataCentersOpEd.path });
+    const article = countyPostOpEds.find((entry) => entry.slug === segments[1]);
+    if (article) {
+      trail.push({ name: article.title, path: article.path });
     }
     return trail;
   }

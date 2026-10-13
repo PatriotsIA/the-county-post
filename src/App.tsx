@@ -16,7 +16,8 @@ import { ITM_TRADING_PATH } from "./data/itm-trading";
 import { ItmTrading } from "./components/ItmTrading";
 import { CountyPublicNotices } from "./components/CountyPublicNotices";
 import { CountyLocalSourcesDirectory } from "./components/LocalSourcesDirectory";
-import { DataCentersOpEdPage } from "./components/CountyPostOpEd";
+import { CountyPostOpEdPage } from "./components/CountyPostOpEd";
+import { countyPostOpEds } from "./data/county-post-op-eds";
 import { AtlasDomainNav } from "./components/AtlasDomainNav";
 import { atlasDomainLabels } from "./lib/atlas-domain-labels";
 import { EditionMap } from "./components/EditionMap";
@@ -357,7 +358,7 @@ function App() {
           <Route path={ITM_TRADING_PATH} element={<ItmTrading />} />
           <Route path="/texas/texas-legends" element={<LegacyLegendsRedirect />} />
           <Route path="/texas/:countySlug/texas-legends" element={<LegacyLegendsRedirect countyScoped />} />
-          <Route path="/op-eds/the-data-centers-and-the-rest-of-us" element={<DataCentersOpEdPage />} />
+          {countyPostOpEds.map((article) => <Route key={article.slug} path={article.path} element={<CountyPostOpEdPage article={article} />} />)}
           <Route path="/op-eds" element={<OpEdPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />

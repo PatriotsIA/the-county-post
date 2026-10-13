@@ -214,21 +214,24 @@ function makeRouteItems({
       });
 }
 
-test("pins the County Post op-ed first on national, state, and county opinion desks", async ({ page }) => {
+test("pins County Post op-eds newest first on national, state, and county opinion desks", async ({ page }) => {
   const opinionDesks = [
+    { path: "/", heading: "Opinion & op-eds" },
     { path: "/op-eds", heading: "National opinion" },
+    { path: "/texas/potter", heading: "Opinion & op-eds" },
     { path: "/arkansas/op-eds", heading: "Arkansas State Op-Eds" },
     { path: "/arkansas/polk/op-eds", heading: "Local opinion" },
   ];
 
   for (const desk of opinionDesks) {
-    await page.goto(desk.path);
+    await page.goto(desk.path, { waitUntil: "domcontentloaded" });
     const section = page.locator("section", { has: page.getByRole("heading", { name: desk.heading, exact: true }) });
     const firstCard = section.locator(".feed-card").first();
-    await expect(firstCard.locator(".feed-title")).toHaveText("The Data Centers and the Rest of Us");
-    await expect(firstCard.locator(".feed-title")).toHaveAttribute("href", "/op-eds/the-data-centers-and-the-rest-of-us");
+    await expect(firstCard.locator(".feed-title")).toHaveText("The Millennial Generation Has a Voice. Are We Using It?");
+    await expect(firstCard.locator(".feed-title")).toHaveAttribute("href", "/op-eds/the-millennial-generation-has-a-voice-are-we-using-it");
+    await expect(section.locator(".feed-title", { hasText: "The Data Centers and the Rest of Us" })).toHaveCount(1);
     await expect(firstCard.locator(".feed-publisher")).toContainText("The County Post · Original reporting");
-    await expect(section.locator(".feed-publisher", { hasText: "The County Post" })).toHaveCount(1);
+    await expect(section.locator(".feed-publisher", { hasText: "The County Post" })).toHaveCount(2);
   }
 
   await page.goto("/op-eds/the-data-centers-and-the-rest-of-us");

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { canSponsorFeed, getAdsForSlot, getInFeedAdRotation, type AdCreative } from "../data/ads";
 import { useAdEditionKey } from "../lib/useAdEditionKey";
 import { VideoAd } from "./VideoAd";
-import { prependFeaturedCountyPostOpEd } from "../data/county-post-op-eds";
+import { prependFeaturedCountyPostOpEds } from "../data/county-post-op-eds";
 import { isTrustedCountyNativeNewsItem } from "../lib/local-news-sources";
 import { fetchNewsApiFeed, isNewsApiConfigured, type NewsFeedItem, type Topic } from "../lib/news-api";
 import { fetchNewsFeeds } from "../lib/rss";
@@ -129,7 +129,7 @@ export function NewsFeedSection({
             effectiveCountyDistinctive,
           )
         : filterFeedItems(items, kind, locality);
-    return dedupeTitles(kind === "opinion" ? prependFeaturedCountyPostOpEd(scopedItems) : scopedItems);
+    return dedupeTitles(kind === "opinion" ? prependFeaturedCountyPostOpEds(scopedItems) : scopedItems);
   }, [effectiveCountyDistinctive, effectiveDatelinePlaces, effectivePlaces, effectiveTrustedHosts, items, kind, locality, source]);
   const feedEntries = useMemo(
     () => createFeedEntries(filteredItems, `${title}-${kind}-${editionKey || "national"}`, gridColumns, inFeedAdRotation),

@@ -210,3 +210,26 @@ test("a search-query 'source' never reaches the card as a byline", async ({ page
   expect(rendered).not.toContain("BingNews");
   expect(rendered).not.toContain("local news OR community news");
 });
+
+
+test("millennial op-ed preserves the full contribution and confirmed author metadata", async ({ page }) => {
+  const path = "/op-eds/the-millennial-generation-has-a-voice-are-we-using-it";
+  const title = "The Millennial Generation Has a Voice. Are We Using It?";
+  await page.goto(path);
+  await expect(page.getByRole("heading", { level: 1, name: title, exact: true })).toBeVisible();
+  await expect(page.locator(".editorial-op-ed-byline")).toHaveText("By Kristin Griswold, The County Post");
+  await expect(page.locator(".editorial-op-ed-author")).toHaveText("Kristin Griswold is a contributor to The County Post. The views expressed in this column are those of the author.");
+  const paragraphs = page.locator(".editorial-op-ed-body > p:not(.editorial-op-ed-author)");
+  await expect(paragraphs).toHaveCount(45);
+  await expect(paragraphs.first()).toContainText("Millennials have spent much of their adult lives navigating extraordinary change.");
+  await expect(paragraphs.last()).toHaveText("Our generation has found its voice. Now we must decide how to use it.");
+  const head = await readHead(page);
+  expect(head.canonical).toBe(`https://thecountypost.com${path}`);
+  expect(head.title).toContain(title);
+  expect(head.robots).not.toContain("noindex");
+  const article = await page.locator('script[type="application/ld+json"]').evaluateAll(nodes => nodes.flatMap(node => JSON.parse(node.textContent || "{}")["@graph"] || []).find(entry => entry["@type"] === "NewsArticle"));
+  expect(article.author.name).toBe("Kristin Griswold");
+  expect(article.articleBody).toBe((await paragraphs.allTextContents()).join("\n\n"));
+  await expect(page.locator(".breadcrumbs li").last()).toHaveText(title);
+  await expect(page.locator(".editorial-op-ed-body a[href^='mailto:']")).toHaveCount(0);
+});

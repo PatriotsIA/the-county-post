@@ -21,7 +21,7 @@ import { counties } from "../../src/data/counties";
 import { states } from "../../src/data/states";
 import { site } from "../../src/data/site";
 import { subjectGroups, subjectPages } from "../../src/data/subjects";
-import { dataCentersOpEd } from "../../src/data/county-post-op-eds";
+import { countyPostOpEds } from "../../src/data/county-post-op-eds";
 import { PANHANDLE_LEGENDS_PATH, PANHANDLE_LEGENDS_TITLE, PANHANDLE_LEGENDS_DESCRIPTION } from "../../src/data/panhandle-legends";
 import { ITM_TRADING_PATH, ITM_TRADING_TITLE, ITM_TRADING_DESCRIPTION } from "../../src/data/itm-trading";
 import { MORNING_POST_TITLE, MORNING_POST_DESCRIPTION } from "../../src/data/morning-post";
@@ -101,7 +101,7 @@ const corePaths = [
   PANHANDLE_LEGENDS_PATH,
   ITM_TRADING_PATH,
   "/op-eds",
-  dataCentersOpEd.path,
+  ...countyPostOpEds.map((article) => article.path),
   "/privacy",
   "/terms",
   ...subjectGroups.map((group) => `/topics/${group.slug}`),
