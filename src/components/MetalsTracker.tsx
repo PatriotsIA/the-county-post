@@ -24,7 +24,6 @@ export function MetalsTracker() {
   const [unit, setUnit] = useState<Unit>("oz");
   const [selected, setSelected] = useState<Metal>("gold");
   const [quantity, setQuantity] = useState("1");
-  const [purity, setPurity] = useState("100");
 
   const factor = units[unit].factor;
   const gold = ticker?.items.find(item => item.key === "gold");
@@ -32,10 +31,8 @@ export function MetalsTracker() {
   const quote = ticker?.items.find(item => item.key === selected);
   const ratio = gold && silver ? gold.price / silver.price : undefined;
   const amount = Number(quantity);
-  const fineness = Number(purity);
   const validAmount = quantity.trim() !== "" && Number.isFinite(amount) && amount > 0 && amount <= 1_000_000;
-  const validPurity = purity.trim() !== "" && Number.isFinite(fineness) && fineness > 0 && fineness <= 100;
-  const estimate = quote && validAmount && validPurity ? quote.price * factor * amount * fineness / 100 : undefined;
+  const estimate = quote && validAmount ? quote.price * factor * amount : undefined;
 
   return (
     <section id="metal-prices" className="itm-tracker" aria-labelledby="metals-title">
@@ -83,9 +80,9 @@ export function MetalsTracker() {
         </section>
         <section className="card itm-analysis" aria-labelledby="metals-calc-title">
           <p className="kicker">Explore a quantity</p><h3 id="metals-calc-title">Metal value calculator</h3>
-          <p className="itm-small">Uses the selected metal and price unit. Estimates the value of the fine metal content.</p>
-          <div className="itm-calculator-inputs"><label>Quantity ({units[unit].short})<input type="number" min="0.000001" max="1000000" step="any" value={quantity} onChange={event => setQuantity(event.target.value)} /></label><label>Purity (%)<input type="number" min="0.000001" max="100" step="any" value={purity} onChange={event => setPurity(event.target.value)} /></label></div>
-          {(!validAmount || !validPurity) ? <p className="itm-small" role="status">Enter a quantity above zero and at most 1,000,000, and a purity above zero and up to 100%.</p> : null}
+          <p className="itm-small">Uses the selected metal and price unit. Enter the fine metal weight, not the total weight of a coin or bar.</p>
+          <div className="itm-calculator-inputs"><label>Quantity ({units[unit].short})<input type="number" min="0.000001" max="1000000" step="any" value={quantity} onChange={event => setQuantity(event.target.value)} /></label></div>
+          {!validAmount ? <p className="itm-small" role="status">Enter a quantity above zero and at most 1,000,000.</p> : null}
           <output className="itm-estimate" aria-live="polite"><span>{metals.find(metal => metal.key === selected)?.name} spot reference value</span><strong>{estimate !== undefined ? money(estimate) : "Unavailable"}</strong></output>
           <p className="itm-small">Excludes dealer premiums, collectible value, fees and taxes. This is a reference calculation, not a purchase or buyback quote. {cached ? "Uses the last available spot quotes." : ""}</p>
           <a className="itm-text-link" href="#stan-roberts">Ask Stan about a product quote <span aria-hidden="true">→</span></a>

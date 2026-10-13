@@ -1,5 +1,6 @@
 import itmLogo from "../../ad-assets/itm-trading-logo.jpg";
-import { itmTrading, itmVideoIds, stanTeam, ITM_TRADING_DESCRIPTION, ITM_TRADING_PATH, ITM_TRADING_TITLE } from "../data/itm-trading";
+import wealthShield from "../../ad-assets/itm-wealth-shield.png";
+import { itmTrading, itmVideoIds, itmVideoTitles, stanTeam, ITM_TRADING_DESCRIPTION, ITM_TRADING_PATH, ITM_TRADING_TITLE } from "../data/itm-trading";
 import { crumbTrail, jsonLdGraph, webPageLd } from "../lib/seo";
 import { MetalsTracker } from "./MetalsTracker";
 import { Seo } from "./Seo";
@@ -24,12 +25,12 @@ export function ItmTrading() {
     <nav className="itm-page-nav" aria-label="ITM Trading page sections"><a href="#stan-roberts">Meet Stan Roberts</a><a href="#stan-team">Stan’s Team</a><a href="#metal-prices">Metal prices</a><a href="#about-itm">About ITM</a><a href="#itm-videos">Videos &amp; education</a></nav>
 
     <section id="stan-roberts" className="card itm-contact" aria-labelledby="itm-stan-title">
-      <div className="itm-profile"><p className="kicker">Your contact at ITM Trading</p><h2 id="itm-stan-title">Stan Roberts</h2><p className="itm-role">{itmTrading.title} · ITM Trading</p><p>Stan will walk through your savings and retirement picture with you, explain how physical gold and silver fit into a long-term protection plan, and answer your questions.</p><p>Call or email Stan directly, or choose a time for a 30-minute appointment. <strong>Mention The County Post when you connect.</strong></p><a href={itmTrading.aboutUrl} target="_blank" rel="noreferrer sponsored">Meet the team at ITM Trading ↗</a></div>
+      <div className="itm-profile"><p className="kicker">Your contact at ITM Trading</p><h2 id="itm-stan-title">Stan Roberts</h2><p className="itm-role">{itmTrading.title} · ITM Trading</p><p>Stan will walk through your savings and retirement picture with you, explain how physical gold and silver fit into a long-term protection plan, and answer your questions.</p><p>Call or email Stan directly, or choose a day and time for a 30-minute appointment. <strong>Mention The County Post when you connect.</strong></p></div>
       <div className="itm-contact-details"><p className="kicker">Contact Stan directly</p><a className="itm-phone" href={itmTrading.phoneHref}>{itmTrading.phone}</a><a href={itmTrading.emailHref}>{itmTrading.email}</a><a className="itm-button" href={itmTrading.appointmentUrl} target="_blank" rel="noreferrer sponsored">Book 30 minutes with Stan <span aria-hidden="true">↗</span></a><p className="itm-small">Choose an appointment time online through Calendly.</p><p className="itm-small">ITM office hours: Monday–Friday, 8 a.m.–5 p.m. PST.<br />11201 N Tatum Blvd, Suite 250<br />Phoenix, AZ 85028 · By appointment.</p></div>
     </section>
 
     <section id="stan-team" className="itm-team" aria-labelledby="itm-team-title">
-      <header className="itm-section-heading"><div><p className="kicker">ITM Trading analysts</p><h2 id="itm-team-title">Stan’s Team</h2></div><a className="itm-text-link" href={itmTrading.aboutUrl} target="_blank" rel="noreferrer sponsored">View ITM’s analyst directory ↗</a></header>
+      <header className="itm-section-heading"><div><p className="kicker">ITM Trading analysts</p><h2 id="itm-team-title">Stan’s Team</h2></div></header>
       <ul className="itm-team-grid">{stanTeam.map(({ name, email }) => <li className="card" key={name}><h3>{name}</h3><p className="itm-small">Senior Analyst · ITM Trading</p><a className="itm-team-email" href={`mailto:${email}?subject=The%20County%20Post%20inquiry`}>{email}</a></li>)}</ul>
     </section>
 
@@ -41,17 +42,16 @@ export function ItmTrading() {
     </section>
 
     <div className="itm-resource-grid">
-      <a href={itmTrading.productsUrl} target="_blank" rel="noreferrer sponsored"><span className="kicker">Physical metals</span><h3>Explore gold &amp; silver</h3><p>Browse ITM’s bullion and coin selection, including gold, silver and pre-1933 gold.</p><span>Explore products ↗</span></a>
-      <a href={itmTrading.strategyUrl} target="_blank" rel="noreferrer sponsored"><span className="kicker">Education &amp; planning</span><h3>Learn about ITM’s approach</h3><p>ITM’s Wealth Shield™ materials explain its approach to precious metals and financial preparedness.</p><span>Read about the strategy ↗</span></a>
+      <a href="#stan-roberts" className="itm-strategy-card"><span className="kicker">Education &amp; planning</span><h3>Learn about ITM’s approach</h3><img className="itm-wealth-shield" src={wealthShield} alt="ITM Trading Wealth Shield: Sustained Living, Wealth Protection, Opportunity Positioning, and Legacy Building" width="719" height="719" loading="lazy" /><p>Talk with Stan about ITM’s Wealth Shield™ approach to precious metals and financial preparedness.</p><span>Contact Stan about the strategy →</span></a>
       <a href={itmTrading.iraUrl} target="_blank" rel="noreferrer sponsored"><span className="kicker">Retirement accounts</span><h3>Precious-metals IRAs</h3><p>Learn how ITM describes self-directed account setup, funding and the selection of eligible products.</p><span>Explore IRA information ↗</span></a>
     </div>
 
     <section id="itm-videos" className="itm-education" aria-labelledby="itm-videos-title">
       <header className="itm-section-heading"><div><p className="kicker">ITM Trading video desk</p><h2 id="itm-videos-title">Videos &amp; education</h2></div></header>
       <p className="itm-disclosure">Sponsor education · The videos below are published by ITM Trading and reflect its views.</p>
-      <div className="itm-videos">{itmVideoIds.map(videoId => <div key={videoId} className="itm-video"><iframe src={`https://www.youtube-nocookie.com/embed/${videoId}`} title="ITM Trading video" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div>)}</div>
+      <div className="itm-videos">{itmVideoIds.map(videoId => <div key={videoId} className="itm-video"><iframe src={`https://www.youtube-nocookie.com/embed/${videoId}`} title={itmVideoTitles[videoId] || "ITM Trading video"} loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div>)}</div>
       <a className="itm-button" href={itmTrading.blogUrl} target="_blank" rel="noreferrer sponsored">Read the ITM Trading blog <span aria-hidden="true">↗</span></a>
     </section>
-    <p className="itm-page-note">Company information adapted from ITM Trading’s <a href={itmTrading.aboutUrl} target="_blank" rel="noreferrer sponsored">About page</a> and <a href={itmTrading.contactUrl} target="_blank" rel="noreferrer sponsored">Contact page</a>. Stan’s profile and team titles updated October 13, 2026; team contacts updated October 12, 2026. Educational information; prices and product values can change. Contact ITM for current terms and quotes.</p>
+    <p className="itm-page-note">Company information adapted from ITM Trading’s <a href={itmTrading.aboutUrl} target="_blank" rel="noreferrer sponsored">About page</a> and <a href={itmTrading.contactUrl} target="_blank" rel="noreferrer sponsored">Contact page</a>. Stan’s profile updated October 6, 2026; team contacts updated October 12, 2026. Educational information, prices, and product values are subject to change. Contact Stan at ITM Trading for current terms and quotes.</p>
   </div>;
 }

@@ -28,5 +28,9 @@ export const stanTeam = [
   { name: "Nate Batiste", email: "nathanb@itmtrading.com" },
 ];
 
-// The only ITM videos shown on The County Post, in the order supplied (updated October 12, 2026).
-export const itmVideoIds = ["1CDpb0G3v2g", "pjlmcqWTPPg", "QZcVYmEJ9x4", "BoT1tVXtE2A"];
+// The only ITM videos shown on The County Post, in the order supplied (updated October 13, 2026).
+export const itmVideoIds = ["40IAZ22a7Ec", "pjlmcqWTPPg", "QZcVYmEJ9x4", "1CDpb0G3v2g"];
+
+export const itmVideoTitles: Record<string, string> = {
+  "40IAZ22a7Ec": "Bigger Than AIG: The AI Debt Secretly Buried in Your Insurance - Dan Oliver",
+};

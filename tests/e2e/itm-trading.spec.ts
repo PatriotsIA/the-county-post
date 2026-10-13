@@ -96,7 +96,7 @@ test("mobile defers both feeds and metals remain available during a TradingView 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
-test("spot comparisons and unit/purity calculations use verified values", async ({ page }) => {
+test("spot comparisons and fine-metal unit calculations use verified values", async ({ page }) => {
   await page.goto("/itm-trading");
   const gold = page.getByRole("article", { name: "Gold spot price", exact: true });
   await expect(gold).toContainText("+$100.00 (+3.45%)");
@@ -107,19 +107,17 @@ test("spot comparisons and unit/purity calculations use verified values", async 
   await expect(page.getByRole("article", { name: "Palladium spot price" })).toContainText("Change unavailable");
   await page.getByLabel("Quantity (troy oz)").fill("2");
   await expect(page.locator('.itm-estimate strong')).toHaveText("$6,000.00");
-  await page.getByLabel("Purity (%)").fill("50");
-  await expect(page.locator('.itm-estimate strong')).toHaveText("$3,000.00");
+  await expect(page.getByLabel("Purity (%)")).toHaveCount(0);
   await page.getByRole("combobox", { name: "Price unit", exact: true }).selectOption("g");
   await expect(gold.locator('.itm-price')).toHaveText("$96.45");
   await page.getByLabel("Quantity (g)").fill("31.1034768");
-  await page.getByLabel("Purity (%)").fill("100");
   await expect(page.locator('.itm-estimate strong')).toHaveText("$3,000.00");
   await page.getByRole("combobox", { name: "Metal", exact: true }).selectOption("silver");
   await expect(page.locator('.itm-estimate strong')).toHaveText("$30.00");
   await page.getByRole("combobox", { name: "Price unit", exact: true }).selectOption("kg");
   await page.getByLabel("Quantity (kg)").fill("1");
   await expect(page.locator('.itm-estimate strong')).toHaveText("$964.52");
-  await page.getByLabel("Purity (%)").fill("101");
+  await page.getByLabel("Quantity (kg)").fill("0");
   await expect(page.locator('.itm-estimate strong')).toHaveText("Unavailable");
   await expect(page.getByRole("status").filter({ hasText: "Enter a quantity" })).toBeVisible();
 });
@@ -205,8 +203,9 @@ test("ITM videos appear only on the landing page, limited to the four supplied v
   await page.goto("/itm-trading");
   const videos = page.locator("#itm-videos iframe");
   await expect(videos).toHaveCount(4);
+  await expect(videos.first()).toHaveAttribute("title", "Bigger Than AIG: The AI Debt Secretly Buried in Your Insurance - Dan Oliver");
   expect(await videos.evaluateAll(frames => frames.map(frame => (frame as HTMLIFrameElement).src))).toEqual(
-    ["1CDpb0G3v2g", "pjlmcqWTPPg", "QZcVYmEJ9x4", "BoT1tVXtE2A"].map(id => `https://www.youtube-nocookie.com/embed/${id}`),
+    ["40IAZ22a7Ec", "pjlmcqWTPPg", "QZcVYmEJ9x4", "1CDpb0G3v2g"].map(id => `https://www.youtube-nocookie.com/embed/${id}`),
   );
   await expect(page.getByRole("link", { name: "Read the ITM Trading blog" })).toHaveAttribute("href", "https://www.itmtrading.com/blog/?utm_source=countypost");
   for (const path of ["/topics/economy-markets", "/texas/economy-markets", "/texas/randall/economy-markets"]) {
@@ -214,5 +213,32 @@ test("ITM videos appear only on the landing page, limited to the four supplied v
     await expect(page.locator("h1, h2").first()).toBeAttached();
     await expect(page.locator('iframe[src*="youtube"]'), path).toHaveCount(0);
     await expect(page.getByText("ITM Trading video desk"), path).toHaveCount(0);
+  }
+});
+
+
+test("ITM resources keep readers with Stan while inquiry pages are deferred", async ({ page }) => {
+  await page.goto("/itm-trading");
+  for (const width of [1280, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(page.getByRole("link", { name: "View ITM’s analyst directory" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Meet the team at ITM Trading" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Explore gold & silver" })).toHaveCount(0);
+    await expect(page.locator(".itm-page form")).toHaveCount(0);
+    const strategy = page.getByRole("link", { name: /Learn about ITM’s approach/ });
+    await expect(strategy).toHaveAttribute("href", "#stan-roberts");
+    const image = strategy.getByRole("img");
+    await image.scrollIntoViewIfNeeded();
+    await image.evaluate((element: HTMLImageElement) => element.decode());
+    expect(await image.evaluate((element: HTMLImageElement) => [element.naturalWidth, element.naturalHeight])).toEqual([719, 719]);
+    await strategy.click();
+    await expect(page).toHaveURL(/#stan-roberts$/);
+    await expect(page.getByRole("heading", { name: "Stan Roberts", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Ask Stan about a product quote/ })).toHaveAttribute("href", "#stan-roberts");
+    await expect(page.locator(".itm-team-grid .itm-small")).toHaveText(Array(3).fill("Senior Analyst · ITM Trading"));
+    await expect(page.locator(".itm-team-grid img")).toHaveCount(0);
+    await expect(page.locator(".itm-page-note")).toContainText("Educational information, prices, and product values are subject to change. Contact Stan at ITM Trading for current terms and quotes.");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.locator(".itm-resource-grid").screenshot({ path: `test-results/itm-resources-${width}.png` });
   }
 });
