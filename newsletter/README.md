@@ -19,6 +19,10 @@ The build emits `morning-post.html` with initial landing-page metadata. Its exac
 
 ## Deploy
 
+Production was activated October 13, 2026 with `SendingEnabled=true` and `MailingAddress=1000 S Jefferson St, Amarillo, TX 79101, United States`. All eight local-time schedules are enabled. The sender and DKIM are verified; live simulator checks passed for signup, queued confirmation, activation and one-click unsubscribe. There were no existing subscriber records at activation; preview recipients were not enrolled. The first scheduled production morning is October 14. The daily scheduled run itself has not yet been observed.
+
+Preserve those production parameter values on subsequent deployments. The template's `false`/empty defaults are for a new installation, not the current production settings. GA4 open-event forwarding remains disabled by choice and is not required for delivery.
+
 From the repository root:
 
 ```sh
@@ -32,7 +36,9 @@ sam validate --lint --template-file newsletter/template.yaml
 sam deploy --template-file newsletter/template.yaml \
   --stack-name county-post-newsletter --resolve-s3 \
   --s3-prefix county-post-newsletter --capabilities CAPABILITY_IAM \
-  --profile pia --region us-east-2
+  --profile pia --region us-east-2 \
+  --parameter-overrides SendingEnabled=true \
+    'MailingAddress="1000 S Jefferson St, Amarillo, TX 79101, United States"'
 ```
 
 The initial default is `SendingEnabled=false`. The API refuses signup while delivery is disabled; no false success or unconfirmed marketing sends. Add the `NewsletterApiUrl` output as `VITE_NEWSLETTER_API_URL` in Amplify's existing environment map (read/merge, never replace other keys), then deploy the frontend. Existing general SPA rewrites must cover `/newsletter` and `/newsletter/sponsor`.
