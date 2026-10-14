@@ -205,7 +205,7 @@ test("ITM videos appear only on the landing page, limited to the four supplied v
   await expect(videos).toHaveCount(4);
   await expect(videos.first()).toHaveAttribute("title", "Bigger Than AIG: The AI Debt Secretly Buried in Your Insurance - Dan Oliver");
   expect(await videos.evaluateAll(frames => frames.map(frame => (frame as HTMLIFrameElement).src))).toEqual(
-    ["40IAZ22a7Ec", "pjlmcqWTPPg", "QZcVYmEJ9x4", "1CDpb0G3v2g"].map(id => `https://www.youtube-nocookie.com/embed/${id}`),
+    ["40IAZ22a7Ec", "VNPjarwfJaw", "QZcVYmEJ9x4", "1CDpb0G3v2g"].map(id => `https://www.youtube-nocookie.com/embed/${id}`),
   );
   await expect(page.getByRole("link", { name: "Read the ITM Trading blog" })).toHaveAttribute("href", "https://www.itmtrading.com/blog/?utm_source=countypost");
   for (const path of ["/topics/economy-markets", "/texas/economy-markets", "/texas/randall/economy-markets"]) {

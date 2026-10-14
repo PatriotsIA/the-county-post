@@ -54,6 +54,8 @@ function PartnerList({ partners, showCountyCoverage = false }: { partners: AdCre
             )}
             {isPartnerDirectoryHref(partner.href) ? (
               <span className="partner-directory-label">County Post partner</span>
+            ) : partner.href.startsWith("/") ? (
+              <Link to={partner.href}>Visit partner</Link>
             ) : (
               <a href={partner.href} target="_blank" rel="noreferrer sponsored">
                 Visit partner

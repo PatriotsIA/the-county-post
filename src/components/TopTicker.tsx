@@ -52,7 +52,7 @@ export function TopTicker({
             <div className="metals-ticker-heading">
               <div><strong>Metals spot prices</strong><small>USD per troy ounce</small></div>
               <Link className="metals-desk-link" to={ITM_TRADING_PATH}>
-                <img src={itmTradingAd} alt="ITM Trading" width="40" height="25" />
+                <img src={itmTradingAd} alt="ITM Trading" width="80" height="50" />
                 <span>Meet our sponsor <span aria-hidden="true">→</span></span>
               </Link>
             </div>

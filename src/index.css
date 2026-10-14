@@ -624,7 +624,7 @@ body::before {
   text-transform: uppercase;
   text-decoration: none;
 }
-.metals-desk-link img { width: 52px; height: auto; flex: 0 0 52px; }
+.metals-desk-link img { width: 80px; height: auto; flex: 0 0 80px; }
 .metals-desk-link:hover { text-decoration: underline; }
 .precious-metals-ticker a:focus-visible { outline: 2px solid var(--news-blue); outline-offset: 4px; }
 

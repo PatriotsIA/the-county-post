@@ -1,6 +1,18 @@
 import { ads, isAdVisibleInCounty, isCarouselOnlyAd, PARTNER_DIRECTORY_PATH, type AdCreative } from "./ads";
 import { getCounty, getCountiesForState } from "./counties";
 import { getStateBySlug } from "./states";
+import { ITM_TRADING_PATH } from "./itm-trading";
+import itmTradingLogo from "../../ad-assets/itm-trading-logo.jpg";
+
+// Directory listings for sponsors with dedicated placements outside the ad rotation.
+const directoryPartners: AdCreative[] = [{
+  id: "itm-trading",
+  slot: "inline",
+  image: itmTradingLogo,
+  name: "ITM Trading",
+  alt: "ITM Trading",
+  href: ITM_TRADING_PATH,
+}];
 
 export function countyPartnersPath(stateSlug: string, countySlug: string) {
   return `/${stateSlug}/${countySlug}/partners`;
@@ -19,11 +31,11 @@ function preferPartnerCandidate(existing: AdCreative, candidate: AdCreative) {
   return existing;
 }
 
-/** Unique partner listings derived from ad creatives. County-scoped ads are included automatically. */
+/** Unique ad and dedicated sponsor listings. County-scoped ads are included automatically. */
 export function getPartnerCreatives(): AdCreative[] {
   const byName = new Map<string, AdCreative>();
 
-  for (const ad of ads) {
+  for (const ad of [...ads, ...directoryPartners]) {
     if (isCarouselOnlyAd(ad.id)) continue;
     const existing = byName.get(ad.name);
     byName.set(ad.name, existing ? preferPartnerCandidate(existing, ad) : ad);
