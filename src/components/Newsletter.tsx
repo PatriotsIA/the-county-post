@@ -3,6 +3,7 @@ import { Link, Navigate, useLocation } from 'react-router-dom';
 import type { CountySite } from '../data/counties';
 import type { StateSite } from '../data/states';
 import { NewsletterEditionSearch } from './NewsletterEditionSearch';
+import { NewsletterGift } from './NewsletterGift';
 import { MORNING_POST_TITLE, MORNING_POST_DESCRIPTION, nationalEdition, type EditionChoice } from '../data/morning-post';
 import { newsletterRequest, newsletterZones, type NewsletterEdition } from '../lib/newsletter-api';
 import { Seo } from './Seo';
@@ -24,6 +25,7 @@ export function NewsletterSignup({ county, state, footer = false }: { county?: C
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [email, setEmail] = useState('');
   const edition = choice?.edition;
   useEffect(() => {
     if (footer || customZone || !edition || edition.level === 'national') return;
@@ -51,7 +53,7 @@ export function NewsletterSignup({ county, state, footer = false }: { county?: C
     {success ? <div role="status"><p>{message}</p>{footer ? <Link to="/morning-post">Explore other editions →</Link> : <button className="newsletter-button" onClick={() => { setSuccess(false); setMessage(''); }}>Subscribe to another edition</button>}</div> : <form onSubmit={submit} className="newsletter-form" aria-label={footer ? 'Footer Morning Post signup' : 'Morning Post signup'}>
       <div className="newsletter-fields">
         {!footer ? <NewsletterEditionSearch selected={choice} onChange={next => { setChoice(next); setCustomZone(false); setTimeZone(browserZone()); setError(''); }} /> : null}
-        <label htmlFor={`${id}-email`}>Email address<input id={`${id}-email`} name="email" type="email" autoComplete="email" placeholder="you@example.com" required maxLength={254} /></label>
+        <label htmlFor={`${id}-email`}>Email address<input id={`${id}-email`} name="email" type="email" autoComplete="email" placeholder="you@example.com" required maxLength={254} value={email} onChange={event => setEmail(event.target.value)} /></label>
         <button className="newsletter-button" disabled={pending}>{pending ? 'Submitting…' : 'Subscribe free'}</button>
       </div>
       <div className="newsletter-trap" aria-hidden="true"><label>Website<input name="website" tabIndex={-1} autoComplete="off" /></label></div>
@@ -62,6 +64,7 @@ export function NewsletterSignup({ county, state, footer = false }: { county?: C
       </div>
       {error ? <p role="alert">{error}</p> : null}
     </form>}
+    <NewsletterGift initialChoice={choice || nationalEdition} senderEmail={email} onSenderEmailChange={setEmail} />
   </section>;
 }
 

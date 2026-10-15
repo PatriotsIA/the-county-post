@@ -6,6 +6,18 @@ The public introduction is `/morning-post`. Edition-home signup forms use the ex
 
 The build emits `morning-post.html` with initial landing-page metadata. Its exact Amplify rewrite (`/morning-post` → `/morning-post.html`, 200) must precede the general SPA rewrite; `/morning-post/` redirects to `/morning-post`.
 
+## Gift invitations
+
+Every signup placement, including the footer, has a **Give The Gift of The Morning Post** disclosure. Its separate form collects the sender's name and email, recipient email, and an independently chosen county, state, or national edition. The sender's email carries over from the signup form. Giving a gift does not enroll the sender.
+
+`POST /invite` creates a pending subscription with `invitedBy` attribution and queues the existing confirmation worker. The HTML and plain-text invitation explain The County Post, the free Morning Post edition and delivery time, and identify the sender. The verified County Post sender and reply address remain unchanged. Recipient confirmation uses the existing deliberate POST and immediate first-edition delivery path; link scanners cannot subscribe a recipient with a GET. Invitations expire after 48 hours and can be ignored or declined.
+
+Invitations preserve active subscriptions, opt-outs, suppression records, and unexpired signups from other senders. Responses do not reveal recipient subscription status. Sender limits are five gift requests per day, alongside the existing shared IP, recipient and total signup limits. Retrying an invitation from the same sender uses its original token and send claim to recover a queue failure without duplicate emails. Expired pending records can be renewed only while their previous version still matches.
+
+Deploy the newsletter backend before publishing a frontend that calls `/invite`. No new infrastructure, schedules, or production parameters are required. The gift form is validated with mocked email delivery locally; do not send test invitations to real people without authorization.
+
+Gift backend deployed October 15, 2026 with production sending/address parameters preserved. Verification: 54 backend tests, newsletter browser checks, frontend/backend builds and typechecks, and SAM lint. A live SES simulator invitation remained pending until confirmed, then today's Potter County edition was observed as sent within 0.7 seconds of polling. Duplicate requests retained the same send claims and a subsequent gift respected opt-out. The simulator subscription and tokens were removed; no real recipients were contacted.
+
 ## Delivery and consent
 
 - Eight EventBridge Scheduler timezone schedules start the daily run at 06:15 local time, with daylight-saving adjustment. County defaults use its centroid and `tz-lookup`; readers may override the timezone, including in split-zone states/counties. National readers select their timezone.

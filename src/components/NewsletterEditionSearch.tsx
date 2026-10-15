@@ -2,7 +2,7 @@ import { useId, useMemo, useState } from 'react';
 import { searchCounties, searchStates } from '../data/place-search';
 import { nationalEdition, type EditionChoice } from '../data/morning-post';
 
-export function NewsletterEditionSearch({ selected, onChange }: { selected?: EditionChoice; onChange: (choice?: EditionChoice) => void }) {
+export function NewsletterEditionSearch({ selected, onChange, label = 'Your edition' }: { selected?: EditionChoice; onChange: (choice?: EditionChoice) => void; label?: string }) {
   const id = useId();
   const [query, setQuery] = useState(selected?.label || '');
   const [open, setOpen] = useState(false);
@@ -19,7 +19,7 @@ export function NewsletterEditionSearch({ selected, onChange }: { selected?: Edi
   }, [query]);
   function choose(choice: EditionChoice) { setQuery(choice.label); onChange(choice); setOpen(false); setActive(-1); }
   return <div className="newsletter-search" onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false); }}>
-    <label htmlFor={id}>Your edition</label>
+    <label htmlFor={id}>{label}</label>
     <input id={id} role="combobox" aria-autocomplete="list" aria-expanded={open} aria-controls={`${id}-results`} aria-activedescendant={open && active >= 0 ? `${id}-option-${active}` : undefined}
       autoComplete="off" placeholder="Search county, state, or national" value={query} maxLength={120} required
       onFocus={event => { setOpen(true); event.currentTarget.select(); }}

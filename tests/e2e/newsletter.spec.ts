@@ -90,7 +90,7 @@ test('Morning Post landing page explains the benefits and has its own navigation
   await expect(page.locator('meta[name="robots"]')).not.toHaveAttribute('content', /noindex/);
   await page.locator('.morning-post-page').screenshot({ path: 'test-results/morning-post-desktop.png' });
   const height = await page.locator('main .newsletter-signup').evaluate(el => el.getBoundingClientRect().height);
-  expect(height).toBeLessThan(260);
+  expect(height).toBeLessThan(320);
   await page.goto('/newsletter?utm_source=the_county_post&utm_medium=email');
   await expect(page).toHaveURL(/morning-post\?utm_source=the_county_post&utm_medium=email/);
 });
@@ -160,4 +160,98 @@ test('sponsor handoff records the edition and campaign and rejects ineligible ad
   await expect(page.getByRole('heading', { name: 'This sponsor is no longer available' })).toBeVisible();
   await page.goto('/newsletter/sponsor?ad=removed-ad&url=https%3A%2F%2Fexample.com');
   await expect(page.getByRole('heading', { name: 'This sponsor is no longer available' })).toBeVisible();
+});
+
+test('every signup offers a collapsed gift form with the current edition and sender email', async ({ page }) => {
+  for (const [path, label] of [['/morning-post', 'National edition'], ['/texas', 'Texas edition'], ['/texas/potter', 'Potter County, Texas']]) {
+    await page.goto(path);
+    for (const scope of [page.locator('main .newsletter-signup'), page.locator('footer .newsletter-signup')]) {
+      const button = scope.getByRole('button', { name: 'Give The Gift of The Morning Post' });
+      await expect(button).toHaveAttribute('aria-expanded', 'false');
+      await expect(scope.getByRole('form', { name: 'Give The Gift of The Morning Post' })).toHaveCount(0);
+      await scope.getByLabel('Email address', { exact: true }).fill('sender@example.com');
+      await button.click();
+      const gift = scope.getByRole('form', { name: 'Give The Gift of The Morning Post' });
+      await expect(gift.getByLabel('Your email address', { exact: true })).toHaveValue('sender@example.com');
+      await expect(gift.getByRole('combobox', { name: 'Recipient’s edition' })).toHaveValue(label);
+      await button.click();
+      await expect(gift).toHaveCount(0);
+    }
+  }
+});
+
+test('gifts select county, state or national editions and send only an invitation', async ({ page }) => {
+  const sent: Record<string, any>[] = [];
+  const analyticsRequests: string[] = [];
+  page.on('request', request => {
+    if (/google-analytics\.com|analytics\.google\.com/.test(new URL(request.url()).hostname)) analyticsRequests.push(decodeURIComponent(`${request.url()} ${request.postData() || ''}`));
+  });
+  let subscriptions = 0;
+  await page.route('http://localhost:8788/subscribe', route => { subscriptions++; return route.fulfill({ json: {} }); });
+  await page.route('http://localhost:8788/invite', route => {
+    sent.push(route.request().postDataJSON());
+    return route.fulfill({ status: 202, json: { message: 'Your invitation request has been received. Their free subscription starts only after they confirm.' } });
+  });
+  await page.goto('/morning-post');
+  const signup = page.locator('main .newsletter-signup');
+  await signup.getByRole('button', { name: 'Give The Gift of The Morning Post' }).click();
+  for (const [query, option, edition] of [
+    ['potter tx', 'Potter County, Texas County', { level: 'county', state: 'texas', county: 'potter' }],
+    ['arizona', 'Arizona edition Statewide', { level: 'state', state: 'arizona' }],
+    ['national', 'National edition Across the U.S.', { level: 'national', timeZone: 'America/New_York' }],
+  ] as const) {
+    const gift = signup.getByRole('form', { name: 'Give The Gift of The Morning Post' });
+    await gift.getByLabel('Your name', { exact: true }).fill('Jamie Reader');
+    await gift.getByLabel('Your email address', { exact: true }).fill('sender@example.com');
+    await gift.getByLabel('Recipient’s email address', { exact: true }).fill('friend@example.com');
+    await gift.getByRole('combobox', { name: 'Recipient’s edition' }).fill(query);
+    await gift.getByRole('option', { name: option, exact: true }).click();
+    if (edition.level === 'national') {
+      await gift.getByText('Recipient’s delivery time', { exact: true }).click();
+      await gift.getByRole('combobox', { name: '6:15 a.m. delivery timezone' }).selectOption('America/New_York');
+    }
+    await gift.getByRole('checkbox').check();
+    await gift.getByRole('button', { name: 'Send free invitation' }).click();
+    await expect(signup.getByRole('status')).toContainText('only after they confirm');
+    expect(sent.at(-1)).toMatchObject({ senderName: 'Jamie Reader', senderEmail: 'sender@example.com', recipientEmail: 'friend@example.com', consent: true, edition });
+    if (edition.level !== 'national') expect(sent.at(-1)!.edition.timeZone).toBeUndefined();
+    await signup.getByRole('button', { name: 'Give another gift' }).click();
+  }
+  expect(subscriptions).toBe(0);
+  // GTM also keeps DOM references internally; inspect event payloads and outgoing
+  // requests, rather than serializing live form elements (which contain inputs).
+  const analytics = await page.evaluate(() => JSON.stringify((window as unknown as { dataLayer: Record<number, unknown>[] }).dataLayer.filter(entry => entry[0] === 'event')));
+  for (const email of ['sender@example.com', 'friend@example.com']) {
+    expect(analytics).not.toContain(email); expect(analyticsRequests.join('\n')).not.toContain(email);
+  }
+});
+
+test('gift errors preserve inputs and the expanded footer fits a small phone', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 900 });
+  let posts = 0;
+  await page.route('http://localhost:8788/invite', route => { posts++; return route.fulfill({ status: 503, json: { error: 'Unable to send the invitation. Please try again.' } }); });
+  await page.goto('/texas/potter/weather');
+  const signup = page.locator('footer .newsletter-signup');
+  await signup.getByRole('button', { name: 'Give The Gift of The Morning Post' }).click();
+  const gift = signup.getByRole('form', { name: 'Give The Gift of The Morning Post' });
+  await gift.getByLabel('Your name', { exact: true }).fill('Jamie Reader');
+  await gift.getByLabel('Your email address', { exact: true }).fill('sender@example.com');
+  await gift.getByLabel('Recipient’s email address', { exact: true }).fill('sender@example.com');
+  await gift.getByRole('checkbox').check();
+  await gift.getByRole('button', { name: 'Send free invitation' }).click();
+  await expect(gift.getByRole('alert')).toContainText('someone else');
+  expect(posts).toBe(0);
+  await gift.getByLabel('Recipient’s email address', { exact: true }).fill('friend@example.com');
+  await gift.getByRole('combobox', { name: 'Recipient’s edition' }).fill('nonexistent edition');
+  await gift.getByRole('button', { name: 'Send free invitation' }).click();
+  await expect(gift.getByRole('alert')).toContainText('Choose an edition');
+  expect(posts).toBe(0);
+  await gift.getByRole('combobox', { name: 'Recipient’s edition' }).fill('potter tx');
+  await gift.getByRole('option', { name: 'Potter County, Texas County', exact: true }).click();
+  await gift.getByRole('button', { name: 'Send free invitation' }).click();
+  await expect(gift.getByRole('alert')).toContainText('Unable to send');
+  await expect(gift.getByLabel('Recipient’s email address', { exact: true })).toHaveValue('friend@example.com');
+  expect(posts).toBe(1);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await signup.screenshot({ path: 'test-results/morning-post-gift-mobile.png' });
 });

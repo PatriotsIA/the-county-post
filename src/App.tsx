@@ -2093,6 +2093,7 @@ function PrivacyPage() {
         </p>
 
         <h2>Morning newsletter</h2>
+        <p>When you give someone The Morning Post, we store your name and email address, their email address, and the edition you select. Your name and email appear in their invitation so they know who sent it. Sending a gift does not subscribe either person automatically. The recipient must confirm before daily delivery starts; they can ignore or decline the invitation.</p>
         <p>When you subscribe, we store your email address, selected edition, delivery timezone, and confirmation status using Amazon Web Services. We send a confirmation before starting daily delivery. Every newsletter includes links to manage its delivery timezone or unsubscribe. We retain subscription and suppression records to honor opt-outs and stop sending to addresses that bounce or report spam. Amazon SES uses an image and tracked links to estimate email opens and clicks. Google Analytics measures visits to our site from tagged newsletter links and clicks through our advertiser pages. Image blocking and privacy services can affect open counts. We do not send your email address or subscription-management tokens to Google Analytics.</p>
 
         <h2>Third-party content</h2>

@@ -102,3 +102,37 @@ it('cancels immediate delivery if a reader unsubscribes while content is being p
   await handler(immediate);
   expect(mock.ses).not.toHaveBeenCalled();
 });
+
+const giftSub = { ...sub, status: 'pending' as const, invitedBy: { name: 'Jamie <Reader> & family', email: 'jamie@example.com' } };
+const giftJob = { kind: 'confirm' as const, subscriber: sub.pk, version: sub.confirmToken, request: sub.confirmToken };
+it('sends one personalized invitation and sends no daily edition before confirmation', async () => {
+  mock.records.set(sub.pk, giftSub);
+  await handler(job); expect(mock.ses).not.toHaveBeenCalled();
+  await handler(giftJob); await handler(giftJob);
+  expect(mock.ses).toHaveBeenCalledOnce();
+  const message = mock.ses.mock.calls[0][0].input;
+  expect(message.Destination.ToAddresses).toEqual([sub.email]);
+  expect(message.FromEmailAddress).toBe('The County Post <newsletters@thecountypost.com>');
+  expect(message.ReplyToAddresses).toEqual(['submissions@thecountypost.com']);
+  expect(message.Content.Simple.Subject.Data).toBe('A gift for you: the free National Morning Post');
+  const { Html, Text } = message.Content.Simple.Body;
+  expect(Html.Data).toContain('Jamie &lt;Reader&gt; &amp; family');
+  expect(Html.Data).not.toContain('Jamie <Reader>');
+  for (const value of ['jamie@example.com', 'The County Post brings together', 'You are not subscribed yet', 'today’s edition', '/newsletter#confirm=confirm', '/newsletter#unsubscribe=opaque']) {
+    expect(Html.Data).toContain(value); expect(Text.Data).toContain(value);
+  }
+  // Recipient confirmation activates the same subscriber and immediate-send path.
+  vi.setSystemTime(new Date('2026-10-12T20:00:00Z'));
+  mock.records.set(sub.pk, { ...giftSub, ...firstSub });
+  await handler(immediate); await handler(immediate);
+  expect(mock.ses).toHaveBeenCalledTimes(2);
+  expect(mock.ses.mock.calls[1][0].input.Content.Simple.Subject.Data).toBe('National Morning Post · 2026-10-12');
+});
+it.each(['unsubscribed', 'active', 'expired', 'superseded', 'suppressed'])('does not send a gift that is %s', async reason => {
+  mock.records.set(sub.pk, { ...giftSub, ...(reason === 'active' || reason === 'unsubscribed' ? { status: reason } : {}), ...(reason === 'expired' ? { confirmExpires: 1 } : {}), ...(reason === 'superseded' ? { confirmToken: 'new-token' } : {}) });
+  if (reason === 'suppressed') {
+    const { hash } = await import('../src/model');
+    mock.records.set(`SUPPRESS#${hash(sub.email)}`, { reason: 'Complaint' });
+  }
+  await handler(giftJob); expect(mock.ses).not.toHaveBeenCalled();
+});

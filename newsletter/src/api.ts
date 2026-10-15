@@ -4,10 +4,11 @@ import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { db, get, table, findByToken, createSubscriber, confirm, unsubscribe, rateLimit, seconds } from './store';
 import { UpdateCommand, TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
 import { InputError, SITE, ZONES, validateEmail, validateEdition, editionKey, editionLabel, suggestedZone, localDate, hash, type Subscriber } from './model';
+import { invitationMessage, prepareInvitation } from './invitations';
 
 const sqs = new SQSClient({});
 const response = (statusCode: number, data: unknown, origin?: string) => ({ statusCode, headers: { 'content-type': 'application/json', 'cache-control': 'no-store', 'referrer-policy': 'no-referrer', ...(origin ? { 'access-control-allow-origin': origin, 'vary': 'Origin', 'access-control-allow-methods': 'GET, POST, OPTIONS', 'access-control-allow-headers': 'content-type' } : {}) }, body: JSON.stringify(data) });
-async function queue(sub: Subscriber, kind: 'confirm' | 'manage') { await sqs.send(new SendMessageCommand({ QueueUrl: process.env.QUEUE_URL!, MessageBody: JSON.stringify({ kind, subscriber: sub.pk, version: sub.confirmToken, request: randomBytes(16).toString('hex') }) })); }
+async function queue(sub: Subscriber, kind: 'confirm' | 'manage') { await sqs.send(new SendMessageCommand({ QueueUrl: process.env.QUEUE_URL!, MessageBody: JSON.stringify({ kind, subscriber: sub.pk, version: sub.confirmToken, request: kind === 'confirm' && sub.invitedBy ? sub.confirmToken : randomBytes(16).toString('hex') }) })); }
 export async function handler(event: APIGatewayProxyEventV2) {
   const method = event.requestContext.http.method;
   const path = event.rawPath;
@@ -55,8 +56,13 @@ export async function handler(event: APIGatewayProxyEventV2) {
       await db.send(new UpdateCommand({ TableName: table(), Key: { pk: sub.pk }, UpdateExpression: sub.status === 'active' ? 'SET timeZone = :zone, activeZone = :zone' : 'SET timeZone = :zone', ExpressionAttributeValues: { ':zone': body.timeZone } }));
       return response(200, { message: 'Delivery timezone updated.' }, origin);
     }
-    if (path !== '/subscribe') return response(404, { error: 'Not found.' }, origin);
+    if (path !== '/subscribe' && path !== '/invite') return response(404, { error: 'Not found.' }, origin);
     if (process.env.SENDING_ENABLED !== 'true') throw new InputError('The morning newsletter is being prepared. Please check back soon.', 503);
+    if (path === '/invite') {
+      const sub = await prepareInvitation(body, event.requestContext.http.sourceIp);
+      if (sub) await queue(sub, 'confirm');
+      return response(202, { message: invitationMessage }, origin);
+    }
     const generic = { message: 'Check your inbox for a confirmation or management link. Only confirmed subscriptions receive the morning newsletter.' };
     if (body.website) return response(202, generic, origin);
     if (body.consent !== true) throw new InputError('Please agree to receive the daily newsletter.');

@@ -4,8 +4,9 @@ import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
 import { UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import type { SQSEvent } from 'aws-lambda';
 import { setTimeout as delay } from 'node:timers/promises';
-import { buildDigest, renderDigest, escapeHtml, type Digest } from './content';
-import { SITE, ZONES, editionKey, editionLabel, localDate, hash, type Subscriber } from './model';
+import { buildDigest, renderDigest, type Digest } from './content';
+import { SITE, ZONES, editionKey, localDate, hash, type Subscriber } from './model';
+import { renderSubscriptionMessage } from './subscription-message';
 import { db, table, get, put, remove, conditional, activePage, rateLimit, seconds } from './store';
 import { recordEngagement } from './analytics';
 
@@ -74,11 +75,7 @@ async function processJob(job: Job) {
   if (job.kind === 'daily') {
     content = renderDigest(await snapshot(sub, job.date!, localMinutes(sub.timeZone) < 375), { date: job.date!, timeZone: sub.timeZone, manageUrl, unsubscribeUrl: unsubscribePage, address: process.env.NEWSLETTER_ADDRESS });
   } else {
-    const confirming = job.kind === 'confirm';
-    const url = confirming ? `${SITE}/newsletter#confirm=${sub.confirmToken}` : manageUrl;
-    const subject = `${confirming ? 'Confirm' : 'Manage'} your ${editionLabel(sub)} Morning Post`;
-    const message = `You requested the ${editionLabel(sub)} newsletter from The County Post. Delivery is daily at 6:15 a.m. ${sub.timeZone}. ${confirming ? "Confirm below to receive today's edition now and start daily delivery. This link expires in 48 hours." : 'Use the link below to manage your existing subscription.'}`;
-    content = { subject, text: `${message}\n\n${url}\n\nIf you did not request this, ignore this email.\nThe County Post\n${process.env.NEWSLETTER_ADDRESS}`, html: `<html lang="en"><body style="background:#fffdf7;color:#202020;font:16px/1.7 Georgia,serif;padding:24px;max-width:600px"><h1>The County Post</h1><h2>${escapeHtml(subject)}</h2><p>${escapeHtml(message)}</p><p><a href="${url}" style="color:#173e64">${confirming ? 'Confirm my subscription' : 'Manage my subscription'}</a></p><p>If you did not request this, ignore this email.</p><p style="font-size:12px">The County Post<br>${escapeHtml(process.env.NEWSLETTER_ADDRESS)}</p></body></html>` };
+    content = renderSubscriptionMessage(sub, job.kind === 'confirm', process.env.NEWSLETTER_ADDRESS);
   }
   // Recheck consent after feed generation, immediately before the send claim.
   sub = await get<Subscriber>(job.subscriber!);

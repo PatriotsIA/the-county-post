@@ -78,3 +78,78 @@ it('never queues an edition when confirmation is rejected', async () => {
   expect((await handler(event('/confirm', 'POST', { token: 'confirm-token' }))).statusCode).toBe(503);
   expect(mock.queue).not.toHaveBeenCalled();
 });
+
+const invitation = { senderName: 'Jamie Reader', senderEmail: 'jamie@example.com', recipientEmail: 'friend@example.com', consent: true, edition };
+it.each([
+  { level: 'national', timeZone: 'America/New_York' },
+  { level: 'state', state: 'arizona' },
+  { level: 'county', state: 'texas', county: 'potter' },
+])('creates a pending gift for %j without enrolling the sender', async giftEdition => {
+  const result = await handler(event('/invite', 'POST', { ...invitation, edition: giftEdition }));
+  expect(result.statusCode).toBe(202);
+  expect(mock.create).toHaveBeenCalledOnce();
+  const sub = mock.create.mock.calls[0][0];
+  expect(sub).toMatchObject({ ...giftEdition, email: 'friend@example.com', status: 'pending', invitedBy: { name: 'Jamie Reader', email: 'jamie@example.com' } });
+  expect(sub.activeZone).toBeUndefined();
+  expect(JSON.parse(mock.queue.mock.calls[0][0].input.MessageBody)).toMatchObject({ kind: 'confirm', subscriber: sub.pk, version: sub.confirmToken, request: sub.confirmToken });
+  expect(result.body).not.toContain(sub.confirmToken);
+  expect(result.body).not.toContain('friend@example.com');
+  expect(mock.rateLimit.mock.calls.map(call => call.slice(1))).toEqual([[20, 3600], [5, 86400], [3, 86400], [1000, 86400]]);
+});
+it.each([
+  { consent: false }, { senderName: '' }, { senderName: 'x'.repeat(81) }, { senderName: 'Jamie\r\nBcc: other@example.com' },
+  { senderEmail: 'invalid' }, { recipientEmail: 'invalid' }, { recipientEmail: 'JAMIE@example.com' },
+  { edition: { level: 'county', state: 'texas', county: 'missing' } },
+])('rejects invalid gift fields %j before sending', async changes => {
+  expect((await handler(event('/invite', 'POST', { ...invitation, ...changes }))).statusCode).toBe(400);
+  expect(mock.create).not.toHaveBeenCalled(); expect(mock.queue).not.toHaveBeenCalled();
+});
+it('honors the honeypot, origin restriction and sending switch for gifts', async () => {
+  expect((await handler(event('/invite', 'POST', { ...invitation, website: 'bot' }))).statusCode).toBe(202);
+  expect((await handler(event('/invite', 'POST', invitation, { origin: 'https://evil.example', 'content-type': 'application/json' }))).statusCode).toBe(403);
+  process.env.SENDING_ENABLED = 'false';
+  expect((await handler(event('/invite', 'POST', invitation))).statusCode).toBe(503);
+  expect(mock.create).not.toHaveBeenCalled(); expect(mock.queue).not.toHaveBeenCalled();
+});
+it.each(['active', 'unsubscribed', 'pending'])('does not replace an existing %s signup with a gift or expose its status', async status => {
+  mock.get.mockImplementation(async (pk: string) => pk.startsWith('SUB#') ? { ...confirmed, pk, status, confirmExpires: 1800000000 } : undefined);
+  const result = await handler(event('/invite', 'POST', invitation));
+  expect(result.statusCode).toBe(202);
+  expect(result.body).toContain('Your invitation request has been received');
+  expect(mock.create).not.toHaveBeenCalled(); expect(mock.db).not.toHaveBeenCalled(); expect(mock.queue).not.toHaveBeenCalled();
+});
+it('does not send to suppressed recipients', async () => {
+  mock.get.mockImplementation(async (pk: string) => pk.startsWith('SUPPRESS#') ? { reason: 'Complaint' } : undefined);
+  expect((await handler(event('/invite', 'POST', invitation))).statusCode).toBe(202);
+  expect(mock.create).not.toHaveBeenCalled(); expect(mock.queue).not.toHaveBeenCalled();
+});
+it('propagates rate limits without creating or sending invitations', async () => {
+  const { InputError } = await import('../src/model');
+  mock.rateLimit.mockRejectedValue(new InputError('Please try again later.', 429));
+  expect((await handler(event('/invite', 'POST', invitation))).statusCode).toBe(429);
+  expect(mock.create).not.toHaveBeenCalled(); expect(mock.queue).not.toHaveBeenCalled();
+});
+it('retries queue failure using the original gift token and a stable send claim', async () => {
+  let saved: any;
+  mock.create.mockImplementation(async sub => { saved = sub; });
+  mock.get.mockImplementation(async (pk: string) => pk.startsWith('SUB#') ? saved : undefined);
+  mock.queue.mockRejectedValueOnce(new Error('SQS unavailable')).mockResolvedValueOnce({});
+  expect((await handler(event('/invite', 'POST', invitation))).statusCode).toBe(503);
+  expect((await handler(event('/invite', 'POST', invitation))).statusCode).toBe(202);
+  expect(mock.create).toHaveBeenCalledOnce(); expect(mock.db).not.toHaveBeenCalled();
+  expect(mock.queue.mock.calls[0][0].input.MessageBody).toEqual(mock.queue.mock.calls[1][0].input.MessageBody);
+});
+it('does not let a different sender overwrite a pending gift', async () => {
+  mock.get.mockImplementation(async (pk: string) => pk.startsWith('SUB#') ? { ...confirmed, pk, status: 'pending', confirmExpires: 1800000000, invitedBy: { name: 'Other sender', email: 'other@example.com' } } : undefined);
+  expect((await handler(event('/invite', 'POST', invitation))).statusCode).toBe(202);
+  expect(mock.create).not.toHaveBeenCalled(); expect(mock.db).not.toHaveBeenCalled(); expect(mock.queue).not.toHaveBeenCalled();
+});
+it('renews an expired pending invitation only if its previous version still matches', async () => {
+  mock.get.mockImplementation(async (pk: string) => pk.startsWith('SUB#') ? { ...confirmed, pk, status: 'pending', confirmExpires: 1 } : undefined);
+  expect((await handler(event('/invite', 'POST', invitation))).statusCode).toBe(202);
+  const put = mock.db.mock.calls[0][0].input.TransactItems[0].Put;
+  expect(put.ConditionExpression).toBe('#status = :pending AND confirmToken = :previous');
+  expect(put.ExpressionAttributeValues).toEqual({ ':pending': 'pending', ':previous': confirmed.confirmToken });
+  expect(put.Item.status).toBe('pending');
+  expect(put.Item.confirmToken).not.toBe(confirmed.confirmToken);
+});
