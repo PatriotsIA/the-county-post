@@ -8,7 +8,7 @@ The build emits `morning-post.html` with initial landing-page metadata. Its exac
 
 ## Gift invitations
 
-Every signup placement, including the footer, has a **Give The Gift of The Morning Post** disclosure. Its separate form collects the sender's name and email, recipient email, and an independently chosen county, state, or national edition. The sender's email carries over from the signup form. Giving a gift does not enroll the sender.
+Every signup placement, including the footer, has a **Give the Gift of The Morning Post** button linking to `/morning-post#morning-post-gift`. The destination scrolls to and focuses the gift form heading. Its form collects the sender's name and email, recipient email, and an independently chosen county, state, or national edition. The selected edition and sender's email carry over through browser navigation state, never URL parameters. The direct link also works without navigation state, defaulting to the national edition. Giving a gift does not enroll the sender.
 
 `POST /invite` creates a pending subscription with `invitedBy` attribution and queues the existing confirmation worker. The HTML and plain-text invitation explain The County Post, the free Morning Post edition and delivery time, and identify the sender. The verified County Post sender and reply address remain unchanged. Recipient confirmation uses the existing deliberate POST and immediate first-edition delivery path; link scanners cannot subscribe a recipient with a GET. Invitations expire after 48 hours and can be ignored or declined.
 

@@ -4,7 +4,7 @@ import type { CountySite } from '../data/counties';
 import type { StateSite } from '../data/states';
 import { NewsletterEditionSearch } from './NewsletterEditionSearch';
 import { NewsletterGift } from './NewsletterGift';
-import { MORNING_POST_TITLE, MORNING_POST_DESCRIPTION, nationalEdition, type EditionChoice } from '../data/morning-post';
+import { MORNING_POST_TITLE, MORNING_POST_DESCRIPTION, MORNING_POST_GIFT_PATH, nationalEdition, type EditionChoice } from '../data/morning-post';
 import { newsletterRequest, newsletterZones, type NewsletterEdition } from '../lib/newsletter-api';
 import { Seo } from './Seo';
 import { ads, isAdVisibleInCounty } from '../data/ads';
@@ -64,7 +64,7 @@ export function NewsletterSignup({ county, state, footer = false }: { county?: C
       </div>
       {error ? <p role="alert">{error}</p> : null}
     </form>}
-    <NewsletterGift initialChoice={choice || nationalEdition} senderEmail={email} onSenderEmailChange={setEmail} />
+    <Link className="newsletter-button newsletter-gift-link" to={MORNING_POST_GIFT_PATH} state={{ morningPostGift: { choice: choice || nationalEdition, email } }}>Give the Gift of The Morning Post</Link>
   </section>;
 }
 
@@ -76,6 +76,7 @@ export function MorningPostPage() {
       <aside className="morning-post-time" aria-label="Delivery starts at 6:15 a.m. local time"><span>Start the day with</span><strong>6:15</strong><span>A.M. · Your local time</span><p>Fresh headlines.<br />A look at the forecast.<br />One morning email.</p></aside>
     </header>
     <div id="morning-post-signup"><NewsletterSignup /></div>
+    <NewsletterGift />
     <section className="morning-post-benefits" aria-label="What is in the Morning Post">
       <article><p className="kicker">01 · Get caught up</p><h2>The stories that shape your day</h2><p>A selection of recent headlines, sports, obituaries, politics, business, and community reporting. Open any story to keep reading at the relevant County Post desk.</p></article>
       <article><p className="kicker">02 · Plan ahead</p><h2>Weather before you head out</h2><p>A weather and precipitation preview alongside your news. County editions show local forecasts; state and national editions identify the locations in their forecast roundup.</p></article>

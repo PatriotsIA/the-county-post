@@ -16,7 +16,9 @@
 .newsletter :is(input, select, button, a):focus-visible { outline: 3px solid var(--news-blue); outline-offset: 3px; }
 .newsletter-trap { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
 .newsletter-actions { display: flex; gap: 14px; flex-wrap: wrap; margin: 16px 0; }
-.newsletter-gift { grid-column: 1 / -1; margin-top: 8px; min-width: 0; }
+.newsletter .newsletter-gift-link { display: inline-flex; align-items: center; justify-content: center; grid-column: 1 / -1; width: fit-content; max-width: 100%; margin-top: 12px; color: #fff; text-align: center; text-decoration: none; }
+.newsletter-gift-link:hover { background: var(--news-blue-dark); }
+.newsletter-gift-section { scroll-margin-top: 20px; }
 .newsletter-gift-toggle { display: flex; align-items: center; gap: 12px; min-height: 44px; max-width: 100%; padding: 8px 0; border: 0; background: transparent; color: var(--news-blue); text-align: left; font: 600 14px/1.5 Georgia, serif; cursor: pointer; }
 .newsletter-gift-toggle:hover { text-decoration: underline; }
 .newsletter-gift-form { border-top: 1px solid var(--rule); padding: 4px 0 12px; }
