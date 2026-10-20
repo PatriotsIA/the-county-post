@@ -29,8 +29,19 @@ export const stanTeam = [
   { name: "Nate Batiste", email: "nathanb@itmtrading.com" },
 ];
 
-// The only ITM videos shown on The County Post, in the order supplied (updated October 14, 2026).
+// Approved ITM videos, in the order supplied (updated October 14, 2026). Not shown for now at the
+// sponsor's request (October 20, 2026); kept here so they can return.
 export const itmVideoIds = ["40IAZ22a7Ec", "VNPjarwfJaw", "QZcVYmEJ9x4", "1CDpb0G3v2g"];
+
+// "Learn About" topics for the Retirement accounts card, supplied by Stan Roberts (October 20, 2026).
+export const iraTopics = [
+  "Rolling Over Retirement Accounts to Precious Metals IRAs",
+  "Benefits/Advantages of Holding Physical Metals",
+  "Different Types of Metals",
+  "Metals as Wealth Insurance",
+  "Strategic Options in Metals",
+  "How to Liquidate",
+];
 
 export const itmVideoTitles: Record<string, string> = {
   "40IAZ22a7Ec": "Bigger Than AIG: The AI Debt Secretly Buried in Your Insurance - Dan Oliver",

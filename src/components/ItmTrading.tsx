@@ -1,6 +1,6 @@
 import itmLogo from "../../ad-assets/itm-trading-logo.jpg";
 import wealthShield from "../../ad-assets/itm-wealth-shield.png";
-import { itmTrading, itmVideoIds, itmVideoTitles, stanTeam, ITM_TRADING_DESCRIPTION, ITM_TRADING_PATH, ITM_TRADING_TITLE } from "../data/itm-trading";
+import { iraTopics, itmTrading, stanTeam, ITM_TRADING_DESCRIPTION, ITM_TRADING_PATH, ITM_TRADING_TITLE } from "../data/itm-trading";
 import { crumbTrail, jsonLdGraph, webPageLd } from "../lib/seo";
 import { MetalsTracker } from "./MetalsTracker";
 import { Seo } from "./Seo";
@@ -43,13 +43,12 @@ export function ItmTrading() {
 
     <div className="itm-resource-grid">
       <a href="#stan-roberts" className="itm-strategy-card"><span className="kicker">Education &amp; planning</span><h3>Learn about ITM’s approach</h3><img className="itm-wealth-shield" src={wealthShield} alt="ITM Trading Wealth Shield: Sustained Living, Wealth Protection, Opportunity Positioning, and Legacy Building" width="719" height="719" loading="lazy" /><p>Talk with Stan about ITM’s Wealth Shield™ approach to precious metals and financial preparedness.</p><span>Contact Stan about the strategy →</span></a>
-      <a href="#stan-roberts"><span className="kicker">Retirement accounts</span><h3>Precious-metals IRAs</h3><p>Learn how ITM describes self-directed account setup, funding and the selection of eligible products.</p><span>Ask Stan about IRAs →</span></a>
+      <a href="#stan-roberts"><span className="kicker">Retirement accounts</span><h3>Precious-metals IRAs</h3><div className="itm-learn"><p>Learn About:</p><ul>{iraTopics.map(topic => <li key={topic}>{topic}</li>)}</ul></div><span>Ask Stan about IRAs →</span></a>
     </div>
 
     <section id="itm-videos" className="itm-education" aria-labelledby="itm-videos-title">
       <header className="itm-section-heading"><div><p className="kicker">ITM Trading video desk</p><h2 id="itm-videos-title">Videos &amp; education</h2></div></header>
-      <p className="itm-disclosure">Sponsor education · The videos below are published by ITM Trading and reflect its views.</p>
-      <div className="itm-videos">{itmVideoIds.map(videoId => <div key={videoId} className="itm-video"><iframe src={`https://www.youtube-nocookie.com/embed/${videoId}`} title={itmVideoTitles[videoId] || "ITM Trading video"} loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div>)}</div>
+      <p className="itm-education-copy">Contact Stan and his team for highly educational, informational videos.</p>
       <a className="itm-button" href={itmTrading.blogUrl} target="_blank" rel="noreferrer sponsored">Read the ITM Trading blog <span aria-hidden="true">↗</span></a>
     </section>
     <p className="itm-page-note">Company information supplied by ITM Trading, with office details from its <a href={itmTrading.contactUrl} target="_blank" rel="noreferrer sponsored">Contact page</a>. Stan’s profile updated October 6, 2026; team contacts updated October 12, 2026; page copy updated October 20, 2026. Educational information, prices, and product values are subject to change. Contact Stan at ITM Trading for current terms and quotes.</p>
