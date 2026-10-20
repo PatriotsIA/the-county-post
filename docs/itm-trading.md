@@ -68,6 +68,16 @@ change. No comparison is shown until a second distinct quote is saved.
 Deploy the API before the frontend. The old frontend can continue displaying
 prices during rollout; the new frontend rejects legacy benchmark responses.
 
+## Sponsor-supplied copy — October 20, 2026
+
+Stan Roberts supplied the hero, "Your contact at ITM Trading" and "Meet our
+sponsor" copy; it is used verbatim and replaces the earlier paraphrase of ITM's
+About page, including the PCGS/NGC grading sentence. At his request the "Read
+ITM's company profile" link is removed for now, and the Retirement accounts card
+links to Stan's contact section (`#stan-roberts`, "Ask Stan about IRAs") instead
+of ITM's IRA page. `aboutUrl` and `iraUrl` stay in `src/data/itm-trading.ts`
+for when those links return.
+
 ## Verified content sources — October 1, 2026
 
 - https://www.itmtrading.com/about — family ownership, product categories,

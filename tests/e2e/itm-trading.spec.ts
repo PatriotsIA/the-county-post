@@ -235,6 +235,9 @@ test("ITM resources keep readers with Stan while inquiry pages are deferred", as
     await expect(page).toHaveURL(/#stan-roberts$/);
     await expect(page.getByRole("heading", { name: "Stan Roberts", exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: /Ask Stan about a product quote/ })).toHaveAttribute("href", "#stan-roberts");
+    await expect(page.getByRole("link", { name: /Precious-metals IRAs.*Ask Stan about IRAs/ })).toHaveAttribute("href", "#stan-roberts");
+    await expect(page.getByRole("link", { name: /company profile/ })).toHaveCount(0);
+    await expect(page.locator('.itm-page a[href*="itmtrading.com/about"], .itm-page a[href*="itmtrading.com/ira"]')).toHaveCount(0);
     await expect(page.locator(".itm-team-grid .itm-small")).toHaveText(Array(3).fill("Senior Analyst · ITM Trading"));
     await expect(page.locator(".itm-team-grid img")).toHaveCount(0);
     await expect(page.locator(".itm-page-note")).toContainText("Educational information, prices, and product values are subject to change. Contact Stan at ITM Trading for current terms and quotes.");
