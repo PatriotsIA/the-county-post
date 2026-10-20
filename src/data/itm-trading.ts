@@ -7,6 +7,7 @@ export const itmTrading = {
   // Organization identity; use websiteUrl for outbound reader links.
   url: "https://www.itmtrading.com/",
   websiteUrl: "https://www.itmtrading.com/?utm_source=countypost",
+  // aboutUrl and iraUrl are unlinked for now at the sponsor's request (October 20, 2026).
   aboutUrl: "https://www.itmtrading.com/about?utm_source=countypost",
   contactUrl: "https://www.itmtrading.com/contactus?utm_source=countypost",
   productsUrl: "https://www.itmtrading.com/products?utm_source=countypost",
