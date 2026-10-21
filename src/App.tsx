@@ -19,7 +19,8 @@ import { CountyLocalSourcesDirectory } from "./components/LocalSourcesDirectory"
 import { CountyPostOpEdPage } from "./components/CountyPostOpEd";
 import { countyPostOpEds } from "./data/county-post-op-eds";
 import { AtlasDomainNav } from "./components/AtlasDomainNav";
-import { atlasDomainLabels } from "./lib/atlas-domain-labels";
+import { PageJumpMenu, type JumpLink, type JumpLinkGroup } from "./components/PageJumpMenu";
+import { atlasDomainLabels, atlasDomainLinks } from "./lib/atlas-domain-labels";
 import { EditionMap } from "./components/EditionMap";
 import { LoadingIndicator } from "./components/LoadingIndicator";
 import { TopTicker } from "./components/TopTicker";
@@ -285,41 +286,23 @@ function App() {
           <span aria-hidden="true">☰</span> Menu
         </button>
         <nav id="primary-navigation" className={`nav${mobileMenuOpen ? " nav-open" : ""}`} aria-label="Primary navigation">
-        <NavLink to="/" end className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")} onClick={() => setMobileMenuOpen(false)}>
-          Front Page
-        </NavLink>
-        <NavLink
-          to="/states"
-          className={({ isActive }) => (isActive ? "nav-link nav-link-directory active" : "nav-link nav-link-directory")}
-          onClick={() => setMobileMenuOpen(false)}
-        >
-          Find Your State & County News
-        </NavLink>
-        <NavLink to="/op-eds" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")} onClick={() => setMobileMenuOpen(false)}>
-          Op-Eds
-        </NavLink>
-        <NavLink to="/partners" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")} onClick={() => setMobileMenuOpen(false)}>
-          Partners
-        </NavLink>
-        <NavLink to={ITM_TRADING_PATH} className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")} onClick={() => setMobileMenuOpen(false)}>
-          ITM Trading
-        </NavLink>
-        <NavLink to="/about" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")} onClick={() => setMobileMenuOpen(false)}>
-          About
-        </NavLink>
-        <NavLink to="/morning-post" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")} onClick={() => setMobileMenuOpen(false)}>
-          Morning Post
-        </NavLink>
-        <NavLink
-          to={submitStoryPath(activeCounty, activeState)}
-          className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
-          onClick={() => setMobileMenuOpen(false)}
-        >
-          Submit A Story
-        </NavLink>
-        <a className="nav-link nav-link-advertise" href="https://www.advertise.thecountypost.com/" onClick={() => setMobileMenuOpen(false)}>
-          Advertise
-        </a>
+        {primaryLinks(activeCounty, activeState).map((link) =>
+          link.external ? (
+            <a key={link.to} className={["nav-link", link.className].filter(Boolean).join(" ")} href={link.to} onClick={() => setMobileMenuOpen(false)}>
+              {link.label}
+            </a>
+          ) : (
+            <NavLink
+              key={link.to}
+              to={link.to}
+              end={link.end}
+              className={({ isActive }) => ["nav-link", link.className, isActive ? "active" : ""].filter(Boolean).join(" ")}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {link.label}
+            </NavLink>
+          ),
+        )}
         </nav>
       </header>
       {!isLegendsPage ? <ContextNav county={activeCounty} state={activeState} /> : null}
@@ -330,15 +313,7 @@ function App() {
         </div>
       ) : null}
       {!isLegendsPage ? <TopTicker county={activeCounty} defaultOpen={isItmTradingPage || isEditionHomePath(pathname, activeCounty, activeState)} /> : null}
-      <button
-        type="button"
-        className={`scroll-top${showScrollTop ? " scroll-top-visible" : ""}`}
-        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-        aria-label="Scroll to the top of the page"
-      >
-        <span aria-hidden="true">↑</span>
-        <span>Top</span>
-      </button>
+      <PageJumpMenu scrolled={showScrollTop} groups={jumpMenuGroups(pathname, isLegendsPage, activeCounty, activeState)} />
 
       <Breadcrumbs county={activeCounty} state={activeState} />
 
@@ -474,13 +449,13 @@ function ContextNav({ county, state }: { county?: NonNullable<ReturnType<typeof 
   const links = contextLinks(county, state);
   if (!links.length) return null;
 
-  const label = county ? `${county.displayName} pages` : state ? `${state.name} pages` : "National pages";
+  const label = contextNavLabel(county, state);
 
   return (
     <nav className="context-nav" aria-label={label}>
       {links.map((link) =>
         link.external ? (
-          <a key={link.to} className="context-link" href={link.to} target="_blank" rel="noopener">
+          <a key={link.to} className="context-link" href={link.to} target={link.newTab ? "_blank" : undefined} rel={link.newTab ? "noopener" : undefined}>
             {link.label}
           </a>
         ) : (
@@ -493,9 +468,42 @@ function ContextNav({ county, state }: { county?: NonNullable<ReturnType<typeof 
   );
 }
 
-type ContextLink = { to: string; label: string; end?: boolean; external?: boolean };
+type ContextLink = JumpLink;
 
-const WHITE_HOUSE_NEWS_LINK: ContextLink = { to: "https://www.whitehouse.gov/live/", label: "White House News", external: true };
+const WHITE_HOUSE_NEWS_LINK: ContextLink = { to: "https://www.whitehouse.gov/live/", label: "White House News", external: true, newTab: true };
+
+function contextNavLabel(county?: NonNullable<ReturnType<typeof getCounty>>, state?: ReturnType<typeof getStateBySlug>) {
+  return county ? `${county.displayName} pages` : state ? `${state.name} pages` : "National pages";
+}
+
+/** The masthead's site-wide links, shared with the phone jump menu. */
+function primaryLinks(county?: ReturnType<typeof getCounty>, state?: ReturnType<typeof getStateBySlug>): (JumpLink & { className?: string })[] {
+  return [
+    { to: "/", label: "Front Page", end: true },
+    { to: "/states", label: "Find Your State & County News", className: "nav-link-directory" },
+    { to: "/op-eds", label: "Op-Eds" },
+    { to: "/partners", label: "Partners" },
+    { to: ITM_TRADING_PATH, label: "ITM Trading" },
+    { to: "/about", label: "About" },
+    { to: "/morning-post", label: "Morning Post" },
+    { to: submitStoryPath(county, state), label: "Submit A Story" },
+    { to: "https://www.advertise.thecountypost.com/", label: "Advertise", external: true, className: "nav-link-advertise" },
+  ];
+}
+
+/** The menus this page shows, in the order the jump menu lists them after the page's feeds. */
+function jumpMenuGroups(
+  pathname: string,
+  isLegendsPage: boolean,
+  county?: NonNullable<ReturnType<typeof getCounty>>,
+  state?: ReturnType<typeof getStateBySlug>,
+): JumpLinkGroup[] {
+  return [
+    ...(county && isCountyDataPath(pathname, county) ? [{ label: `${county.displayName} data`, links: atlasDomainLinks(county) }] : []),
+    ...(!isLegendsPage ? [{ label: contextNavLabel(county, state), links: contextLinks(county, state) }] : []),
+    { label: "The County Post", links: primaryLinks(county, state) },
+  ];
+}
 
 /** Subject desk links under `base`, with White House News beside the Elections desk at every level. */
 function subjectLinks(base: string): ContextLink[] {
