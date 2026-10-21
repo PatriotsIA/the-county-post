@@ -199,14 +199,10 @@ test("the phone layout shows sponsor contacts and flags older or stale spot quot
   await page.locator('#stan-roberts').screenshot({ path: "test-results/itm-contact-mobile.png" });
 });
 
-test("ITM videos appear only on the landing page, limited to the four supplied videos and a blog link", async ({ page }) => {
+test("ITM videos are hidden for now: the landing page invites readers to contact Stan, with a blog link", async ({ page }) => {
   await page.goto("/itm-trading");
-  const videos = page.locator("#itm-videos iframe");
-  await expect(videos).toHaveCount(4);
-  await expect(videos.first()).toHaveAttribute("title", "Bigger Than AIG: The AI Debt Secretly Buried in Your Insurance - Dan Oliver");
-  expect(await videos.evaluateAll(frames => frames.map(frame => (frame as HTMLIFrameElement).src))).toEqual(
-    ["40IAZ22a7Ec", "VNPjarwfJaw", "QZcVYmEJ9x4", "1CDpb0G3v2g"].map(id => `https://www.youtube-nocookie.com/embed/${id}`),
-  );
+  await expect(page.locator('iframe[src*="youtube"]')).toHaveCount(0);
+  await expect(page.locator("#itm-videos")).toContainText("Contact Stan and his team for highly educational, informational videos.");
   await expect(page.getByRole("link", { name: "Read the ITM Trading blog" })).toHaveAttribute("href", "https://www.itmtrading.com/blog/?utm_source=countypost");
   for (const path of ["/topics/economy-markets", "/texas/economy-markets", "/texas/randall/economy-markets"]) {
     await page.goto(path);
@@ -235,7 +231,16 @@ test("ITM resources keep readers with Stan while inquiry pages are deferred", as
     await expect(page).toHaveURL(/#stan-roberts$/);
     await expect(page.getByRole("heading", { name: "Stan Roberts", exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: /Ask Stan about a product quote/ })).toHaveAttribute("href", "#stan-roberts");
-    await expect(page.getByRole("link", { name: /Precious-metals IRAs.*Ask Stan about IRAs/ })).toHaveAttribute("href", "#stan-roberts");
+    const ira = page.getByRole("link", { name: /Precious-metals IRAs.*Ask Stan about IRAs/ });
+    await expect(ira).toHaveAttribute("href", "#stan-roberts");
+    await expect(ira.getByRole("listitem")).toHaveText([
+      "Rolling Over Retirement Accounts to Precious Metals IRAs",
+      "Benefits/Advantages of Holding Physical Metals",
+      "Different Types of Metals",
+      "Metals as Wealth Insurance",
+      "Strategic Options in Metals",
+      "How to Liquidate",
+    ]);
     await expect(page.getByRole("link", { name: /company profile/ })).toHaveCount(0);
     await expect(page.locator('.itm-page a[href*="itmtrading.com/about"], .itm-page a[href*="itmtrading.com/ira"]')).toHaveCount(0);
     await expect(page.locator(".itm-team-grid .itm-small")).toHaveText(Array(3).fill("Senior Analyst · ITM Trading"));

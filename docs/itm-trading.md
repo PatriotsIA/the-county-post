@@ -78,6 +78,16 @@ links to Stan's contact section (`#stan-roberts`, "Ask Stan about IRAs") instead
 of ITM's IRA page. `aboutUrl` and `iraUrl` stay in `src/data/itm-trading.ts`
 for when those links return.
 
+## IRA topics and videos — October 20, 2026
+
+Stan's follow-up replaces the Retirement accounts description with a "Learn
+About" list (`iraTopics` in `src/data/itm-trading.ts`); the card still links to
+his contact section, and ITM's IRA page stays unlinked until readers contact
+the team. The YouTube embeds are hidden for now; the Videos & education section
+shows his line inviting readers to contact Stan and his team for videos, followed
+by the ITM blog button. `itmVideoIds` and `itmVideoTitles` are kept for their
+return.
+
 ## Verified content sources — October 1, 2026
 
 - https://www.itmtrading.com/about — family ownership, product categories,
