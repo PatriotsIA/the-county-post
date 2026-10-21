@@ -484,16 +484,21 @@ function genericNewsLabel(locality?: LocalityScope) {
 
 type FeedEntry = { type: "article"; item: NewsFeedItem } | { type: "ad"; ad: AdCreative; position: number };
 
+// A one-column feed (phones) would otherwise put an ad after every story.
+const SINGLE_COLUMN_ARTICLES_PER_AD = 5;
+
 function createFeedEntries(items: NewsFeedItem[], feedIdentity: string, gridColumns: number, inFeedAdRotation: AdCreative[]): FeedEntry[] {
   const entries: FeedEntry[] = [];
   const seed = hashFeedIdentity(feedIdentity);
-  const articlesPerAd = Math.max(1, gridColumns * 2 - 1);
+  const singleColumn = gridColumns <= 1;
+  const articlesPerAd = singleColumn ? SINGLE_COLUMN_ARTICLES_PER_AD : gridColumns * 2 - 1;
 
   for (let start = 0, adPosition = 0; start < items.length; start += articlesPerAd, adPosition += 1) {
     const chunk = items.slice(start, start + articlesPerAd);
-    // One ad follows every two grid rows of articles. Its column changes per
-    // feed and insertion, but a full article-only row always separates ad rows.
-    const adIndex = gridColumns + ((seed + adPosition) % gridColumns);
+    // On a multi-column grid one ad follows every two rows of articles. Its
+    // column changes per feed and insertion, but a full article-only row always
+    // separates ad rows. A single column shows five stories between ads.
+    const adIndex = singleColumn ? articlesPerAd : gridColumns + ((seed + adPosition) % gridColumns);
     entries.push(...chunk.slice(0, adIndex).map((item) => ({ type: "article" as const, item })));
 
     if (chunk.length && inFeedAdRotation.length) {
