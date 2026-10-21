@@ -1299,6 +1299,8 @@ test("phones get compact feed cards and a jump menu for the page's feeds and men
   await expect(lead.locator("article.feed-card").first()).toBeVisible();
   expect((await lead.locator("article.feed-card").first().boundingBox())!.height).toBeLessThan(240);
   expect((await lead.locator("a.feed-ad-card").first().boundingBox())!.height).toBeLessThan(240);
+  const cardOrder = () => lead.locator(".feed-grid > *").evaluateAll((cards) => cards.map((card) => (card.matches(".feed-ad-card") ? "ad" : "story")).join(" "));
+  await expect.poll(cardOrder).toMatch(/^(story ){5}ad story/);
 
   await page.getByRole("button", { name: "Jump to" }).click();
   const menu = page.getByRole("dialog", { name: "Jump to" });
