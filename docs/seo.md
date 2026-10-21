@@ -123,17 +123,25 @@ node .seo-build/generate-sitemaps.js
 Output is a sitemap index at `dist/sitemap.xml` over per-type children, chunked
 at 25,000 URLs (the spec limit is 50,000 / 50 MB).
 
-## AI crawlers are welcome
+## Only search engines may crawl
 
-`public/robots.txt` names AI and LLM agents in explicit `Allow` groups rather
-than leaving them to the wildcard: `GPTBot`, `OAI-SearchBot`, `ClaudeBot`,
-`Claude-User`, `PerplexityBot`, `Google-Extended`, `Applebot-Extended`, `CCBot`,
-`Bytespider`, `Meta-ExternalAgent`, and others. `public/llms.txt` gives the same
-audience a structured map of the URL shapes, county sections, and data
-provenance.
+`public/robots.txt` disallows everything by default and allows only search
+engines: `Googlebot` (which also covers Google's image, news and video
+crawlers), `Google-InspectionTool` (Search Console's live tests), `Bingbot`,
+`DuckDuckBot` and `Applebot`. Link
+preview fetchers (`Twitterbot`, `facebookexternalhit`, `LinkedInBot`,
+`Slackbot`, `Discordbot`) and `Stripebot` are allowed because they fetch single
+pages on request rather than crawling. `Google-Extended` and
+`Applebot-Extended` are disallowed, which opts the site out of Google and Apple
+AI training without affecting search.
 
-This is deliberate. Generic SEO checklists commonly recommend disallowing these
-agents; that is the opposite of what this site wants. Do not reverse it.
+This is the owner's decision of October 21, 2026, which reversed the earlier
+policy of welcoming AI and LLM crawlers. That day two AI crawlers (ShapBot and
+Reflectionbot) used about 95% of the news API's compute time: each county they
+rendered outside the pre-built states was a cold, 11-second feed build. Do not
+re-admit AI, answer-engine or SEO-tool crawlers without the owner's say-so.
+`public/llms.txt` still exists but is no longer reachable by the crawlers it
+was written for.
 
 ## Attribution
 
