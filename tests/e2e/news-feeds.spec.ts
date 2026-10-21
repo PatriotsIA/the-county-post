@@ -1289,3 +1289,35 @@ test("White House News follows Elections in the national and state navs", async 
     await expect(nav.getByRole("link", { name: "Elections" }).locator("xpath=following-sibling::a[1]")).toHaveText("White House News");
   }
 });
+
+test("phones get compact feed cards and a jump menu for the page's feeds and menus", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/texas/randall");
+  await page.getByRole("button", { name: "Dismiss bookmark reminder" }).click();
+
+  const lead = page.locator('[data-page-jump="Local headlines"]');
+  await expect(lead.locator("article.feed-card").first()).toBeVisible();
+  expect((await lead.locator("article.feed-card").first().boundingBox())!.height).toBeLessThan(240);
+  expect((await lead.locator("a.feed-ad-card").first().boundingBox())!.height).toBeLessThan(240);
+
+  await page.getByRole("button", { name: "Jump to" }).click();
+  const menu = page.getByRole("dialog", { name: "Jump to" });
+  await expect(menu.locator(".page-jump-group").first().getByRole("button")).toHaveText([
+    "Local headlines", "Local sports", "Obituaries", "Politics", "Economy & business",
+    "Crime & courts", "Opinion & op-eds", "Texas headlines", "National briefing",
+  ]);
+  await expect(menu.getByRole("navigation", { name: "Randall County pages" }).getByRole("link", { name: "Weather" })).toHaveAttribute("href", "/texas/randall/weather");
+  await expect(menu.getByRole("navigation", { name: "The County Post" }).getByRole("link", { name: "Morning Post" })).toHaveAttribute("href", "/morning-post");
+
+  await menu.getByRole("button", { name: "Obituaries" }).click();
+  await expect(menu).toHaveCount(0);
+  await expect(page.locator('[data-page-jump="Obituaries"] h2')).toBeInViewport();
+
+  await page.getByRole("button", { name: "Jump to" }).click();
+  await menu.getByRole("button", { name: "Back to top" }).click();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeLessThan(10);
+
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect(page.getByRole("button", { name: "Jump to" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Scroll to the top of the page" })).toHaveCount(1);
+});
