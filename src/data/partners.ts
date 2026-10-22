@@ -1,4 +1,4 @@
-import { ads, isAdVisibleInCounty, isCarouselOnlyAd, PARTNER_DIRECTORY_PATH, type AdCreative } from "./ads";
+import { ads, feedOnlySponsors, isAdVisibleInCounty, isCarouselOnlyAd, PARTNER_DIRECTORY_PATH, type AdCreative } from "./ads";
 import { getCounty, getCountiesForState } from "./counties";
 import { getStateBySlug } from "./states";
 import { ITM_TRADING_PATH } from "./itm-trading";
@@ -35,7 +35,7 @@ function preferPartnerCandidate(existing: AdCreative, candidate: AdCreative) {
 export function getPartnerCreatives(): AdCreative[] {
   const byName = new Map<string, AdCreative>();
 
-  for (const ad of [...ads, ...directoryPartners]) {
+  for (const ad of [...ads, ...feedOnlySponsors, ...directoryPartners]) {
     if (isCarouselOnlyAd(ad.id)) continue;
     const existing = byName.get(ad.name);
     byName.set(ad.name, existing ? preferPartnerCandidate(existing, ad) : ad);

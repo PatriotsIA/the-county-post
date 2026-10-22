@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { canSponsorFeed, getAdsForSlot, getInFeedAdRotation, type AdCreative } from "../data/ads";
+import { DIGNITY_MEMORIAL_AD_ID, getFeedSponsor, getInFeedAdRotation, type AdCreative } from "../data/ads";
 import { useAdEditionKey } from "../lib/useAdEditionKey";
 import { VideoAd } from "./VideoAd";
 import { prependFeaturedCountyPostOpEds } from "../data/county-post-op-eds";
@@ -519,19 +519,19 @@ function hashFeedIdentity(value: string) {
   return Array.from(value).reduce((hash, character) => (hash * 31 + character.charCodeAt(0)) >>> 0, 0);
 }
 
-const feedSponsorIds: Partial<Record<FeedKind, string>> = {
-  general: "guerrilla-gear-inline",
-  sports: "lemc-inline",
-  economy: "plains-bank-inline",
-  obituaries: "patriot-trailer-inline",
-  "jobs-business": "plains-bank-inline",
-  "budgets-levies": "lawyers-title-inline",
-  "audits-recounts": "amberwood-brush-inline",
+// Listed in order of preference; Dignity Memorial presents obituaries in Texas editions.
+const feedSponsorIds: Partial<Record<FeedKind, string[]>> = {
+  general: ["guerrilla-gear-inline"],
+  sports: ["lemc-inline"],
+  economy: ["plains-bank-inline"],
+  obituaries: [DIGNITY_MEMORIAL_AD_ID, "patriot-trailer-inline"],
+  "jobs-business": ["plains-bank-inline"],
+  "budgets-levies": ["lawyers-title-inline"],
+  "audits-recounts": ["amberwood-brush-inline"],
 };
 
 function FeedSponsor({ kind, sponsorId, editionKey }: { kind: FeedKind; sponsorId?: string; editionKey?: string }) {
-  const requestedId = sponsorId || feedSponsorIds[kind];
-  const sponsor = getAdsForSlot("inline", editionKey).find((ad) => ad.id === requestedId && canSponsorFeed(ad));
+  const sponsor = getFeedSponsor(sponsorId ? [sponsorId] : feedSponsorIds[kind] ?? [], editionKey);
   if (!sponsor) return null;
 
   return (
