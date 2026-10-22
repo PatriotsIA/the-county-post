@@ -22,6 +22,28 @@ import parallelBuilders from "../../ad-assets/parallel-builders.png";
 import gopConnect from "../../ad-assets/gopconnect-be-informed.png";
 import darrylBergstresserBanner from "../../ad-assets/darryl-bergstresser-banner.png";
 import dignityMemorialLogo from "../../ad-assets/dignity-memorial-logo.jpg";
+import booksAllSquare from "../../ad-assets/books-all-square.webp";
+import booksAllBanner from "../../ad-assets/books-all-banner.webp";
+import booksCaesarRodneySquare from "../../ad-assets/books-caesar-rodney-square.webp";
+import booksCaesarRodneyBanner from "../../ad-assets/books-caesar-rodney-banner.webp";
+import booksElectronicVotingSquare from "../../ad-assets/books-electronic-voting-square.webp";
+import booksElectronicVotingBanner from "../../ad-assets/books-electronic-voting-banner.webp";
+import booksFoundingFathersSquare from "../../ad-assets/books-founding-fathers-square.webp";
+import booksFoundingFathersBanner from "../../ad-assets/books-founding-fathers-banner.webp";
+import booksFoundingOfAmericaSquare from "../../ad-assets/books-founding-of-america-square.webp";
+import booksFoundingOfAmericaBanner from "../../ad-assets/books-founding-of-america-banner.webp";
+import booksGrowingTheNationSquare from "../../ad-assets/books-growing-the-nation-square.webp";
+import booksGrowingTheNationBanner from "../../ad-assets/books-growing-the-nation-banner.webp";
+import booksMenWhoHeldTheOarsSquare from "../../ad-assets/books-men-who-held-the-oars-square.webp";
+import booksMenWhoHeldTheOarsBanner from "../../ad-assets/books-men-who-held-the-oars-banner.webp";
+import booksOperationShowUpSquare from "../../ad-assets/books-operation-show-up-square.webp";
+import booksOperationShowUpBanner from "../../ad-assets/books-operation-show-up-banner.webp";
+import booksWomenWhoGuardedTheBridgeSquare from "../../ad-assets/books-women-who-guarded-the-bridge-square.webp";
+import booksWomenWhoGuardedTheBridgeBanner from "../../ad-assets/books-women-who-guarded-the-bridge-banner.webp";
+import ballotBoxSquare from "../../ad-assets/ballot-box-square.webp";
+import ballotBoxBanner from "../../ad-assets/ballot-box-banner.webp";
+import patriotsForPaperSquare from "../../ad-assets/patriots-for-paper-square.webp";
+import patriotsForPaperBanner from "../../ad-assets/patriots-for-paper-banner.webp";
 import dignityMemorialWordmark from "../../ad-assets/dignity-memorial-wordmark.jpg";
 import { panhandleLegendsAds } from "./panhandle-legends";
 
@@ -123,13 +145,46 @@ export type AdCreative = {
   stateSlugs?: string[];
   countyKeys?: string[];
   inFeedWeight?: number;
+  /** false keeps the ad out of the county masthead sponsor pool, so existing assignments hold. */
+  mastheadSponsor?: boolean;
   video?: { embedUrl: string; title: string; watchUrl: string };
 };
 
 export const PARTNER_DIRECTORY_PATH = "/partners";
 
+const BOOKS_URL = "https://shop.patriotsinaction.com/collections/books";
+
+// Patriots in Action books: a square and a banner for each of nine titles. Each
+// runs at weight 1, so together they take about three advertisers' in-feed share.
+const books = {
+  "all": { square: booksAllSquare, banner: booksAllBanner, alt: "Books for All Ages — the Patriots in Action book collection. Shop the collection." },
+  "caesar-rodney": { square: booksCaesarRodneySquare, banner: booksCaesarRodneyBanner, alt: "One ride. A nation’s future. Discover the courage of Caesar Rodney — read the story." },
+  "electronic-voting": { square: booksElectronicVotingSquare, banner: booksElectronicVotingBanner, alt: "Big title. Bigger punchline. Everything a Voter Can Personally Verify About Electronic Voting by Daniel L. Rogers — get the book." },
+  "founding-fathers": { square: booksFoundingFathersSquare, banner: booksFoundingFathersBanner, alt: "Big ideas. Bright colors. America’s Founding Fathers coloring book — color America’s founding story. Shop now." },
+  "founding-of-america": { square: booksFoundingOfAmericaSquare, banner: booksFoundingOfAmericaBanner, alt: "Color your way through history! The Founding of America coloring book. Shop now." },
+  "growing-the-nation": { square: booksGrowingTheNationSquare, banner: booksGrowingTheNationBanner, alt: "A growing nation. A colorful adventure. Growing the Nation coloring book. Shop now." },
+  "men-who-held-the-oars": { square: booksMenWhoHeldTheOarsSquare, banner: booksMenWhoHeldTheOarsBanner, alt: "Ordinary men. Extraordinary courage. The Men Who Held the Oars: How Fishermen Carried the Revolution — read the story." },
+  "operation-show-up": { square: booksOperationShowUpSquare, banner: booksOperationShowUpBanner, alt: "Liberty is not a spectator sport. Operation Show Up by Daniel L. Rogers — get the book." },
+  "women-who-guarded-the-bridge": { square: booksWomenWhoGuardedTheBridgeSquare, banner: booksWomenWhoGuardedTheBridgeBanner, alt: "Someone had to guard the bridge. The Women Who Guarded the Bridge — read the story." },
+};
+
+function bookAd(title: keyof typeof books, slot: AdSlotId): AdCreative {
+  const book = books[title];
+  return {
+    id: `books-${title}-${slot}`,
+    slot,
+    image: slot === "inline" ? book.square : book.banner,
+    name: "Patriots in Action Books",
+    alt: book.alt,
+    href: BOOKS_URL,
+    inFeedWeight: 1,
+    mastheadSponsor: false,
+  };
+}
+
 // When adding a county-scoped ad (countyKeys), it is included automatically on that
 // county's partners page and in the global partners directory via src/data/partners.ts.
+// Array order is rotation order: new creatives sit between existing ones of the same slot.
 export const ads: AdCreative[] = [
   {
     id: "gopconnect-inline",
@@ -139,6 +194,7 @@ export const ads: AdCreative[] = [
     alt: "My Local GOP — Be informed. Text GOP to 84576. Paid for by GOPConnect, LLC.",
     href: "https://mylocalgop.com/",
   },
+  bookAd("all", "inline"),
   {
     id: "merch-inline",
     slot: "inline",
@@ -210,6 +266,17 @@ export const ads: AdCreative[] = [
     alt: "LEMC Realty",
     href: "https://www.331-rent.com/",
   },
+  bookAd("caesar-rodney", "inline"),
+  {
+    id: "ballot-box-inline",
+    slot: "inline",
+    image: ballotBoxSquare,
+    name: "The Ballot Box",
+    alt: "The Ballot Box — Your community. Your government. Explore officials, candidates and races at TheBallotBox.com.",
+    href: "https://theballotbox.com/",
+    mastheadSponsor: false,
+  },
+  bookAd("electronic-voting", "inline"),
   {
     id: "plains-bank-inline",
     slot: "inline",
@@ -218,6 +285,7 @@ export const ads: AdCreative[] = [
     alt: "Plains Bank",
     href: PARTNER_DIRECTORY_PATH,
   },
+  bookAd("founding-fathers", "inline"),
   {
     id: "patriot-trailer-inline",
     slot: "inline",
@@ -226,6 +294,7 @@ export const ads: AdCreative[] = [
     alt: "Patriot Trailer Store",
     href: "https://piaevents.com/",
   },
+  bookAd("founding-of-america", "inline"),
   {
     id: "guerrilla-gear-inline",
     slot: "inline",
@@ -280,6 +349,19 @@ export const ads: AdCreative[] = [
     alt: "LEMC Realty",
     href: "https://www.331-rent.com/",
   },
+  bookAd("all", "banner"),
+  bookAd("caesar-rodney", "banner"),
+  {
+    id: "ballot-box-banner",
+    slot: "banner",
+    image: ballotBoxBanner,
+    name: "The Ballot Box",
+    alt: "The Ballot Box — Your community. Your government. Explore officials, candidates and races at TheBallotBox.com.",
+    href: "https://theballotbox.com/",
+    mastheadSponsor: false,
+  },
+  bookAd("electronic-voting", "banner"),
+  bookAd("founding-fathers", "banner"),
   {
     id: "amberwood-brush-inline",
     slot: "inline",
@@ -289,6 +371,17 @@ export const ads: AdCreative[] = [
     alt: "Amberwood Brush Site — serving residential and commercial customers",
     href: PARTNER_DIRECTORY_PATH,
   },
+  bookAd("growing-the-nation", "inline"),
+  {
+    id: "patriots-for-paper-inline",
+    slot: "inline",
+    image: patriotsForPaperSquare,
+    name: "Patriots for Paper",
+    alt: "Patriots for Paper — Paper ballots. Public counts. Real audits. Join the pledge at PatriotsForPaper.com.",
+    href: "https://patriotsforpaper.com/",
+    stateSlugs: ["texas"],
+    mastheadSponsor: false,
+  },
   {
     id: "become-a-patriot-inline",
     slot: "inline",
@@ -297,6 +390,7 @@ export const ads: AdCreative[] = [
     alt: "Become a Patriot",
     href: "https://community.patriotsinaction.com/",
   },
+  bookAd("men-who-held-the-oars", "inline"),
   {
     id: "become-a-patriot-2-inline",
     slot: "inline",
@@ -305,6 +399,7 @@ export const ads: AdCreative[] = [
     alt: "Become a Patriot",
     href: "https://community.patriotsinaction.com/",
   },
+  bookAd("operation-show-up", "inline"),
   {
     id: "lawyers-title-inline",
     slot: "inline",
@@ -313,6 +408,7 @@ export const ads: AdCreative[] = [
     alt: "Lawyers Title",
     href: PARTNER_DIRECTORY_PATH,
   },
+  bookAd("women-who-guarded-the-bridge", "inline"),
   {
     id: "mattress-banner",
     slot: "banner",
@@ -321,6 +417,18 @@ export const ads: AdCreative[] = [
     alt: "Mattress By Appointment",
     href: PARTNER_DIRECTORY_PATH,
   },
+  bookAd("founding-of-america", "banner"),
+  {
+    id: "patriots-for-paper-banner",
+    slot: "banner",
+    image: patriotsForPaperBanner,
+    name: "Patriots for Paper",
+    alt: "Patriots for Paper — Paper ballots. Public counts. Real audits. Join the pledge at PatriotsForPaper.com.",
+    href: "https://patriotsforpaper.com/",
+    stateSlugs: ["texas"],
+    mastheadSponsor: false,
+  },
+  bookAd("growing-the-nation", "banner"),
   {
     id: "pia-banner",
     slot: "banner",
@@ -346,6 +454,9 @@ export const ads: AdCreative[] = [
       "texas/ector",
     ],
   },
+  bookAd("men-who-held-the-oars", "banner"),
+  bookAd("operation-show-up", "banner"),
+  bookAd("women-who-guarded-the-bridge", "banner"),
 ];
 
 // Sponsors that present a feed and are listed on the partner pages, but stay out

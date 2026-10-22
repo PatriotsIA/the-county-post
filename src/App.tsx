@@ -1694,7 +1694,7 @@ function MastheadHeroCopy({
 
 function CountySponsor({ county }: { county: NonNullable<ReturnType<typeof getCounty>> }) {
   const sponsorAds = getAdsForSlot("inline", countyAdKey(county.state.slug, county.slug))
-    .filter((ad) => ad.id !== "guerrilla-gear-inline" && canSponsorFeed(ad));
+    .filter((ad) => ad.id !== "guerrilla-gear-inline" && ad.mastheadSponsor !== false && canSponsorFeed(ad));
   const seed = county.fips || `${county.state.slug}/${county.slug}`;
   const hash = Array.from(seed).reduce((total, character) => total + character.charCodeAt(0), 0);
   const sponsor = sponsorAds[hash % sponsorAds.length];
