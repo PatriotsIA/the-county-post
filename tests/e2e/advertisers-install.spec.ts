@@ -143,6 +143,56 @@ test("Amberwood uses square artwork for ads and the wide logo for feed sponsorsh
   await expect(page.locator('img[src*="Amberwood-Brush-Site-250"]')).toHaveCount(0);
 });
 
+test("books, The Ballot Box and Patriots for Paper run spread between existing ads without moving masthead sponsors", async ({ page }) => {
+  await page.goto("/partners");
+  const placement = await page.evaluate(async () => {
+    const paths = ["/src/data/ads.ts", "/src/data/partners.ts", "/src/data/counties.ts"];
+    const [adData, partnerData, countyData] = await Promise.all(paths.map((path) => import(path)));
+    type Ad = { id: string; href: string; video?: unknown };
+    const countyKeys = countyData.counties.map((county: { state: { slug: string }; slug: string }) => `${county.state.slug}/${county.slug}`);
+    const editions = [undefined, "texas", "oklahoma", ...countyKeys];
+    const isBook = (ad: Ad) => ad.id.startsWith("books-");
+    const count = (slot: string, key: string | undefined, test: (ad: Ad) => boolean) => adData.getAdsForSlot(slot, key).filter(test).length;
+    const hrefs = (prefix: string) => [...new Set(adData.ads.filter((ad: Ad) => ad.id.startsWith(prefix)).map((ad: Ad) => ad.href))];
+    const longestBookRun = (creatives: Ad[]) => creatives.reduce((run, ad) => ({ now: isBook(ad) ? run.now + 1 : 0, max: Math.max(run.max, isBook(ad) ? run.now + 1 : 0) }), { now: 0, max: 0 }).max;
+    const spreadIn = (key?: string) => ({
+      squares: longestBookRun(adData.getAdsForSlot("inline", key).filter((ad: Ad) => !ad.video)),
+      feed: longestBookRun(adData.getInFeedAdRotation(key).filter((ad: Ad) => !ad.video)),
+      banners: longestBookRun(adData.getAdsForSlot("banner", key)),
+      firstBanner: adData.getAdsForSlot("banner", key)[0].id,
+    });
+    return {
+      booksEverywhere: editions.every((key) => count("inline", key, isBook) === 9 && count("banner", key, isBook) === 9),
+      ballotBoxEverywhere: editions.every((key) => ["inline", "banner"].every((slot) => count(slot, key, (ad) => ad.id.startsWith("ballot-box-")) === 1)),
+      paperOnlyInTexas: editions.every((key) => ["inline", "banner"].every((slot) =>
+        count(slot, key, (ad) => ad.id.startsWith("patriots-for-paper-")) === (key?.split("/")[0] === "texas" ? 1 : 0))),
+      hrefs: [hrefs("books-"), hrefs("ballot-box-"), hrefs("patriots-for-paper-")],
+      spread: [spreadIn(), spreadIn("texas/harris")],
+      partners: [partnerData.getSitewidePartners().filter((ad: { name: string }) => /^(Patriots in Action Books|The Ballot Box)$/.test(ad.name)).length, partnerData.getStatewidePartners("texas").filter((ad: { name: string }) => ad.name === "Patriots for Paper").length],
+    };
+  });
+  expect(placement).toEqual({
+    booksEverywhere: true,
+    ballotBoxEverywhere: true,
+    paperOnlyInTexas: true,
+    hrefs: [["https://shop.patriotsinaction.com/collections/books"], ["https://theballotbox.com/"], ["https://patriotsforpaper.com/"]],
+    spread: Array.from({ length: 2 }, () => ({ squares: 1, feed: 1, banners: 3, firstBanner: "lemc-banner" })),
+    partners: [2, 1],
+  });
+
+  // County masthead sponsors are assigned by position in the ad list; new ads must not reshuffle them (PIA-014).
+  for (const [path, sponsor] of [["/texas/potter", "Parallel Builders"], ["/texas/harris", "Plains Bank"], ["/arkansas/polk", "Become a Patriot"], ["/new-york/kings", "Amberwood Brush"]]) {
+    await page.goto(path);
+    await expect(page.locator(".county-sponsor img"), path).toHaveAttribute("alt", new RegExp(`^${sponsor}`));
+  }
+  await page.goto("/texas/harris");
+  for (const [selector, size] of [['.ad-slot-inline img[src*="books-all-square"]', [750, 750]], ['.ad-banner-slide img[src*="patriots-for-paper-banner"]', [1761, 600]]] as const) {
+    const image = page.locator(selector).first();
+    await image.evaluate((element: HTMLImageElement) => element.decode());
+    expect(await image.evaluate((element: HTMLImageElement) => [element.naturalWidth, element.naturalHeight])).toEqual(size);
+  }
+});
+
 test("Dignity Memorial presents obituaries in every Texas edition without joining the ad rotation", async ({ page }) => {
   await page.goto("/partners");
   const targeting = await page.evaluate(async () => {
