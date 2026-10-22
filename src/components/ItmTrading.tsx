@@ -49,7 +49,7 @@ export function ItmTrading() {
     <section id="itm-videos" className="itm-education" aria-labelledby="itm-videos-title">
       <header className="itm-section-heading"><div><p className="kicker">ITM Trading video desk</p><h2 id="itm-videos-title">Videos &amp; education</h2></div></header>
       <p className="itm-education-copy">Contact Stan and his team for highly educational, informational videos.</p>
-      <a className="itm-button" href={itmTrading.blogUrl} target="_blank" rel="noreferrer sponsored">Read the ITM Trading blog <span aria-hidden="true">↗</span></a>
+      <a className="itm-button" href="#stan-roberts">Contact Stan <span aria-hidden="true">→</span></a>
     </section>
     <p className="itm-page-note">Company information supplied by ITM Trading, with office details from its <a href={itmTrading.contactUrl} target="_blank" rel="noreferrer sponsored">Contact page</a>. Stan’s profile updated October 6, 2026; team contacts updated October 12, 2026; page copy updated October 20, 2026. Educational information, prices, and product values are subject to change. Contact Stan at ITM Trading for current terms and quotes.</p>
   </div>;

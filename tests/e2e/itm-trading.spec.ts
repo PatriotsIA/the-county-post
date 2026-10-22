@@ -199,11 +199,13 @@ test("the phone layout shows sponsor contacts and flags older or stale spot quot
   await page.locator('#stan-roberts').screenshot({ path: "test-results/itm-contact-mobile.png" });
 });
 
-test("ITM videos are hidden for now: the landing page invites readers to contact Stan, with a blog link", async ({ page }) => {
+test("ITM videos are hidden for now: the landing page invites readers to contact Stan, with a button to his contacts", async ({ page }) => {
   await page.goto("/itm-trading");
   await expect(page.locator('iframe[src*="youtube"]')).toHaveCount(0);
   await expect(page.locator("#itm-videos")).toContainText("Contact Stan and his team for highly educational, informational videos.");
-  await expect(page.getByRole("link", { name: "Read the ITM Trading blog" })).toHaveAttribute("href", "https://www.itmtrading.com/blog/?utm_source=countypost");
+  await expect(page.locator('a[href*="itmtrading.com/blog"]')).toHaveCount(0);
+  await page.locator("#itm-videos").getByRole("link", { name: "Contact Stan", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Stan Roberts", exact: true })).toBeInViewport();
   for (const path of ["/topics/economy-markets", "/texas/economy-markets", "/texas/randall/economy-markets"]) {
     await page.goto(path);
     await expect(page.locator("h1, h2").first()).toBeAttached();
