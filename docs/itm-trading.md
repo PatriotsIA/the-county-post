@@ -88,6 +88,10 @@ shows his line inviting readers to contact Stan and his team for videos, followe
 by the ITM blog button. `itmVideoIds` and `itmVideoTitles` are kept for their
 return.
 
+On October 22, 2026 the blog button became a "Contact Stan" button that jumps to
+his contact section (`#stan-roberts`). `blogUrl` stays in
+`src/data/itm-trading.ts`, unlinked.
+
 ## Verified content sources — October 1, 2026
 
 - https://www.itmtrading.com/about — family ownership, product categories,
