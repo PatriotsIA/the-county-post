@@ -31,6 +31,46 @@ export const dataCentersOpEd = {
   authorBio: "Dan Rogers is the publisher of The County Post and a Texas Panhandle cattleman.",
 } as const;
 
+// Paragraphs mark the author's emphasis with **double asterisks**.
+export const texasMailerOpEd = {
+  "id": "county-post-op-ed-texas-parents-transgender-mailer",
+  "slug": "texas-parents-deserve-answers-about-the-transgender-mailer",
+  "path": "/op-eds/texas-parents-deserve-answers-about-the-transgender-mailer",
+  "category": "Opinion",
+  "title": "Texas Parents Deserve Answers About the Transgender Mailer",
+  "deck": "The most important question may not be what the pamphlet says. It is: Who sent it, and why?",
+  "byline": "By Kristin Griswold, The County Post",
+  "publishedAt": "2026-10-22T13:49:03-05:00",
+  "paragraphs": [
+    "There is something deeply unsettling about opening your mailbox and finding a glossy pamphlet addressed not to you, but to your child.",
+    "That is what parents across Texas have reported in recent days. The publication, titled the “Texas Trans & LGBTQ+ Student Resource Guide,” presents itself as a resource for transgender and LGBTQ+ students. It discusses student rights, finding support outside the family, emancipation and other sensitive subjects.",
+    "But the most important question may not be what the pamphlet says.",
+    "It is: **Who sent it, and why?**",
+    "That question matters because the organization prominently associated with the mailer, the Transgender Education Network of Texas, says it did not author, approve or distribute the material. TENT has publicly denied involvement, and reporting by The Texas Tribune found that the entity identified as the “Texas Transgender Student Union” was registered as a Wyoming LLC only in September.",
+    "The timing also deserves scrutiny. The mailers began appearing as early voting started for the November 2026 election. No public evidence has yet established who paid for the mailing or who ultimately directed it.",
+    "That uncertainty should concern Texans across the political spectrum.",
+    "Parents who oppose transgender advocacy may understandably be angry that material concerning their children arrived without their knowledge. Parents who support transgender children should be equally concerned if an outside organization is falsely using the names and reputations of legitimate nonprofits to communicate with families.",
+    "And everyone should be concerned when political tactics deliberately blur the line between advocacy and deception.",
+    "There is an important distinction here: **protecting children and respecting parents does not require denying that transgender young people exist.** Nor does concern about transgender advocacy require assuming that every organization supporting LGBTQ+ youth is acting improperly.",
+    "But neither should parents be expected to accept anonymous or misleading political communications involving their children without asking questions.",
+    "The pamphlets reportedly direct students toward outside organizations and discuss what students can do if their parents do not support them. That is precisely the kind of material that deserves transparency about its authorship, funding and purpose.",
+    "If the mailer was genuinely intended as a student resource, its sponsors should have no reason to hide.",
+    "If it was designed primarily to provoke parents during an election, Texans deserve to know that, too.",
+    "And if someone intentionally made the pamphlet appear to come from organizations that had nothing to do with it, that raises an entirely different set of questions about accountability.",
+    "Already, the controversy has produced consequences beyond political arguments. TENT has reported backlash and threats after the mailers were attributed to the organization. Other nonprofits have also reportedly been dragged into the controversy after their names or contact information circulated online.",
+    "That is not healthy political discourse.",
+    "Texas parents are perfectly capable of deciding what they believe about transgender issues. They do not need anonymous operatives manufacturing outrage on their behalf.",
+    "The proper response now is simple: **find out who did it.**",
+    "Who created the Texas Transgender Student Union? Who financed the printing and postage? Who obtained the mailing lists? Who authorized the use of other organizations' names and websites? Was the mailer part of a political campaign? And did anyone intentionally attempt to mislead Texas families?",
+    "Those questions deserve answers from investigators, election officials and anyone else with the authority to follow the money and the paper trail.",
+    "Most Texans can disagree passionately about transgender policy, parental rights and the role of schools. That disagreement is part of democracy.",
+    "But democracy depends on something more basic than agreement:",
+    "**We need to know who is talking to us.**",
+    "Texas parents should demand nothing less."
+  ],
+  "authorBio": "Kristin Griswold is a contributor to The County Post. The views expressed in this column are those of the author."
+} as const;
+
 export const millennialVoiceOpEd = {
   "id": "county-post-op-ed-millennial-generation-voice",
   "slug": "the-millennial-generation-has-a-voice-are-we-using-it",
@@ -91,7 +131,7 @@ export const millennialVoiceOpEd = {
 } as const;
 
 // Newest first; County Post originals appear on every opinion desk.
-export const countyPostOpEds: readonly CountyPostOpEd[] = [millennialVoiceOpEd, dataCentersOpEd];
+export const countyPostOpEds: readonly CountyPostOpEd[] = [texasMailerOpEd, millennialVoiceOpEd, dataCentersOpEd];
 
 export const featuredCountyPostOpEds: NewsFeedItem[] = countyPostOpEds.map((article) => ({
   id: article.id,
