@@ -143,6 +143,51 @@ test("Amberwood uses square artwork for ads and the wide logo for feed sponsorsh
   await expect(page.locator('img[src*="Amberwood-Brush-Site-250"]')).toHaveCount(0);
 });
 
+test("Dignity Memorial presents obituaries in every Texas edition without joining the ad rotation", async ({ page }) => {
+  await page.goto("/partners");
+  const targeting = await page.evaluate(async () => {
+    const paths = ["/src/data/ads.ts", "/src/data/partners.ts", "/src/data/counties.ts"];
+    const [adData, partnerData, countyData] = await Promise.all(paths.map((path) => import(path)));
+    const id = adData.DIGNITY_MEMORIAL_AD_ID;
+    const isDignity = (ad: { id: string }) => ad.id === id;
+    const countyKeys = countyData.counties.map((county: { state: { slug: string }; slug: string }) => `${county.state.slug}/${county.slug}`);
+    const texasEditions = ["texas", ...countyKeys.filter((key: string) => key.startsWith("texas/"))];
+    const otherEditions = [undefined, "arkansas", ...countyKeys.filter((key: string) => !key.startsWith("texas/"))];
+    return {
+      texasEditions: texasEditions.length,
+      sponsorsTexas: texasEditions.every((key) => adData.getFeedSponsor([id], key)?.id === id),
+      absentElsewhere: otherEditions.every((key) => !adData.getFeedSponsor([id], key)),
+      outOfRotation: [...texasEditions, ...otherEditions].every((key) =>
+        !adData.getAdsForSlot("inline", key).some(isDignity) && !adData.getInFeedAdRotation(key).some(isDignity)),
+      statewidePartner: partnerData.getStatewidePartners("texas").filter(isDignity).length,
+      everyTexasCountyPartner: texasEditions.slice(1).every((key) => partnerData.getPartnersForCounty(key).some(isDignity)),
+    };
+  });
+  expect(targeting).toEqual({ texasEditions: 255, sponsorsTexas: true, absentElsewhere: true, outOfRotation: true, statewidePartner: 1, everyTexasCountyPartner: true });
+
+  for (const path of ["/texas/harris", "/texas"]) {
+    await page.goto(path);
+    const sponsor = page.locator("#desk-obituaries .feed-sponsor");
+    await sponsor.locator("img").evaluate((image: HTMLImageElement) => image.decode());
+    await expect(sponsor.locator("img")).toHaveAttribute("alt", "Dignity Memorial");
+    await expect(sponsor).toHaveAttribute("href", "https://www.dignitymemorial.com/");
+    expect(await sponsor.locator("img").evaluate((image: HTMLImageElement) => [image.naturalWidth, image.naturalHeight])).toEqual([580, 200]);
+  }
+  await page.goto("/arkansas/polk");
+  await expect(page.locator("#desk-obituaries .feed-sponsor img")).toHaveAttribute("alt", "Patriot Trailer Store");
+
+  for (const path of ["/partners", "/texas/harris/partners"]) {
+    await page.goto(path);
+    const card = page.locator(".partner-section").filter({ hasText: /statewide partners/i }).locator(".partner-card")
+      .filter({ has: page.getByRole("heading", { name: "Dignity Memorial", exact: true }) });
+    await expect(card).toContainText("Supporting every county in Texas.");
+    await expect(card.locator("img")).toHaveAttribute("src", /dignity-memorial-wordmark\.jpg/);
+    await expect(card.getByRole("link", { name: "Visit partner" })).toHaveAttribute("href", "https://www.dignitymemorial.com/");
+  }
+  await page.goto("/arkansas/polk/partners");
+  await expect(page.getByRole("heading", { name: "Dignity Memorial", exact: true })).toHaveCount(0);
+});
+
 test("Texas advertiser targeting covers all 254 counties and excludes other editions", async ({ page }) => {
   await page.goto("/partners");
   const result = await page.evaluate(async (expectedVideoIds) => {

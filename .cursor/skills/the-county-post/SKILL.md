@@ -39,6 +39,7 @@ Copy `.env.example` to `.env` and set:
 - Ad creatives live in `src/data/ads.ts`. County-scoped ads use `countyKeys` (for example `texas/randall`).
 - Partner listings are derived from ads in `src/data/partners.ts`; do not maintain a separate partner list.
 - When adding a county-scoped ad, set `countyKeys` and it will appear in carousels, feed sponsors (if wired), and partner pages for those counties automatically.
+- A sponsor that should only present a feed (Dignity Memorial on Texas obituaries) goes in `feedOnlySponsors` in `src/data/ads.ts`: it is listed on partner pages but stays out of carousels, the in-feed rotation and the county masthead.
 - Global partners page: `/partners` (`GlobalPartnerDirectory`).
 - County partners page: `/:stateSlug/:countySlug/partners` (`CountyPartnerDirectory`).
 

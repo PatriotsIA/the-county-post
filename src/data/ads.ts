@@ -21,10 +21,13 @@ import parallelRoofing from "../../ad-assets/parallel-roofing.png";
 import parallelBuilders from "../../ad-assets/parallel-builders.png";
 import gopConnect from "../../ad-assets/gopconnect-be-informed.png";
 import darrylBergstresserBanner from "../../ad-assets/darryl-bergstresser-banner.png";
+import dignityMemorialLogo from "../../ad-assets/dignity-memorial-logo.jpg";
+import dignityMemorialWordmark from "../../ad-assets/dignity-memorial-wordmark.jpg";
 import { panhandleLegendsAds } from "./panhandle-legends";
 
 export type AdSlotId = "inline" | "banner";
 
+export const DIGNITY_MEMORIAL_AD_ID = "dignity-memorial-sponsor";
 export const LORI_HORNER_AD_ID = "lori-horner-inline";
 const loriHornerCountyKeys = ["texas/randall", "texas/potter"] as const;
 const parallelCountyKeys = ["texas/randall", "texas/potter"];
@@ -79,6 +82,13 @@ export function isCarouselOnlyAd(id: string) {
 
 export function canSponsorFeed(ad: AdCreative) {
   return !ad.video && !isCarouselOnlyAd(ad.id);
+}
+
+/** The first of the requested sponsors that appears in the edition presents the feed. */
+export function getFeedSponsor(ids: string[], editionKey?: string) {
+  const sponsors = [...ads, ...feedOnlySponsors].filter((ad) =>
+    ad.slot === "inline" && isAdVisibleInCounty(ad, editionKey) && canSponsorFeed(ad));
+  return ids.map((id) => sponsors.find((ad) => ad.id === id)).find(Boolean);
 }
 
 const DEFAULT_IN_FEED_AD_WEIGHT = 3;
@@ -335,5 +345,20 @@ export const ads: AdCreative[] = [
       "texas/midland",
       "texas/ector",
     ],
+  },
+];
+
+// Sponsors that present a feed and are listed on the partner pages, but stay out
+// of the ad rotation and the county masthead sponsor.
+export const feedOnlySponsors: AdCreative[] = [
+  {
+    id: DIGNITY_MEMORIAL_AD_ID,
+    slot: "inline",
+    image: dignityMemorialWordmark,
+    sponsorImage: dignityMemorialLogo,
+    name: "Dignity Memorial",
+    alt: "Dignity Memorial",
+    href: "https://www.dignitymemorial.com/",
+    stateSlugs: ["texas"],
   },
 ];
