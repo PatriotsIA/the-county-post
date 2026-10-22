@@ -227,11 +227,12 @@ test("pins County Post op-eds newest first on national, state, and county opinio
     await page.goto(desk.path, { waitUntil: "domcontentloaded" });
     const section = page.locator("section", { has: page.getByRole("heading", { name: desk.heading, exact: true }) });
     const firstCard = section.locator(".feed-card").first();
-    await expect(firstCard.locator(".feed-title")).toHaveText("The Millennial Generation Has a Voice. Are We Using It?");
-    await expect(firstCard.locator(".feed-title")).toHaveAttribute("href", "/op-eds/the-millennial-generation-has-a-voice-are-we-using-it");
+    await expect(firstCard.locator(".feed-title")).toHaveText("Texas Parents Deserve Answers About the Transgender Mailer");
+    await expect(firstCard.locator(".feed-title")).toHaveAttribute("href", "/op-eds/texas-parents-deserve-answers-about-the-transgender-mailer");
+    await expect(section.locator(".feed-title", { hasText: "The Millennial Generation Has a Voice. Are We Using It?" })).toHaveCount(1);
     await expect(section.locator(".feed-title", { hasText: "The Data Centers and the Rest of Us" })).toHaveCount(1);
     await expect(firstCard.locator(".feed-publisher")).toContainText("The County Post · Original reporting");
-    await expect(section.locator(".feed-publisher", { hasText: "The County Post" })).toHaveCount(2);
+    await expect(section.locator(".feed-publisher", { hasText: "The County Post" })).toHaveCount(3);
   }
 
   await page.goto("/op-eds/the-data-centers-and-the-rest-of-us");

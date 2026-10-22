@@ -3,6 +3,11 @@ import { jsonLdGraph, newsArticleLd, breadcrumbLd } from "../lib/seo";
 import { Link } from "react-router-dom";
 import type { CountyPostOpEd } from "../data/county-post-op-eds";
 
+// Paragraphs mark the author's emphasis with **double asterisks**.
+function withEmphasis(paragraph: string) {
+  return paragraph.split(/\*\*(.+?)\*\*/g).map((part, index) => (index % 2 ? <strong key={index}>{part}</strong> : part));
+}
+
 export function CountyPostOpEdPage({ article }: { article: CountyPostOpEd }) {
   return (
     <div className="layout-grid">
@@ -20,7 +25,7 @@ export function CountyPostOpEdPage({ article }: { article: CountyPostOpEd }) {
             publishedAt: article.publishedAt,
             authorName: article.byline.replace(/^By\s+/, "").replace(/,\s*The County Post$/, ""),
             section: article.category,
-            body: article.paragraphs.join("\n\n"),
+            body: article.paragraphs.join("\n\n").replace(/\*\*/g, ""),
           }),
           breadcrumbLd([
             { name: "United States", path: "/" },
@@ -39,7 +44,7 @@ export function CountyPostOpEdPage({ article }: { article: CountyPostOpEd }) {
 
         <div className="editorial-op-ed-body">
           {article.paragraphs.map((paragraph) => (
-            <p key={paragraph}>{paragraph}</p>
+            <p key={paragraph}>{withEmphasis(paragraph)}</p>
           ))}
           <p className="editorial-op-ed-author">{article.authorBio}</p>
         </div>

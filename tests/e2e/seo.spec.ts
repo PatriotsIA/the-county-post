@@ -212,6 +212,30 @@ test("a search-query 'source' never reaches the card as a byline", async ({ page
 });
 
 
+test("Texas mailer op-ed keeps the author's emphasis without literal asterisks", async ({ page }) => {
+  const path = "/op-eds/texas-parents-deserve-answers-about-the-transgender-mailer";
+  const title = "Texas Parents Deserve Answers About the Transgender Mailer";
+  await page.goto(path);
+  await expect(page.getByRole("heading", { level: 1, name: title, exact: true })).toBeVisible();
+  await expect(page.locator(".editorial-op-ed-byline")).toHaveText("By Kristin Griswold, The County Post");
+  const paragraphs = page.locator(".editorial-op-ed-body > p:not(.editorial-op-ed-author)");
+  await expect(paragraphs).toHaveCount(25);
+  await expect(paragraphs.last()).toHaveText("Texas parents should demand nothing less.");
+  await expect(page.locator(".editorial-op-ed-body strong")).toHaveText([
+    "Who sent it, and why?",
+    "protecting children and respecting parents does not require denying that transgender young people exist.",
+    "find out who did it.",
+    "We need to know who is talking to us.",
+  ]);
+  await expect(page.locator(".editorial-op-ed-body")).not.toContainText("**");
+  const head = await readHead(page);
+  expect(head.canonical).toBe(`https://thecountypost.com${path}`);
+  const article = await page.locator('script[type="application/ld+json"]').evaluateAll(nodes => nodes.flatMap(node => JSON.parse(node.textContent || "{}")["@graph"] || []).find(entry => entry["@type"] === "NewsArticle"));
+  expect(article.author.name).toBe("Kristin Griswold");
+  expect(article.articleBody).toBe((await paragraphs.allTextContents()).join("\n\n"));
+  await expect(page.locator(".breadcrumbs li").last()).toHaveText(title);
+});
+
 test("millennial op-ed preserves the full contribution and confirmed author metadata", async ({ page }) => {
   const path = "/op-eds/the-millennial-generation-has-a-voice-are-we-using-it";
   const title = "The Millennial Generation Has a Voice. Are We Using It?";
