@@ -18,6 +18,27 @@ Deploy the newsletter backend before publishing a frontend that calls `/invite`.
 
 Gift backend deployed October 15, 2026 with production sending/address parameters preserved. Verification: 54 backend tests, newsletter browser checks, frontend/backend builds and typechecks, and SAM lint. A live SES simulator invitation remained pending until confirmed, then today's Potter County edition was observed as sent within 0.7 seconds of polling. Duplicate requests retained the same send claims and a subsequent gift respected opt-out. The simulator subscription and tokens were removed; no real recipients were contacted.
 
+## Story pages
+
+Every headline in an edition opens a County Post page for that story, inside the edition that emailed it:
+
+| Edition | Story page |
+| --- | --- |
+| National | `/story/{id}` |
+| State | `/{state}/story/{id}` |
+| County | `/{state}/{county}/story/{id}` |
+
+- **Page contents:** the publisher's headline, name and date, plus the feed's short summary and image. A **Read the full story at {publisher}** button opens the original article in a new tab. A short list from the same desk links back to that desk, and the edition's own masthead, advertisers and signup run around it.
+- **Saving:** the worker saves each edition's stories, as `STORY#{id}` items in the subscriber table, before storing that edition's snapshot. A snapshot therefore never exists without its story pages.
+  - Items expire after 90 days through the table's `expires` TTL, so links in older emails keep working well past the 14-day snapshot window.
+  - The ID is 20 hex characters of the SHA-256 of the edition plus the article link. The same article gets a separate page in each edition that runs it.
+- **Reading:** `GET /stories/{id}` returns only the fields the page shows. Any other path returns 404, so no other kind of record can be read this way.
+- **Safety:** the page shows only what the worker saved. Nobody can build a County Post URL that displays a headline we did not send.
+- **Search engines:** story pages are `noindex, follow` (`morningPostStory` in `src/lib/seo.ts`) and carry no `Article` structured data. They are another publisher's reporting, credited and linked, and would be thin duplicates in search.
+- **Unavailable stories:** a page for an expired or unknown story, or one opened under another edition's URL, says the story is no longer available and links to that edition's news.
+
+Deploy the frontend first: until it ships, story URLs fall through to the site's 404. Then deploy this stack. No infrastructure or parameter changes are needed, because the API and worker already have read and write access to the table.
+
 ## Delivery and consent
 
 - Eight EventBridge Scheduler timezone schedules start the daily run at 06:15 local time, with daylight-saving adjustment. County defaults use its centroid and `tz-lookup`; readers may override the timezone, including in split-zone states/counties. National readers select their timezone.
@@ -27,7 +48,7 @@ Gift backend deployed October 15, 2026 with production sending/address parameter
 - SQS separates signup and daily fan-out from sending. Two workers, each pausing 1.1 seconds after an SES send, keep this service below the inspected 14/second regional quota. A 5,000-message daily budget initially reserves capacity for other PIA applications. Signup limits: 20/IP/hour, 3/address/day and 1,000 total/day. Review these limits as subscriptions grow.
 - Daily content is built once per edition/date/timezone and stored in a private S3 bucket for 14 days. A DynamoDB lease prevents concurrent builds. Missing/old stories are never fabricated. General stories are at most 72 hours old; obituaries at most seven days. Forecasts are dated and exclude expired periods. State/national forecasts explicitly identify their county locations.
 - Confirmations before 06:15 use a separate early snapshot so they do not freeze the scheduled morning edition's content. That subscriber still receives only one edition that local day.
-- All story links return to the appropriate `#desk-…` on The County Post. Weather returns to its county weather page. The frontend build generates sponsor artwork and a catalog from the current site ad list; county/state restrictions are retained. PIA placements lead; county editions prefer current local partners. Removed advertisers disappear from the next generated catalog.
+- Each story links to its own County Post story page (see *Story pages*). County Post originals link to their existing pages, and a feed item without a usable web link falls back to its `#desk-…`. Weather returns to its county weather page. The frontend build generates sponsor artwork and a catalog from the current site ad list; county/state restrictions are retained. PIA placements lead; county editions prefer current local partners. Removed advertisers disappear from the next generated catalog.
 - Scheduled delivery starts at 06:15; mailbox arrival depends on queue size and receiving mail servers. Scheduled jobs older than the 08:15 local cutoff are skipped; confirmation-triggered first editions may send any time on their original local date. Scheduling, throttling and shared snapshots avoid a request per subscriber to the upstream news API.
 - A permanent daily send claim prevents automatic duplicates. SES has no idempotency key: an ambiguous network timeout is left for manual review in the dead-letter queue, rather than risk a duplicate. Explicit SES throttles/rejections may retry. Never blindly replay ambiguous sends. Content-build and known delivery failures retry through SQS.
 
@@ -86,6 +107,6 @@ aws cloudformation describe-stacks --stack-name county-post-newsletter --profile
 
 Inspect the `FailedDeliveriesAlarm`, worker errors and SQS queue age before increasing volume. The CloudWatch alarm uses the existing `pia-operations-alerts` SNS topic, whose confirmed email destination is erik@patriotsinaction.com. The SES configuration suppresses hard bounces/complaints; the feedback consumer also blocks that address across all newsletter editions. Subscribers can change delivery timezone or unsubscribe using their email link; changing edition uses unsubscribe plus a newly confirmed signup.
 
-Preview only (no sends): `cd newsletter && npm run build && node dist/preview.mjs`. A preview fetches current national, Texas and Potter County feeds, writes ignored files under `previews/`, and never adds subscribers. Sending requires explicit `--to=… --from=…` flags and a verified SES sender. Use `--saved` to render the previously inspected snapshot without another feed fetch. Previews have no production SES tracking configuration and do not count as daily deliveries.
+Preview only (no sends): `cd newsletter && npm run build && node dist/preview.mjs`. A preview fetches current national, Texas and Potter County feeds, writes ignored files under `previews/`, and never adds subscribers. Sending requires explicit `--to=… --from=…` flags and a verified SES sender. Use `--saved` to render the previously inspected snapshot without another feed fetch. Headlines link to story pages, which open only once their stories are saved. Sending a preview therefore saves them first and needs `TABLE_NAME` set to the `SubscriberTable` output. `--save-stories` saves them without sending. Previews have no production SES tracking configuration and do not count as daily deliveries.
 
 External references: [SES production access](https://docs.aws.amazon.com/ses/latest/dg/request-production-access.html), [timezone scheduling](https://docs.aws.amazon.com/scheduler/latest/UserGuide/schedule-types.html), [SES unsubscribe headers](https://aws.amazon.com/blogs/messaging-and-targeting/using-one-click-unsubscribe-with-amazon-ses/), [GA4 Measurement Protocol](https://developers.google.com/analytics/devguides/collection/protocol/ga4/reference).

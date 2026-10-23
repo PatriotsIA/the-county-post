@@ -85,6 +85,8 @@ export const indexPolicy = {
 
   countySubmit: "noindex",
   submit: "noindex",
+  // Another publisher's story, credited and linked; thin by design.
+  morningPostStory: "noindex",
   classifieds: "noindex",
   notFound: "noindex",
 } as const satisfies Record<string, IndexTier>;
@@ -427,6 +429,7 @@ const SECTION_LABELS: Record<string, string> = {
   "local-sources": "Local Sources",
   submit: "Submit A Story",
   classifieds: "Classifieds",
+  story: "Morning Post Story",
 };
 
 function sectionLabel(slug: string) {

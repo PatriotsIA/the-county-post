@@ -4,6 +4,7 @@ import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { db, get, table, findByToken, createSubscriber, confirm, unsubscribe, rateLimit, seconds } from './store';
 import { UpdateCommand, TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
 import { InputError, SITE, ZONES, validateEmail, validateEdition, editionKey, editionLabel, suggestedZone, localDate, hash, type Subscriber } from './model';
+import type { StoryRecord } from './content';
 import { invitationMessage, prepareInvitation } from './invitations';
 
 const sqs = new SQSClient({});
@@ -26,6 +27,13 @@ export async function handler(event: APIGatewayProxyEventV2) {
     if (method === 'GET' && path === '/preferences') {
       const sub = await findByToken(query.get('token'), 'manage');
       return response(200, { edition: { level: sub.level, state: sub.state, county: sub.county, timeZone: sub.timeZone }, label: editionLabel(sub), status: sub.status }, origin);
+    }
+    const storyPath = /^\/stories\/([a-f0-9]{20})$/.exec(path);
+    if (method === 'GET' && storyPath) {
+      const record = await get<StoryRecord>(`STORY#${storyPath[1]}`);
+      if (!record || record.expires < seconds()) throw new InputError('This story is no longer available.', 404);
+      const { id, title, source, link, publishedAt, description, imageUrl, topic, deskTitle, edition } = record;
+      return response(200, { story: { id, title, source, link, publishedAt, description, imageUrl, topic, deskTitle, edition } }, origin);
     }
     if (method !== 'POST') return response(404, { error: 'Not found.' }, origin);
     const raw = event.isBase64Encoded ? Buffer.from(event.body || '', 'base64').toString() : event.body || '';

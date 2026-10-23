@@ -4,6 +4,13 @@ export const newsletterZones = [
   ['America/Anchorage', 'Alaska'], ['America/Adak', 'Aleutian'], ['Pacific/Honolulu', 'Hawaii'],
 ] as const;
 export type NewsletterEdition = { level: 'national' | 'state' | 'county'; state?: string; county?: string; timeZone: string };
+export type MorningPostStory = {
+  id: string; title: string; source: string; link: string; publishedAt: string; description?: string; imageUrl?: string;
+  topic: string; deskTitle: string; edition: { level: 'national' | 'state' | 'county'; state?: string; county?: string };
+};
+export async function fetchMorningPostStory(id: string, signal?: AbortSignal) {
+  return (await newsletterRequest<{ story: MorningPostStory }>(`/stories/${id}`, undefined, signal)).story;
+}
 export async function newsletterRequest<T = { message: string }>(path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
   const base = import.meta.env.VITE_NEWSLETTER_API_URL;
   if (!base) throw new Error('The morning newsletter is being prepared. Please check back soon.');

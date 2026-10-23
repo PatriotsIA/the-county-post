@@ -1,12 +1,17 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
-import { buildDigest, renderDigest } from './content';
+import { buildDigest, renderDigest, storyRecords } from './content';
 import { localDate, type Edition } from './model';
 
 // Sending is explicit; building previews alone never sends mail or creates subscribers.
 const recipient = process.argv.find(arg => arg.startsWith('--to='))?.slice(5);
 const sender = process.argv.find(arg => arg.startsWith('--from='))?.slice(7);
 if (recipient && !sender) throw new Error('Provide --from with a verified SES sender.');
+// Headlines link to County Post story pages, which only open once their stories are saved.
+// Saving is required before sending a preview and optional (--save-stories) otherwise.
+const saveStories = Boolean(recipient) || process.argv.includes('--save-stories');
+if (saveStories && !process.env.TABLE_NAME) throw new Error('Set TABLE_NAME to the SubscriberTable output so preview story pages open.');
+const store = saveStories ? await import('./store') : undefined;
 await mkdir('previews', { recursive: true });
 const ses = new SESv2Client({ region: 'us-east-2', maxAttempts: 1 });
 for (const edition of [
@@ -21,6 +26,7 @@ for (const edition of [
   await writeFile(`previews/${edition.level}.html`, rendered.html);
   await writeFile(`previews/${edition.level}.txt`, rendered.text);
   await writeFile(`previews/${edition.level}.json`, JSON.stringify(digest, null, 2));
+  if (store) await Promise.all(storyRecords(digest).map(record => store.put(record)));
   console.log(`${edition.level}: ${digest.sections.reduce((total: number, s: { stories: unknown[] }) => total + s.stories.length, 0)} stories, ${digest.forecasts.length} weather locations`);
   if (recipient) {
     const response = await ses.send(new SendEmailCommand({ FromEmailAddress: `The County Post <${sender}>`, Destination: { ToAddresses: [recipient] }, ReplyToAddresses: ['submissions@thecountypost.com'], Content: { Simple: { Subject: { Data: rendered.subject, Charset: 'UTF-8' }, Body: { Html: { Data: rendered.html, Charset: 'UTF-8' }, Text: { Data: rendered.text, Charset: 'UTF-8' } } } } }));
