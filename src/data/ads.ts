@@ -44,6 +44,10 @@ import ballotBoxSquare from "../../ad-assets/ballot-box-square.webp";
 import ballotBoxBanner from "../../ad-assets/ballot-box-banner.webp";
 import patriotsForPaperSquare from "../../ad-assets/patriots-for-paper-square.webp";
 import patriotsForPaperBanner from "../../ad-assets/patriots-for-paper-banner.webp";
+import stopSexualizingSquare from "../../ad-assets/stop-sexualizing-texas-children-square.webp";
+import stopSexualizingBanner from "../../ad-assets/stop-sexualizing-texas-children-banner.webp";
+import texasShariaWatchSquare from "../../ad-assets/texas-sharia-watch-square.webp";
+import texasShariaWatchBanner from "../../ad-assets/texas-sharia-watch-banner.webp";
 import dignityMemorialWordmark from "../../ad-assets/dignity-memorial-wordmark.jpg";
 import { panhandleLegendsAds } from "./panhandle-legends";
 
@@ -153,6 +157,10 @@ export type AdCreative = {
 export const PARTNER_DIRECTORY_PATH = "/partners";
 
 const BOOKS_URL = "https://shop.patriotsinaction.com/collections/books";
+const STOP_SEXUALIZING_URL = "https://recoveramerica.com/protectchildren";
+const TEXAS_SHARIA_WATCH_URL = "https://www.facebook.com/profile.php?id=61593844757341";
+const STOP_SEXUALIZING_ALT = "Stop sexualizing Texas children. Let children be children.";
+const TEXAS_SHARIA_WATCH_ALT = "Texas Sharia Watch — Sharia-Free Texas, legislative priority #2.";
 
 // Patriots in Action books: a square and a banner for each of nine titles. Each
 // runs at weight 1, so together they take about three advertisers' in-feed share.
@@ -278,6 +286,16 @@ export const ads: AdCreative[] = [
   },
   bookAd("electronic-voting", "inline"),
   {
+    id: "stop-sexualizing-texas-children-inline",
+    slot: "inline",
+    image: stopSexualizingSquare,
+    name: "Stop Sexualizing Texas Children",
+    alt: STOP_SEXUALIZING_ALT,
+    href: STOP_SEXUALIZING_URL,
+    stateSlugs: ["texas"],
+    mastheadSponsor: false,
+  },
+  {
     id: "plains-bank-inline",
     slot: "inline",
     image: plainsBank,
@@ -361,6 +379,16 @@ export const ads: AdCreative[] = [
     mastheadSponsor: false,
   },
   bookAd("electronic-voting", "banner"),
+  {
+    id: "stop-sexualizing-texas-children-banner",
+    slot: "banner",
+    image: stopSexualizingBanner,
+    name: "Stop Sexualizing Texas Children",
+    alt: STOP_SEXUALIZING_ALT,
+    href: STOP_SEXUALIZING_URL,
+    stateSlugs: ["texas"],
+    mastheadSponsor: false,
+  },
   bookAd("founding-fathers", "banner"),
   {
     id: "amberwood-brush-inline",
@@ -391,6 +419,16 @@ export const ads: AdCreative[] = [
     href: "https://community.patriotsinaction.com/",
   },
   bookAd("men-who-held-the-oars", "inline"),
+  {
+    id: "texas-sharia-watch-inline",
+    slot: "inline",
+    image: texasShariaWatchSquare,
+    name: "Texas Sharia Watch",
+    alt: TEXAS_SHARIA_WATCH_ALT,
+    href: TEXAS_SHARIA_WATCH_URL,
+    stateSlugs: ["texas"],
+    mastheadSponsor: false,
+  },
   {
     id: "become-a-patriot-2-inline",
     slot: "inline",
@@ -455,6 +493,16 @@ export const ads: AdCreative[] = [
     ],
   },
   bookAd("men-who-held-the-oars", "banner"),
+  {
+    id: "texas-sharia-watch-banner",
+    slot: "banner",
+    image: texasShariaWatchBanner,
+    name: "Texas Sharia Watch",
+    alt: TEXAS_SHARIA_WATCH_ALT,
+    href: TEXAS_SHARIA_WATCH_URL,
+    stateSlugs: ["texas"],
+    mastheadSponsor: false,
+  },
   bookAd("operation-show-up", "banner"),
   bookAd("women-who-guarded-the-bridge", "banner"),
 ];
