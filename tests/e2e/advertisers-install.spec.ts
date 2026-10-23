@@ -143,7 +143,7 @@ test("Amberwood uses square artwork for ads and the wide logo for feed sponsorsh
   await expect(page.locator('img[src*="Amberwood-Brush-Site-250"]')).toHaveCount(0);
 });
 
-test("books, The Ballot Box and Patriots for Paper run spread between existing ads without moving masthead sponsors", async ({ page }) => {
+test("books, The Ballot Box and the Texas statewide ads run spread between existing ads without moving masthead sponsors", async ({ page }) => {
   await page.goto("/partners");
   const placement = await page.evaluate(async () => {
     const paths = ["/src/data/ads.ts", "/src/data/partners.ts", "/src/data/counties.ts"];
@@ -152,6 +152,7 @@ test("books, The Ballot Box and Patriots for Paper run spread between existing a
     const countyKeys = countyData.counties.map((county: { state: { slug: string }; slug: string }) => `${county.state.slug}/${county.slug}`);
     const editions = [undefined, "texas", "oklahoma", ...countyKeys];
     const isBook = (ad: Ad) => ad.id.startsWith("books-");
+    const texasPrefixes = ["patriots-for-paper-", "stop-sexualizing-texas-children-", "texas-sharia-watch-"];
     const count = (slot: string, key: string | undefined, test: (ad: Ad) => boolean) => adData.getAdsForSlot(slot, key).filter(test).length;
     const hrefs = (prefix: string) => [...new Set(adData.ads.filter((ad: Ad) => ad.id.startsWith(prefix)).map((ad: Ad) => ad.href))];
     const longestBookRun = (creatives: Ad[]) => creatives.reduce((run, ad) => ({ now: isBook(ad) ? run.now + 1 : 0, max: Math.max(run.max, isBook(ad) ? run.now + 1 : 0) }), { now: 0, max: 0 }).max;
@@ -164,20 +165,26 @@ test("books, The Ballot Box and Patriots for Paper run spread between existing a
     return {
       booksEverywhere: editions.every((key) => count("inline", key, isBook) === 9 && count("banner", key, isBook) === 9),
       ballotBoxEverywhere: editions.every((key) => ["inline", "banner"].every((slot) => count(slot, key, (ad) => ad.id.startsWith("ballot-box-")) === 1)),
-      paperOnlyInTexas: editions.every((key) => ["inline", "banner"].every((slot) =>
-        count(slot, key, (ad) => ad.id.startsWith("patriots-for-paper-")) === (key?.split("/")[0] === "texas" ? 1 : 0))),
-      hrefs: [hrefs("books-"), hrefs("ballot-box-"), hrefs("patriots-for-paper-")],
+      texasOnly: texasPrefixes.every((prefix) => editions.every((key) => ["inline", "banner"].every((slot) =>
+        count(slot, key, (ad) => ad.id.startsWith(prefix)) === (key?.split("/")[0] === "texas" ? 1 : 0)))),
+      hrefs: [hrefs("books-"), hrefs("ballot-box-"), ...texasPrefixes.map(hrefs)],
       spread: [spreadIn(), spreadIn("texas/harris")],
-      partners: [partnerData.getSitewidePartners().filter((ad: { name: string }) => /^(Patriots in Action Books|The Ballot Box)$/.test(ad.name)).length, partnerData.getStatewidePartners("texas").filter((ad: { name: string }) => ad.name === "Patriots for Paper").length],
+      partners: [partnerData.getSitewidePartners().filter((ad: { name: string }) => /^(Patriots in Action Books|The Ballot Box)$/.test(ad.name)).length, partnerData.getStatewidePartners("texas").filter((ad: { name: string }) => /^(Patriots for Paper|Stop Sexualizing Texas Children|Texas Sharia Watch)$/.test(ad.name)).length],
     };
   });
   expect(placement).toEqual({
     booksEverywhere: true,
     ballotBoxEverywhere: true,
-    paperOnlyInTexas: true,
-    hrefs: [["https://shop.patriotsinaction.com/collections/books"], ["https://theballotbox.com/"], ["https://patriotsforpaper.com/"]],
-    spread: Array.from({ length: 2 }, () => ({ squares: 1, feed: 1, banners: 3, firstBanner: "lemc-banner" })),
-    partners: [2, 1],
+    texasOnly: true,
+    hrefs: [
+      ["https://shop.patriotsinaction.com/collections/books"],
+      ["https://theballotbox.com/"],
+      ["https://patriotsforpaper.com/"],
+      ["https://recoveramerica.com/protectchildren"],
+      ["https://www.facebook.com/profile.php?id=61593844757341"],
+    ],
+    spread: [{ squares: 1, feed: 1, banners: 3, firstBanner: "lemc-banner" }, { squares: 1, feed: 1, banners: 2, firstBanner: "lemc-banner" }],
+    partners: [2, 3],
   });
 
   // County masthead sponsors are assigned by position in the ad list; new ads must not reshuffle them (PIA-014).
@@ -280,6 +287,9 @@ test("Texas advertiser targeting covers all 254 counties and excludes other edit
 });
 
 test("Panhandle videos occur in Texas feeds and carousels without loading players or becoming sponsors", async ({ page }) => {
+  // Every fifth in-feed ad is a video, so feeds long enough for five or more ads show one
+  // wherever their rotation starts; short fixtures would depend on each feed's starting point.
+  await mockNews(page, 48);
   for (const path of ["/texas", "/texas/randall", "/texas/harris"]) {
     await page.goto(path);
     await expect(page.locator(".ad-slot-inline").first().locator(".video-ad")).toHaveCount(9);
