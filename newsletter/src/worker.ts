@@ -4,7 +4,7 @@ import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
 import { UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import type { SQSEvent } from 'aws-lambda';
 import { setTimeout as delay } from 'node:timers/promises';
-import { buildDigest, renderDigest, type Digest } from './content';
+import { buildDigest, renderDigest, storyRecords, type Digest } from './content';
 import { SITE, ZONES, editionKey, localDate, hash, type Subscriber } from './model';
 import { renderSubscriptionMessage } from './subscription-message';
 import { db, table, get, put, remove, conditional, activePage, rateLimit, seconds } from './store';
@@ -33,6 +33,8 @@ export async function snapshot(sub: Subscriber, date: string, beforeMorning = fa
     const existing = await read();
     if (existing) return existing;
     const digest = await buildDigest(sub);
+    // Story pages must exist before any email links to them, so save them ahead of the snapshot.
+    await Promise.all(storyRecords(digest).map(record => put(record)));
     await s3.send(new PutObjectCommand({ Bucket: process.env.CONTENT_BUCKET!, Key: key, Body: JSON.stringify(digest), ContentType: 'application/json' }));
     return digest;
   } finally { await remove(lease); }

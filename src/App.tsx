@@ -17,6 +17,7 @@ import { ItmTrading } from "./components/ItmTrading";
 import { CountyPublicNotices } from "./components/CountyPublicNotices";
 import { CountyLocalSourcesDirectory } from "./components/LocalSourcesDirectory";
 import { CountyPostOpEdPage } from "./components/CountyPostOpEd";
+import { MorningPostStoryPage } from "./components/MorningPostStory";
 import { countyPostOpEds } from "./data/county-post-op-eds";
 import { AtlasDomainNav } from "./components/AtlasDomainNav";
 import { PageJumpMenu, type JumpLink, type JumpLinkGroup } from "./components/PageJumpMenu";
@@ -324,6 +325,9 @@ function App() {
           <Route path="/newsletter" element={<NewsletterPage />} />
           <Route path="/morning-post" element={<MorningPostPage />} />
           <Route path="/newsletter/sponsor" element={<NewsletterSponsorVisit />} />
+          <Route path="/story/:storyId" element={<MorningPostStoryPage />} />
+          <Route path="/:stateSlug/story/:storyId" element={<MorningPostStoryPage />} />
+          <Route path="/:stateSlug/:countySlug/story/:storyId" element={<MorningPostStoryPage />} />
           <Route path="/topics/:subjectSlug" element={<NationalSubjectPage />} />
           <Route path="/submit" element={<SubmitPage />} />
           <Route path="/states" element={<StateDirectory />} />
@@ -1538,6 +1542,20 @@ function MastheadHeroCopy({
       );
     }
 
+    if (rest.startsWith("story/")) {
+      return (
+        <MastheadHeroText
+          kicker="The Morning Post"
+          title={
+            <>
+              {county.displayName} Morning Post <span className="muted">({county.state.abbr})</span>
+            </>
+          }
+          lead="A story from your free daily newsletter, credited to the publisher that reported it."
+        />
+      );
+    }
+
     const countyDesk = getSubjectGroup(rest) || getSubjectPage(rest);
     if (countyDesk) {
       return (
@@ -1564,6 +1582,19 @@ function MastheadHeroCopy({
 
   if (state) {
     const rest = pathAfter(pathname, stateHomePath(state));
+    if (rest.startsWith("story/")) {
+      return (
+        <MastheadHeroText
+          kicker="The Morning Post"
+          title={
+            <>
+              {state.name} Morning Post <span className="muted">({state.abbr})</span>
+            </>
+          }
+          lead="A story from your free daily newsletter, credited to the publisher that reported it."
+        />
+      );
+    }
     if (!rest) {
       return (
         <MastheadHeroText

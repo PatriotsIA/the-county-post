@@ -269,3 +269,31 @@ test('gift errors preserve inputs and the footer gift button reaches a form that
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await signup.screenshot({ path: 'test-results/morning-post-gift-mobile.png' });
 });
+
+test('Morning Post stories open on The County Post in their edition, credit the publisher and stay out of search', async ({ page }) => {
+  const story = { id: '0123456789abcdef0123', title: 'Potter County approves road budget', source: 'Amarillo Globe-News', link: 'https://www.amarillo.com/story/news/1', publishedAt: '2026-10-22T15:00:00.000Z', description: 'Commissioners approved the plan.', imageUrl: 'https://www.amarillo.com/photo.jpg', topic: 'economy', deskTitle: 'Economy & business', edition: { level: 'county', state: 'texas', county: 'potter' } };
+  await page.route('http://localhost:8788/stories/**', route => route.request().url().endsWith(`/stories/${story.id}`)
+    ? route.fulfill({ json: { story } })
+    : route.fulfill({ status: 404, json: { error: 'This story is no longer available.' } }));
+  await page.goto(`/texas/potter/story/${story.id}?utm_source=the_county_post&utm_medium=email`);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Potter County Morning Post (TX)');
+  await expect(page.getByRole('heading', { level: 2 }).first()).toHaveText(story.title);
+  await expect(page.getByText('Reported by Amarillo Globe-News · October 22, 2026')).toBeVisible();
+  await expect(page.getByText(story.description)).toBeVisible();
+  const read = page.getByRole('link', { name: 'Read the full story at Amarillo Globe-News →' });
+  await expect(read).toHaveAttribute('href', story.link);
+  await expect(read).toHaveAttribute('target', '_blank');
+  await expect(page.getByRole('heading', { name: 'More economy & business' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Economy & business desk' })).toHaveAttribute('href', '/texas/potter#desk-economy');
+  // The edition's own advertisers run around the story.
+  await expect(page.locator('.ad-banner-slide img[src*="parallel-roofing"]').first()).toBeAttached();
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, follow');
+  expect((await page.locator('script[type="application/ld+json"]').allTextContents()).join('')).not.toMatch(/Article/);
+
+  // Another edition's URL, or an expired story, offers that edition's news instead.
+  for (const [path, level, label, href] of [[`/texas/randall/story/${story.id}`, 2, 'Randall County news →', '/texas/randall'], ['/story/ffffffffffffffffffff', 1, "Today's news →", '/']] as const) {
+    await page.goto(path);
+    await expect(page.getByRole('heading', { level, name: 'This story is no longer available.' })).toBeVisible();
+    await expect(page.getByRole('link', { name: label })).toHaveAttribute('href', href);
+  }
+});

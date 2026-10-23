@@ -5038,6 +5038,31 @@ main,
   margin-left: max(0px, calc((100% - 760px) / 2));
 }
 
+.morning-post-story > :is(h1, h2) {
+  font-family: "Playfair Display", "Libre Baskerville", serif;
+}
+
+/* Edition pages carry their h1 in the masthead, so the headline is an h2 there. */
+.morning-post-story .editorial-op-ed-header h2 {
+  margin: 8px 0 12px;
+  font-family: "Playfair Display", "Libre Baskerville", serif;
+  font-size: clamp(30px, 5vw, 52px);
+  line-height: 1.05;
+}
+
+.morning-post-story-image {
+  display: block;
+  width: 100%;
+  max-height: 460px;
+  object-fit: cover;
+  margin: 0 0 24px;
+  border: 1px solid var(--rule);
+}
+
+.morning-post-story-read {
+  margin: 4px 0 28px;
+}
+
 @media (max-width: 720px) {
   .editorial-op-ed {
     padding: 20px 16px;

@@ -14,6 +14,9 @@ export const editionKey = (e: Edition) => [e.level, e.state, e.county].filter(Bo
 export const homePath = (e: Edition) => e.level === 'national' ? '/' : `/${e.state}${e.level === 'county' ? `/${e.county}` : ''}`;
 export const editionLabel = (e: Edition) => e.level === 'national' ? 'National' : e.level === 'state' ? states.find(s => s.slug === e.state)!.name : `${getCounty(e.state, e.county)!.displayName}, ${states.find(s => s.slug === e.state)!.name}`;
 export const sectionUrl = (e: Edition, topic: string) => `${SITE}${homePath(e)}#desk-${topic}`;
+// Story pages live under their edition, so the page carries that edition's masthead, ads and desks.
+export const storyUrl = (e: Edition, id: string) => `${SITE}${e.level === 'national' ? '' : homePath(e)}/story/${id}`;
+export const storyId = (e: Edition, link: string) => hash(`${editionKey(e)}|${link}`).slice(0, 20);
 export function localDate(timeZone: string, date = new Date()) {
   return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
 }

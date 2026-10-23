@@ -30,6 +30,19 @@ it('does not change an active subscription from a public signup', async () => {
   expect(mock.create).not.toHaveBeenCalled(); expect(mock.db).not.toHaveBeenCalled();
   expect(mock.queue.mock.calls[0][0].input.MessageBody).toContain('manage');
 });
+it('serves saved Morning Post stories without exposing other records', async () => {
+  const story = { pk: 'STORY#0123456789abcdef0123', id: '0123456789abcdef0123', title: 'Council approves budget', source: 'Amarillo Globe-News', link: 'https://www.amarillo.com/story/news/1', publishedAt: '2026-10-13T10:00:00.000Z', topic: 'general', deskTitle: 'Headlines', edition: { level: 'county', state: 'texas', county: 'potter' }, expires: 1700000001 };
+  mock.get.mockImplementation(async (pk: string) => pk === story.pk ? story : undefined);
+  const found = await handler(event('/stories/0123456789abcdef0123', 'GET'));
+  expect(found.statusCode).toBe(200);
+  const { pk: _pk, expires: _expires, ...visible } = story;
+  expect(JSON.parse(found.body).story).toEqual(visible);
+  expect((await handler(event('/stories/fffffffffffffffffff0', 'GET'))).statusCode).toBe(404);
+  mock.get.mockResolvedValue({ ...story, expires: 1699999999 });
+  expect((await handler(event('/stories/0123456789abcdef0123', 'GET'))).statusCode).toBe(404);
+  expect((await handler(event('/stories/SUB%23anything', 'GET'))).statusCode).toBe(404);
+  expect(mock.get).not.toHaveBeenCalledWith(expect.stringMatching(/^SUB#/));
+});
 it('link scanners cannot confirm or unsubscribe with GET', async () => {
   expect((await handler(event('/confirm', 'GET'))).statusCode).toBe(404);
   expect((await handler(event('/unsubscribe', 'GET'))).statusCode).toBe(404);

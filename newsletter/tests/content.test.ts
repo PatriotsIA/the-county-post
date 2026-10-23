@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { validateEdition, validateEmail, suggestedZone, localDate, weatherCounties, sectionUrl } from '../src/model';
-import { recentStories, renderDigest, type Digest } from '../src/content';
+import { validateEdition, validateEmail, suggestedZone, localDate, weatherCounties, sectionUrl, storyId } from '../src/model';
+import { recentStories, renderDigest, storyRecords, type Digest } from '../src/content';
 import { selectSponsors, type Catalog } from '../src/sponsors';
 import { analyticsEvent, trackedUrl } from '../src/tracking';
 
@@ -31,6 +31,21 @@ describe('content safety and attribution', () => {
     const items = [story, story, { ...story, title: 'Earlier news', publishedAt: '2026-10-11T10:00:00Z' }, { ...story, title: 'Old news', publishedAt: '2026-09-01T00:00:00Z' }, { ...story, title: 'Undated', publishedAt: undefined }, { ...story, title: 'Future', publishedAt: '2027-01-01T00:00:00Z' }];
     expect(recentStories(items, 'general', county, now, new Set()).map(s => s.title)).toEqual(['Local news', 'Earlier news']);
     expect(recentStories(items, 'general', county, now, new Set())[0].url).toBe(sectionUrl(county, 'general'));
+  });
+  it('links each story to its County Post page and saves only what that page shows', () => {
+    const now = new Date('2026-10-12T12:00:00Z');
+    const item = { title: 'Council approves budget', publishedAt: '2026-10-12T10:00:00Z', source: 'Amarillo Globe-News', link: 'https://www.amarillo.com/story/news/1', description: '<p>The council voted 4&amp;1.</p>', imageUrl: 'https://www.amarillo.com/photo.jpg' };
+    const items = [item, { ...item, title: 'Our column', link: '/op-eds/our-column', publishedAt: '2026-10-12T09:00:00Z' }, { ...item, title: 'No link', link: 'javascript:alert(1)', publishedAt: '2026-10-12T08:00:00Z' }];
+    const [external, original, unlinked] = recentStories(items, 'general', county, now, new Set());
+    const id = storyId(county, item.link);
+    expect(id).toMatch(/^[a-f0-9]{20}$/);
+    expect(storyId(national, item.link)).not.toBe(id);
+    expect(external).toMatchObject({ id, url: `https://thecountypost.com/texas/potter/story/${id}`, link: item.link, description: 'The council voted 4&1.', imageUrl: item.imageUrl });
+    expect(recentStories([item], 'general', national, now, new Set())[0].url).toBe(`https://thecountypost.com/story/${storyId(national, item.link)}`);
+    expect(original.url).toBe('https://thecountypost.com/op-eds/our-column');
+    expect(unlinked.url).toBe(sectionUrl(county, 'general'));
+    const digest = { edition: county, label: 'Potter County', url: '', builtAt: now.toISOString(), forecasts: [], sections: [{ title: 'Headlines', topic: 'general', url: sectionUrl(county, 'general'), stories: [external, original, unlinked] }] } as Digest;
+    expect(storyRecords(digest, now)).toEqual([{ pk: `STORY#${id}`, id, title: item.title, source: item.source, link: item.link, publishedAt: item.publishedAt.replace('Z', '.000Z'), description: 'The council voted 4&1.', imageUrl: item.imageUrl, topic: 'general', deskTitle: 'Headlines', edition: { level: 'county', state: 'texas', county: 'potter' }, expires: now.getTime() / 1000 + 90 * 86400 }]);
   });
   it('escapes feed HTML, includes unsubscribe links and no fabricated forecast', () => {
     const digest: Digest = { edition: county, label: 'Potter County', url: 'https://thecountypost.com/texas/potter', builtAt: '2026-10-12T12:00:00Z', forecasts: [{ label: 'Potter County', url: 'https://thecountypost.com/texas/potter/weather', periods: [] }], sections: ['general', 'sports'].map(topic => ({ title: topic, url: sectionUrl(county, topic), stories: [{ title: '<script>alert(1)</script>', source: 'Publisher & Co', publishedAt: '2026-10-12T11:00:00Z', url: sectionUrl(county, topic) }] })) };
