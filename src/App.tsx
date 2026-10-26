@@ -2,6 +2,8 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type ReactNo
 import { Link, Navigate, NavLink, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
 import { SubmissionForm } from "./components/SubmissionForm";
 import { ClassifiedSubmissionForm } from "./components/ClassifiedSubmissionForm";
+import { ClassifiedsEntry } from "./components/ClassifiedsEntry";
+import { classifiedsOrigin, stateClassifiedsUrl } from "./lib/classifieds";
 import { AdSlot } from "./components/AdSlot";
 import { BookmarkPrompt } from "./components/BookmarkPrompt";
 import { NewsFeedSection } from "./components/NewsFeedSection";
@@ -814,6 +816,7 @@ function StatePage() {
   }
 
   const seo = stateSeo(state, counties.length);
+  const classifiedsUrl = stateClassifiedsUrl(counties[0]?.fips.slice(0, 2) || "");
 
   return (
     <div className="layout-grid">
@@ -837,6 +840,7 @@ function StatePage() {
       <CountyDirectorySearch />
 
       <StateCountyIndex state={state} />
+      {classifiedsUrl ? <section className="section"><h2>{state.name} classifieds</h2><p><a href={classifiedsUrl}>Browse statewide listings</a></p><p>Choose a county in the marketplace to post an item.</p></section> : null}
 
       <NewsFeedSection
         title="State headlines"
@@ -1973,7 +1977,7 @@ function CountyClassifiedsPage() {
   return (
     <div className="layout-grid">
       <Seo title={seo.title} description={seo.description} policy="classifieds" />
-      <ClassifiedSubmissionForm county={county} />
+      {classifiedsOrigin() ? <ClassifiedsEntry county={county} /> : <ClassifiedSubmissionForm county={county} />}
     </div>
   );
 }
