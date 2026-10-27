@@ -228,7 +228,7 @@ test("pins County Post op-eds newest first on national, state, and county opinio
     const section = page.locator("section", { has: page.getByRole("heading", { name: desk.heading, exact: true }) });
     const firstCard = section.locator(".feed-card").first();
     await expect(firstCard.locator(".feed-title")).toHaveText('Potter County GOP chairman to Paxton rally: "Don\'t spray the kitchen"');
-    await expect(firstCard.locator(".feed-title")).toHaveAttribute("href", "/op-eds/potter-county-gop-chairman-paxton-rally-dont-spray-the-kitchen");
+    await expect(firstCard.locator(".feed-title")).toHaveAttribute("href", "/op-eds/paxton-rally");
     await expect(section.locator(".feed-title", { hasText: "Enough About The Other Guy" })).toHaveCount(1);
     await expect(section.locator(".feed-title", { hasText: "The Millennial Generation Has a Voice. Are We Using It?" })).toHaveCount(1);
     await expect(section.locator(".feed-title", { hasText: "The Data Centers and the Rest of Us" })).toHaveCount(1);

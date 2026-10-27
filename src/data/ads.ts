@@ -50,6 +50,7 @@ import texasShariaWatchSquare from "../../ad-assets/texas-sharia-watch-square.we
 import texasShariaWatchBanner from "../../ad-assets/texas-sharia-watch-banner.webp";
 import dignityMemorialWordmark from "../../ad-assets/dignity-memorial-wordmark.jpg";
 import { panhandleLegendsAds } from "./panhandle-legends";
+import { paxtonSquareAd, paxtonBannerAd, abbottSquareAd, abbottBannerAd } from "./campaign-ads";
 
 export type AdSlotId = "inline" | "banner";
 
@@ -285,6 +286,7 @@ export const ads: AdCreative[] = [
     mastheadSponsor: false,
   },
   bookAd("electronic-voting", "inline"),
+  paxtonSquareAd,
   {
     id: "stop-sexualizing-texas-children-inline",
     slot: "inline",
@@ -313,6 +315,7 @@ export const ads: AdCreative[] = [
     href: "https://piaevents.com/",
   },
   bookAd("founding-of-america", "inline"),
+  abbottSquareAd,
   {
     id: "guerrilla-gear-inline",
     slot: "inline",
@@ -379,6 +382,7 @@ export const ads: AdCreative[] = [
     mastheadSponsor: false,
   },
   bookAd("electronic-voting", "banner"),
+  paxtonBannerAd,
   {
     id: "stop-sexualizing-texas-children-banner",
     slot: "banner",
@@ -504,6 +508,7 @@ export const ads: AdCreative[] = [
     mastheadSponsor: false,
   },
   bookAd("operation-show-up", "banner"),
+  abbottBannerAd,
   bookAd("women-who-guarded-the-bridge", "banner"),
 ];
 
