@@ -8,6 +8,15 @@ function withEmphasis(paragraph: string) {
   return paragraph.split(/\*\*(.+?)\*\*/g).map((part, index) => (index % 2 ? <strong key={index}>{part}</strong> : part));
 }
 
+// Link the supplied publication and polling-location addresses without accepting HTML.
+function withLinks(paragraph: string) {
+  return paragraph.split(/(https:\/\/theballotbox\.com|TheCountyPost\.com)/g).map((part, index) =>
+    part === "https://theballotbox.com" || part === "TheCountyPost.com"
+      ? <a key={index} href={part === "TheCountyPost.com" ? "https://thecountypost.com" : part}>{part}</a>
+      : <span key={index}>{withEmphasis(part)}</span>,
+  );
+}
+
 export function CountyPostOpEdPage({ article }: { article: CountyPostOpEd }) {
   return (
     <div className="layout-grid">
@@ -25,7 +34,7 @@ export function CountyPostOpEdPage({ article }: { article: CountyPostOpEd }) {
             publishedAt: article.publishedAt,
             authorName: article.byline.replace(/^By\s+/, "").replace(/,\s*The County Post$/, ""),
             section: article.category,
-            body: article.paragraphs.join("\n\n").replace(/\*\*/g, ""),
+            body: article.paragraphs.join("\n\n").replace(/\*\*/g, "").replace(/^## /gm, ""),
           }),
           breadcrumbLd([
             { name: "United States", path: "/" },
@@ -43,10 +52,20 @@ export function CountyPostOpEdPage({ article }: { article: CountyPostOpEd }) {
         </header>
 
         <div className="editorial-op-ed-body">
-          {article.paragraphs.map((paragraph) => (
-            <p key={paragraph}>{withEmphasis(paragraph)}</p>
-          ))}
-          <p className="editorial-op-ed-author">{article.authorBio}</p>
+          {article.video && (
+            <figure className="editorial-op-ed-video">
+              <video controls playsInline preload="none" poster={article.video.poster} aria-label={article.video.label}>
+                <source src={article.video.src} type="video/mp4" />
+                Your browser does not support embedded video. <a href={article.video.src}>Watch the full recording</a>.
+              </video>
+              <figcaption>{article.video.caption} <a href={article.video.src}>Open the full video</a>.</figcaption>
+            </figure>
+          )}
+          {article.paragraphs.map((paragraph) => paragraph.startsWith("## ")
+            ? <h2 key={paragraph}>{withEmphasis(paragraph.slice(3))}</h2>
+            : <p key={paragraph}>{withLinks(paragraph)}</p>,
+          )}
+          <p className="editorial-op-ed-author">{withLinks(article.authorBio)}</p>
         </div>
 
         <Link className="button-link editorial-op-ed-back" to="/op-eds">
