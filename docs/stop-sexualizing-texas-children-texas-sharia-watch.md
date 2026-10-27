@@ -23,3 +23,11 @@ Each advertiser supplied a square ("250") and a banner ("980") creative. Both ru
 The supplied PNGs are 250 × 250 and 980 × 300, at 70–300 KB each. The repository stores WebP copies at the same size (quality 88), 12–42 KB each.
 
 They were not upscaled, so on high-density screens they look softer than the other advertisers' creatives, which were supplied at two to three times the display size. If the advertisers can send larger originals, replace the files in `ad-assets/` under the same names.
+
+## Partner video — October 27, 2026
+
+Stop Sexualizing Texas Children links to Recover America's Protect Children pledge, so its partner listing now carries the Patriots in Action TV video "BONNIE WALLACE RECOVERAMERICA" (https://vimeo.com/1239959908, 1 hr 6 min).
+
+- The video appears beneath the partner cards wherever that listing does: the Texas statewide section of `/partners` and every Texas county's partners page. It never enters the ad rotation; the ad entries carry it as `partnerVideo`, which only the directory reads.
+- The player uses Vimeo's supplied embed URL, permissions and title, in a 16:9 frame that loads lazily. Vimeo's `player.js` is left out because nothing here uses its scripting API.
+- Vimeo's oEmbed endpoint answers without a referring domain, so embedding is not domain-restricted. Vimeo's bot check blocks headless browsers, so playback itself is confirmed by hand rather than by tests.
