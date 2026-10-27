@@ -5058,6 +5058,13 @@ main,
   line-height: 1.6;
 }
 
+.editorial-op-ed-video-more {
+  margin-top: 1rem;
+  max-width: 100%;
+  white-space: normal;
+  text-align: center;
+}
+
 .editorial-op-ed-back {
   margin-left: max(0px, calc((100% - 760px) / 2));
 }

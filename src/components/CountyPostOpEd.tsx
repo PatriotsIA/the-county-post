@@ -59,6 +59,11 @@ export function CountyPostOpEdPage({ article }: { article: CountyPostOpEd }) {
                 Your browser does not support embedded video. <a href={article.video.src}>Watch the full recording</a>.
               </video>
               <figcaption>{article.video.caption} <a href={article.video.src}>Open the full video</a>.</figcaption>
+              {article.video.moreUrl && (
+                <a className="button-link editorial-op-ed-video-more" href={article.video.moreUrl}>
+                  Watch the full video and learn more
+                </a>
+              )}
             </figure>
           )}
           {article.paragraphs.map((paragraph) => paragraph.startsWith("## ")

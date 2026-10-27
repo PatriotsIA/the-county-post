@@ -3,7 +3,7 @@ import type { NewsFeedItem } from "../lib/news-api";
 export type CountyPostOpEd = {
   id: string; slug: string; path: string; category: string; title: string; deck: string;
   byline: string; publishedAt: string; paragraphs: readonly string[]; authorBio: string;
-  video?: { src: string; poster: string; label: string; caption: string };
+  video?: { src: string; poster: string; label: string; caption: string; moreUrl?: string };
 };
 
 export const dataCentersOpEd = {
@@ -190,6 +190,7 @@ export const paxtonRallyOpEd = {
     poster: "/editorial/paxton-rally.webp",
     label: "Full recording of the Ken Paxton rally in Amarillo",
     caption: "Full rally recording · 37 minutes, 20 seconds. Includes introductory remarks.",
+    moreUrl: "https://patriotsinaction.com/ken-paxton",
   },
   paragraphs: [
     "AMARILLO — Potter County Republican Chairman Dan Rogers took the stage before a packed room of several hundred voters at Ken Paxton's rally Monday night — a weeknight crowd that turned out on short notice — with a message aimed less at the Paxton faithful in the room than at the Republicans who weren't there: the ones still nursing a grudge from the spring primary.",
