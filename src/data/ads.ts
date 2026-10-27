@@ -153,7 +153,11 @@ export type AdCreative = {
   /** false keeps the ad out of the county masthead sponsor pool, so existing assignments hold. */
   mastheadSponsor?: boolean;
   video?: { embedUrl: string; title: string; watchUrl: string };
+  /** Shown with the partner's directory listing only; it never enters the ad rotation. */
+  partnerVideo?: PartnerVideo;
 };
+
+export type PartnerVideo = { embedUrl: string; title: string; watchUrl: string; label: string; details: string };
 
 export const PARTNER_DIRECTORY_PATH = "/partners";
 
@@ -161,6 +165,14 @@ const BOOKS_URL = "https://shop.patriotsinaction.com/collections/books";
 const STOP_SEXUALIZING_URL = "https://recoveramerica.com/protectchildren";
 const TEXAS_SHARIA_WATCH_URL = "https://www.facebook.com/profile.php?id=61593844757341";
 const STOP_SEXUALIZING_ALT = "Stop sexualizing Texas children. Let children be children.";
+// Patriots in Action TV video (1 hr 6 min) for Recover America, whose Protect Children pledge the campaign links to.
+const RECOVER_AMERICA_VIDEO: PartnerVideo = {
+  embedUrl: "https://player.vimeo.com/video/1239959908?badge=0&autopause=0&player_id=0&app_id=58479",
+  watchUrl: "https://vimeo.com/1239959908",
+  title: "BONNIE WALLACE RECOVERAMERICA",
+  label: "Bonnie Wallace · Recover America",
+  details: "Patriots in Action TV · 1 hr 6 min",
+};
 const TEXAS_SHARIA_WATCH_ALT = "Texas Sharia Watch — Sharia-Free Texas, legislative priority #2.";
 
 // Patriots in Action books: a square and a banner for each of nine titles. Each
@@ -296,6 +308,7 @@ export const ads: AdCreative[] = [
     href: STOP_SEXUALIZING_URL,
     stateSlugs: ["texas"],
     mastheadSponsor: false,
+    partnerVideo: RECOVER_AMERICA_VIDEO,
   },
   {
     id: "plains-bank-inline",
@@ -392,6 +405,7 @@ export const ads: AdCreative[] = [
     href: STOP_SEXUALIZING_URL,
     stateSlugs: ["texas"],
     mastheadSponsor: false,
+    partnerVideo: RECOVER_AMERICA_VIDEO,
   },
   bookAd("founding-fathers", "banner"),
   {

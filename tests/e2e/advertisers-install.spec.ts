@@ -204,6 +204,18 @@ test("books, The Ballot Box and the Texas statewide ads run spread between exist
   }
 });
 
+test("the Recover America video accompanies the Stop Sexualizing Texas Children partner listing", async ({ page }) => {
+  await mockNews(page);
+  await page.route("https://player.vimeo.com/**", (route) => route.abort());
+  for (const [path, count] of [["/partners", 1], ["/texas/harris/partners", 1], ["/arkansas/polk/partners", 0]] as const) {
+    await page.goto(path);
+    await expect(page.locator(".partner-card").first()).toBeVisible();
+    const player = page.locator('.partner-video iframe[title="BONNIE WALLACE RECOVERAMERICA"]');
+    await expect(player, path).toHaveCount(count);
+    if (count) await expect(player).toHaveAttribute("src", "https://player.vimeo.com/video/1239959908?badge=0&autopause=0&player_id=0&app_id=58479");
+  }
+});
+
 test("Dignity Memorial presents obituaries in every Texas edition without joining the ad rotation", async ({ page }) => {
   await page.goto("/partners");
   const targeting = await page.evaluate(async () => {

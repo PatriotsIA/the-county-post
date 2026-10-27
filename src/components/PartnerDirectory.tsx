@@ -38,36 +38,59 @@ function PartnerList({ partners, showCountyCoverage = false }: { partners: AdCre
     return <p className="muted">No partners listed yet.</p>;
   }
 
+  const videoPartners = partners.filter((partner) => partner.partnerVideo);
+
   return (
-    <div className="partner-directory">
-      {partners.map((partner) => (
-        <article key={partner.id} className="partner-card">
-          <img src={partner.image} alt="" />
-          <div>
-            <h3>{partner.name}</h3>
-            {partner.stateSlugs?.length ? (
-              <p className="partner-coverage">Supporting every county in {formatPartnerStateLabels(partner.stateSlugs)}.</p>
-            ) : showCountyCoverage && partner.countyKeys?.length ? (
-              <p className="partner-coverage">Supporting {formatPartnerCountyLabels(partner.countyKeys)}</p>
-            ) : (
-              <p>Supporting independent county-by-county news coverage.</p>
-            )}
-            {isPartnerDirectoryHref(partner.href) ? (
-              <span className="partner-directory-label">County Post partner</span>
-            ) : partner.href.startsWith("/") ? (
-              <Link to={partner.href}>Visit partner</Link>
-            ) : (
-              <a href={partner.href} target="_blank" rel="noreferrer sponsored">
-                Visit partner
-              </a>
-            )}
-            {partner.id.startsWith("panhandle-legends-") ? (
-              <Link to={PANHANDLE_LEGENDS_PATH} className="partner-legends-button">Explore Panhandle Legends <span aria-hidden="true">→</span></Link>
-            ) : null}
+    <>
+      <div className="partner-directory">
+        {partners.map((partner) => (
+          <article key={partner.id} className="partner-card">
+            <img src={partner.image} alt="" />
+            <div>
+              <h3>{partner.name}</h3>
+              {partner.stateSlugs?.length ? (
+                <p className="partner-coverage">Supporting every county in {formatPartnerStateLabels(partner.stateSlugs)}.</p>
+              ) : showCountyCoverage && partner.countyKeys?.length ? (
+                <p className="partner-coverage">Supporting {formatPartnerCountyLabels(partner.countyKeys)}</p>
+              ) : (
+                <p>Supporting independent county-by-county news coverage.</p>
+              )}
+              {isPartnerDirectoryHref(partner.href) ? (
+                <span className="partner-directory-label">County Post partner</span>
+              ) : partner.href.startsWith("/") ? (
+                <Link to={partner.href}>Visit partner</Link>
+              ) : (
+                <a href={partner.href} target="_blank" rel="noreferrer sponsored">
+                  Visit partner
+                </a>
+              )}
+              {partner.id.startsWith("panhandle-legends-") ? (
+                <Link to={PANHANDLE_LEGENDS_PATH} className="partner-legends-button">Explore Panhandle Legends <span aria-hidden="true">→</span></Link>
+              ) : null}
+            </div>
+          </article>
+        ))}
+      </div>
+      {videoPartners.map(({ id, name, partnerVideo: video }) => video ? (
+        <figure key={id} className="partner-video">
+          <figcaption>
+            <span className="kicker">Partner video · {name}</span>
+            <strong>{video.label}</strong>
+            <span>{video.details} · <a href={video.watchUrl} target="_blank" rel="noreferrer">Watch on Vimeo ↗</a></span>
+          </figcaption>
+          <div className="partner-video-frame">
+            <iframe
+              src={video.embedUrl}
+              title={video.title}
+              loading="lazy"
+              allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
+              allowFullScreen
+              referrerPolicy="strict-origin-when-cross-origin"
+            />
           </div>
-        </article>
-      ))}
-    </div>
+        </figure>
+      ) : null)}
+    </>
   );
 }
 
