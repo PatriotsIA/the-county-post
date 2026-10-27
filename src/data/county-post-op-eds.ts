@@ -130,8 +130,53 @@ export const millennialVoiceOpEd = {
   "authorBio": "Kristin Griswold is a contributor to The County Post. The views expressed in this column are those of the author."
 } as const;
 
+export const enoughAboutTheOtherGuyOpEd = {
+  "id": "county-post-op-ed-enough-about-the-other-guy",
+  "slug": "enough-about-the-other-guy",
+  "path": "/op-eds/enough-about-the-other-guy",
+  "category": "Opinion",
+  "title": "Enough About The Other Guy",
+  "deck": "Perhaps candidates should spend a little less time telling us about the person running against them and a little more time telling us about themselves.",
+  "byline": "By Kristin Griswold, The County Post",
+  "publishedAt": "2026-10-27T12:32:54-05:00",
+  "paragraphs": [
+    "Turn on the television. Check your mailbox. Scroll through social media. Open a website. Before long, chances are you will encounter another political advertisement telling you why you should be afraid of the other candidate.",
+    "One candidate is supposedly too extreme. Another is allegedly out of touch. One can't be trusted. The other has a terrible record. One will destroy everything we value, while the other will somehow save it all.",
+    "After a while, it becomes difficult to remember what any of the candidates actually intend to do.",
+    "Political advertising has become a constant part of modern life, particularly during election season. Candidates and political groups spend enormous amounts of money trying to get our attention. Yet too often, those messages seem to tell us more about what a candidate thinks is wrong with the opponent than what the candidate believes is right for the community.",
+    "That should concern all of us, regardless of political party.",
+    "There is certainly a place for candidates to point out differences. Voters deserve to know about voting records, past statements, policy positions and decisions that may affect the public. Holding elected officials accountable is an important part of democracy.",
+    "But there is a difference between informing voters about a legitimate disagreement and simply trying to make the other person look bad.",
+    "Instead of another advertisement explaining why an opponent is supposedly unfit for office, wouldn't it be refreshing to hear a candidate say:",
+    "Here is what I believe.",
+    "Here is what I want to accomplish.",
+    "Here is how I plan to pay for it.",
+    "Here is what I would do differently.",
+    "And here is what I will do if you give me your vote.",
+    "Those are the answers voters can actually use.",
+    "The problem with attack-oriented advertising is that it can leave voters with plenty of reasons to dislike candidates but very little information about what those candidates would actually do once elected.",
+    "And governing is about more than winning an election.",
+    "Whether the office is local, state or federal, the people elected will eventually have to sit down, make decisions, negotiate, set priorities and live with the consequences of those decisions. Campaign advertisements rarely show us that side of politics.",
+    "Perhaps candidates should spend a little less time telling us about the person running against them and a little more time telling us about themselves.",
+    "Tell us about your experience.",
+    "Tell us your priorities.",
+    "Tell us what problems you believe need to be addressed.",
+    "Tell us what you would change—and what you would leave alone.",
+    "Tell us what your plans would cost.",
+    "Tell us what you believe government should and should not be doing.",
+    "And, perhaps most importantly, tell us what you will be willing to compromise on when circumstances require it.",
+    "Voters don't need candidates to agree with one another. In fact, disagreement is a natural and necessary part of a democracy.",
+    "What voters need is enough information to make their own judgments.",
+    "So the next time another political advertisement appears on the screen and begins with everything wrong with \"the other candidate,\" perhaps we should ask a simple question:",
+    "\"That's interesting. But what are you going to do?\"",
+    "That is the conversation worth having.",
+    "And it is one that could make elections a lot more informative—and a lot less exhausting—for everyone."
+  ],
+  "authorBio": "Kristin Griswold is a contributor to The County Post. The views expressed in this column are those of the author."
+} as const;
+
 // Newest first; County Post originals appear on every opinion desk.
-export const countyPostOpEds: readonly CountyPostOpEd[] = [texasMailerOpEd, millennialVoiceOpEd, dataCentersOpEd];
+export const countyPostOpEds: readonly CountyPostOpEd[] = [enoughAboutTheOtherGuyOpEd, texasMailerOpEd, millennialVoiceOpEd, dataCentersOpEd];
 
 export const featuredCountyPostOpEds: NewsFeedItem[] = countyPostOpEds.map((article) => ({
   id: article.id,
