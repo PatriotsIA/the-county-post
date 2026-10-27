@@ -3,6 +3,7 @@ import type { NewsFeedItem } from "../lib/news-api";
 export type CountyPostOpEd = {
   id: string; slug: string; path: string; category: string; title: string; deck: string;
   byline: string; publishedAt: string; paragraphs: readonly string[]; authorBio: string;
+  video?: { src: string; poster: string; label: string; caption: string };
 };
 
 export const dataCentersOpEd = {
@@ -175,8 +176,48 @@ export const enoughAboutTheOtherGuyOpEd = {
   "authorBio": "Kristin Griswold is a contributor to The County Post. The views expressed in this column are those of the author."
 } as const;
 
+export const paxtonRallyOpEd = {
+  id: "county-post-op-ed-paxton-rally-dont-spray-the-kitchen",
+  slug: "potter-county-gop-chairman-paxton-rally-dont-spray-the-kitchen",
+  path: "/op-eds/potter-county-gop-chairman-paxton-rally-dont-spray-the-kitchen",
+  category: "Opinion",
+  title: 'Potter County GOP chairman to Paxton rally: "Don\'t spray the kitchen"',
+  deck: "Dan Rogers used a story about an ant and a roach to tell Republicans still sore from the primary what a ticket-split costs. Watch the full remarks below.",
+  byline: "By Daniel L. Rogers, The County Post",
+  publishedAt: "2026-10-27T13:00:14-05:00",
+  video: {
+    src: "https://d2mwhhov0un9j4.cloudfront.net/paxton/big-texan-full-v1.mp4",
+    poster: "/editorial/paxton-rally.webp",
+    label: "Full recording of the Ken Paxton rally in Amarillo",
+    caption: "Full rally recording · 37 minutes, 20 seconds. Includes introductory remarks.",
+  },
+  paragraphs: [
+    "AMARILLO — Potter County Republican Chairman Dan Rogers took the stage before a packed room of several hundred voters at Ken Paxton's rally Monday night — a weeknight crowd that turned out on short notice — with a message aimed less at the Paxton faithful in the room than at the Republicans who weren't there: the ones still nursing a grudge from the spring primary.",
+    "Rogers got the call to speak that afternoon.",
+    '"Primaries are about the candidate," Rogers told the crowd. "General elections are about the party. In the primary you pick who you want. In the general you decide which party holds the gavel."',
+    "Then he told them a story.",
+    "## The ant and the roach",
+    '"There was an ant who hated the roach. Couldn\'t stand him. Hated him so much that one day he got hold of a can of insecticide and sprayed the whole kitchen. Got the roach, too. Killed every living thing in the room — including himself.',
+    '"We just came through a primary. It was hard, and some folks on our side are still sore about it. I understand. But here\'s how the system works.',
+    '"The Constitution doesn\'t hand power to a single senator. It hands it to whichever party has fifty-one. That party picks the Majority Leader. That party decides what comes to the floor, which judges get confirmed, whether the President\'s agenda moves or dies in committee. One seat in Texas can be the difference between Chuck Schumer running the Senate or Republicans running it.',
+    '"So a Republican who stays home next week or splits his ticket because he\'s still sore about the primary, isn\'t punishing Ken Paxton. He\'s spraying the kitchen."',
+    "The room, loud during most of Rogers’ remarks, went quiet for that one.",
+    '"It is the party\'s job to get our nominee elected," Rogers went on. "All of our nominees, from the top of the ballot to the bottom. That\'s what a party is for. We picked our man. The picking is over. Now we go to work."',
+    "## Why it matters this week",
+    "The arithmetic behind the speech is simple. Recent statewide polling shows the Senate race within the margin of error, with Democrat James Talarico holding roughly 98 percent of his party's voters while Paxton holds closer to 88 percent of his. The gap is almost entirely Republicans who voted for Sen. John Cornyn in the primary and haven't decided whether to come home.",
+    "Rogers, who ran a long list of Paxton's record as attorney general — the border fights with Washington, the deportation-freeze lawsuit, the Big Tech privacy settlements, the 2020 election litigation — said the record wasn't really the point.",
+    '"That\'s not a politician\'s record. That\'s a fighter\'s record. And that\'s who we nominated," he said. "Now here\'s what I really came to say."',
+    "He closed with an ask rather than a pitch: call every Republican you know who hasn't voted, skip the argument about the primary, and ask one question — who do you want running the United States Senate?",
+    '"You\'ve got a choice. Use it," Rogers said. "Ken Paxton is my pick. Go make him yours."',
+    "## Before you put the phone down",
+    "Early voting ends Friday, Oct. 30. Election Day is Tuesday, Nov. 3. Find your polling location and hours at https://theballotbox.com",
+    "The County Post covers the Panhandle's counties, courthouses, and campaigns. Get the stories first — subscribe free at TheCountyPost.com.",
+  ],
+  authorBio: "Daniel L. Rogers, Publisher\nThe County Post\n1000 S. Jefferson Street, Amarillo, TX 79101\nTheCountyPost.com | dan@thecountypost.com\n(866) 756-1776 Office | (806) 646-6448 Direct",
+} as const;
+
 // Newest first; County Post originals appear on every opinion desk.
-export const countyPostOpEds: readonly CountyPostOpEd[] = [enoughAboutTheOtherGuyOpEd, texasMailerOpEd, millennialVoiceOpEd, dataCentersOpEd];
+export const countyPostOpEds: readonly CountyPostOpEd[] = [paxtonRallyOpEd, enoughAboutTheOtherGuyOpEd, texasMailerOpEd, millennialVoiceOpEd, dataCentersOpEd];
 
 export const featuredCountyPostOpEds: NewsFeedItem[] = countyPostOpEds.map((article) => ({
   id: article.id,

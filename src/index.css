@@ -5028,10 +5028,34 @@ main,
 }
 
 .editorial-op-ed-author {
+  white-space: pre-line;
   border-top: 1px solid var(--rule);
   padding-top: 18px;
   color: var(--muted);
   font-style: italic;
+}
+
+.editorial-op-ed-body > h2 {
+  margin: 1.5em 0 0.75em;
+  font-family: "Playfair Display", "Libre Baskerville", serif;
+}
+
+.editorial-op-ed-video {
+  margin: 0 0 2rem;
+}
+
+.editorial-op-ed-video video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+}
+
+.editorial-op-ed-video figcaption {
+  margin-top: 0.75rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.6;
 }
 
 .editorial-op-ed-back {
