@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const path = "/op-eds/potter-county-gop-chairman-paxton-rally-dont-spray-the-kitchen";
+const path = "/op-eds/paxton-rally";
 const fullVideo = "https://d2mwhhov0un9j4.cloudfront.net/paxton/big-texan-full-v1.mp4";
 
 test("rally article offers the full recording without downloading it before playback", async ({ page }) => {
@@ -43,8 +43,20 @@ test("rally article offers the full recording without downloading it before play
   }
   expect(mediaRequests).toEqual([]);
 
+  await page.goto("/op-eds/potter-county-gop-chairman-paxton-rally-dont-spray-the-kitchen", { waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL(new RegExp(`${path}$`));
+  await expect(page.locator('link[rel="canonical"]')).toHaveCount(1);
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", `https://thecountypost.com${path}`);
+  await expect(page.getByRole("link", { name: "Watch the full video and learn more", exact: true })).toHaveAttribute("href", "https://patriotsinaction.com/ken-paxton");
+  const footerAd = page.getByRole("complementary", { name: "Ken Paxton advertisement" });
+  await footerAd.scrollIntoViewIfNeeded();
+  await expect(footerAd.getByRole("link")).toHaveAttribute("href", "https://patriotsinaction.com/ken-paxton");
+  await expect(footerAd.getByRole("img")).toBeVisible();
+  await expect(page.locator("article.editorial-op-ed > :last-child")).toHaveClass("editorial-op-ed-ad");
+
   // The optional media and heading support must not add a player to older columns.
   await page.goto("/op-eds/enough-about-the-other-guy", { waitUntil: "domcontentloaded" });
   await expect(page.locator("article.editorial-op-ed video")).toHaveCount(0);
+  await expect(page.locator(".editorial-op-ed-ad")).toHaveCount(0);
   await expect(page.locator(".editorial-op-ed-body > p").first()).toContainText("Turn on the television.");
 });

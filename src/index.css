@@ -5065,6 +5065,17 @@ main,
   text-align: center;
 }
 
+.editorial-op-ed-ad {
+  max-width: 360px;
+  margin: 2rem auto 0;
+}
+
+.editorial-op-ed-ad img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 .editorial-op-ed-back {
   margin-left: max(0px, calc((100% - 760px) / 2));
 }

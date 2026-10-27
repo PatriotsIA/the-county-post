@@ -23,7 +23,9 @@ async function mockNews(page: Page, itemCount = 24) {
         ? `${location}: topic${index} project${index} meeting${index} report${index}`
         : `${location} local news, sports and community report ${index}`,
       link: `https://example.com/report/${index}`,
-      source: "Community News",
+      // Long-feed fixtures need independent publishers: shared county/state words
+      // otherwise make the same-publisher event deduper collapse them to one story.
+      source: itemCount > 24 ? `Community News ${index}` : "Community News",
       contentSnippet: `News from ${location}.`,
       publishedAt: new Date(Date.UTC(2026, 8, 14, 12, 0, 0) - index * 3600000).toISOString(),
     }));
@@ -152,7 +154,7 @@ test("books, The Ballot Box and the Texas statewide ads run spread between exist
     const countyKeys = countyData.counties.map((county: { state: { slug: string }; slug: string }) => `${county.state.slug}/${county.slug}`);
     const editions = [undefined, "texas", "oklahoma", ...countyKeys];
     const isBook = (ad: Ad) => ad.id.startsWith("books-");
-    const texasPrefixes = ["patriots-for-paper-", "stop-sexualizing-texas-children-", "texas-sharia-watch-"];
+    const texasPrefixes = ["patriots-for-paper-", "stop-sexualizing-texas-children-", "texas-sharia-watch-", "ken-paxton-", "greg-abbott-"];
     const count = (slot: string, key: string | undefined, test: (ad: Ad) => boolean) => adData.getAdsForSlot(slot, key).filter(test).length;
     const hrefs = (prefix: string) => [...new Set(adData.ads.filter((ad: Ad) => ad.id.startsWith(prefix)).map((ad: Ad) => ad.href))];
     const longestBookRun = (creatives: Ad[]) => creatives.reduce((run, ad) => ({ now: isBook(ad) ? run.now + 1 : 0, max: Math.max(run.max, isBook(ad) ? run.now + 1 : 0) }), { now: 0, max: 0 }).max;
@@ -182,6 +184,8 @@ test("books, The Ballot Box and the Texas statewide ads run spread between exist
       ["https://patriotsforpaper.com/"],
       ["https://recoveramerica.com/protectchildren"],
       ["https://www.facebook.com/profile.php?id=61593844757341"],
+      ["https://patriotsinaction.com/ken-paxton"],
+      ["https://patriotsinaction.com/greg-abbott"],
     ],
     spread: [{ squares: 1, feed: 1, banners: 3, firstBanner: "lemc-banner" }, { squares: 1, feed: 1, banners: 2, firstBanner: "lemc-banner" }],
     partners: [2, 3],
@@ -334,7 +338,10 @@ test("video carousel waits during playback and stops an offscreen player", async
   await page.clock.install();
   await page.route("https://player.vimeo.com/video/**", (route) => route.fulfill({ contentType: "text/html", body: "<html><body>Video player fixture</body></html>" }));
   await page.goto("/texas");
+  await page.locator(".feed-source").nth(2).waitFor({ state: "attached" });
   const video = page.locator(".ad-slot-inline .video-ad").first();
+  await video.scrollIntoViewIfNeeded();
+  await video.locator("img").evaluate((image: HTMLImageElement) => image.decode());
   await video.getByRole("button", { name: /^Play Panhandle Legends:/ }).click();
   await expect(video.locator("iframe")).toHaveAttribute("src", /player\.vimeo\.com\/video\/1215218560\?autoplay=1/);
   const track = page.locator(".ad-slot-inline .ad-slot-items");
@@ -452,4 +459,26 @@ test("edition home pages show the banner below the lead feed and the square caro
   // Subpages keep the banner at the bottom.
   await page.goto("/oklahoma/tulsa/partners");
   await expect(page.locator("main + .ad-slot-banner")).toHaveCount(1);
+});
+
+test("Texas desks display both campaign formats and banners remain selectable", async ({ page }) => {
+  for (const path of ["/texas", "/texas/harris"]) {
+    await page.goto(path);
+    for (const [id, name] of [["ken-paxton", "Ken Paxton"], ["greg-abbott", "Greg Abbott"]]) {
+      const square = page.locator(`.ad-slot-inline img[src*="${id}-square"]`).first();
+      await square.evaluate((img: HTMLImageElement) => img.decode());
+      expect(await square.evaluate((img: HTMLImageElement) => [img.naturalWidth, img.naturalHeight])).toEqual([600, 600]);
+      await expect(square.locator("..")).toHaveAttribute("href", `https://patriotsinaction.com/${id}`);
+      await page.getByRole("button", { name: `Show ${name} advertisement`, exact: true }).first().click();
+      const banner = page.locator(`.ad-banner-slide.active img[src*="${id}-banner"]`).first();
+      await expect(banner).toBeVisible();
+      await banner.evaluate((img: HTMLImageElement) => img.decode());
+      expect(await banner.evaluate((img: HTMLImageElement) => [img.naturalWidth, img.naturalHeight])).toEqual([980, 250]);
+      await expect(banner.locator("..")).toHaveAttribute("href", `https://patriotsinaction.com/${id}`);
+    }
+  }
+  for (const path of ["/", "/oklahoma", "/arkansas/polk"]) {
+    await page.goto(path);
+    await expect(page.locator('.ad-slot img[src*="ken-paxton"], .ad-slot img[src*="greg-abbott"]')).toHaveCount(0);
+  }
 });
