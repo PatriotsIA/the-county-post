@@ -476,9 +476,9 @@ test("edition home pages show the banner below the lead feed and the square caro
 test("Texas desks display both campaign formats and banners remain selectable", async ({ page }) => {
   for (const path of ["/texas", "/texas/harris"]) {
     await page.goto(path);
-    for (const [id, name, payer] of [["ken-paxton", "Ken Paxton", "GOP Connect LLC"], ["greg-abbott", "Greg Abbott", "PatriotsForAction.org"]]) {
+    for (const [id, name, publisher] of [["ken-paxton", "Ken Paxton", "GOP Connect LLC."], ["greg-abbott", "Greg Abbott", "Patriots Connect, LLC, d/b/a Patriots in Action. PatriotsInAction.com."]]) {
       const square = page.locator(`.ad-slot-inline img[src*="${id}-square"]`).first();
-      expect(await square.getAttribute("alt")).toContain(`Paid for by ${payer}. Not authorized by any candidate or candidate’s campaign or committees.`);
+      expect(await square.getAttribute("alt")).toContain(`Published by ${publisher} Not authorized by any candidate or candidate’s committee.`);
       await square.evaluate((img: HTMLImageElement) => img.decode());
       expect(await square.evaluate((img: HTMLImageElement) => [img.naturalWidth, img.naturalHeight])).toEqual([600, 600]);
       await expect(square.locator("..")).toHaveAttribute("href", `https://patriotsinaction.com/${id}`);
