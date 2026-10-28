@@ -337,7 +337,8 @@ function App() {
           <Route path={ITM_TRADING_PATH} element={<ItmTrading />} />
           <Route path="/texas/texas-legends" element={<LegacyLegendsRedirect />} />
           <Route path="/texas/:countySlug/texas-legends" element={<LegacyLegendsRedirect countyScoped />} />
-          <Route path="/op-eds/potter-county-gop-chairman-paxton-rally-dont-spray-the-kitchen" element={<Navigate to="/op-eds/paxton-rally" replace />} />
+          <Route path="/op-eds/potter-county-gop-chairman-paxton-rally-dont-spray-the-kitchen" element={<Navigate to="/op-eds/r" replace />} />
+          <Route path="/op-eds/paxton-rally" element={<Navigate to="/op-eds/r" replace />} />
           {countyPostOpEds.map((article) => <Route key={article.slug} path={article.path} element={<CountyPostOpEdPage article={article} />} />)}
           <Route path="/op-eds" element={<OpEdPage />} />
           <Route path="/about" element={<AboutPage />} />

@@ -1,12 +1,9 @@
 import type { NewsFeedItem } from "../lib/news-api";
-import type { AdCreative } from "./ads";
-import { paxtonSquareAd } from "./campaign-ads";
 
 export type CountyPostOpEd = {
   id: string; slug: string; path: string; category: string; title: string; deck: string;
   byline: string; publishedAt: string; paragraphs: readonly string[]; authorBio: string;
   video?: { src: string; poster: string; label: string; caption: string; moreUrl?: string };
-  footerAd?: AdCreative;
 };
 
 export const dataCentersOpEd = {
@@ -181,14 +178,13 @@ export const enoughAboutTheOtherGuyOpEd = {
 
 export const paxtonRallyOpEd = {
   id: "county-post-op-ed-paxton-rally-dont-spray-the-kitchen",
-  slug: "paxton-rally",
-  path: "/op-eds/paxton-rally",
+  slug: "r",
+  path: "/op-eds/r",
   category: "Opinion",
   title: 'Potter County GOP chairman to Paxton rally: "Don\'t spray the kitchen"',
   deck: "Dan Rogers used a story about an ant and a roach to tell Republicans still sore from the primary what a ticket-split costs. Watch the full remarks below.",
   byline: "By Daniel L. Rogers, The County Post",
   publishedAt: "2026-10-27T13:00:14-05:00",
-  footerAd: paxtonSquareAd,
   video: {
     src: "https://d2mwhhov0un9j4.cloudfront.net/paxton/big-texan-full-v1.mp4",
     poster: "/editorial/paxton-rally.webp",

@@ -76,14 +76,6 @@ export function CountyPostOpEdPage({ article }: { article: CountyPostOpEd }) {
         <Link className="button-link editorial-op-ed-back" to="/op-eds">
           Return to National Op-Eds
         </Link>
-        {article.footerAd && (
-          <aside className="editorial-op-ed-ad" aria-label={`${article.footerAd.name} advertisement`}>
-            <p className="ad-slot-label">Advertisement</p>
-            <a href={article.footerAd.href} target="_blank" rel="noreferrer sponsored">
-              <img src={article.footerAd.image} alt={article.footerAd.alt} width="600" height="600" loading="lazy" />
-            </a>
-          </aside>
-        )}
       </article>
     </div>
   );
