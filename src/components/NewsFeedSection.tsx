@@ -524,7 +524,7 @@ const feedSponsorIds: Partial<Record<FeedKind, string[]>> = {
   general: ["guerrilla-gear-inline"],
   sports: ["lemc-inline"],
   economy: ["plains-bank-inline"],
-  obituaries: [DIGNITY_MEMORIAL_AD_ID, "patriot-trailer-inline"],
+  obituaries: [DIGNITY_MEMORIAL_AD_ID, "pia-events-inline"],
   "jobs-business": ["plains-bank-inline"],
   "budgets-levies": ["lawyers-title-inline"],
   "audits-recounts": ["amberwood-brush-inline"],

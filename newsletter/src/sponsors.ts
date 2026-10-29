@@ -6,7 +6,7 @@ export function selectSponsors(catalog: Catalog, edition: Edition, date: string)
   const eligible = catalog.ads.filter(ad => (!ad.stateSlugs?.length || ad.stateSlugs.includes(edition.state || '')) && (!ad.countyKeys?.length || ad.countyKeys.includes(countyKey || '')));
   const banner = eligible.find(ad => ad.id === 'pia-banner');
   const local = eligible.filter(ad => ad.slot === 'inline' && ad.countyKeys?.includes(countyKey || ''));
-  const priority = ['merch-inline', 'become-a-patriot-inline', 'patriot-trailer-inline', 'guerrilla-gear-inline'];
+  const priority = ['merch-inline', 'become-a-patriot-inline', 'pia-events-inline', 'guerrilla-gear-inline'];
   const general = eligible.filter(ad => priority.includes(ad.id)).sort((a, b) => priority.indexOf(a.id) - priority.indexOf(b.id));
   const rotation = local.length ? local : general;
   const start = rotation.length ? parseInt(hash(`${date}|${countyKey || edition.state || 'national'}`).slice(0, 6), 16) % rotation.length : 0;

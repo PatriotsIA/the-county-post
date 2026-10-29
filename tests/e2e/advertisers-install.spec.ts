@@ -247,7 +247,7 @@ test("Dignity Memorial presents obituaries in every Texas edition without joinin
     expect(await sponsor.locator("img").evaluate((image: HTMLImageElement) => [image.naturalWidth, image.naturalHeight])).toEqual([580, 200]);
   }
   await page.goto("/arkansas/polk");
-  await expect(page.locator("#desk-obituaries .feed-sponsor img")).toHaveAttribute("alt", "Patriot Trailer Store");
+  await expect(page.locator("#desk-obituaries .feed-sponsor img")).toHaveAttribute("alt", /^PIA Events: Where Patriots Show Up/);
 
   for (const path of ["/partners", "/texas/harris/partners"]) {
     await page.goto(path);
