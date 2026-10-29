@@ -11,7 +11,6 @@ import hoffbrau from "../../ad-assets/Hoffbrau250.jpg";
 import guerrillaGear from "../../ad-assets/ad-guerilla-gear.png";
 import lemcInline from "../../ad-assets/LEMC250.jpg";
 import lemcBanner from "../../ad-assets/LEMC980.jpg";
-import mattressBanner from "../../ad-assets/matress-ad.jpg";
 import lawyersTitle from "../../ad-assets/LawyersTitle250.jpg";
 import pastureBanner from "../../ad-assets/Pasture-Exchange980.jpg";
 import pastureInline from "../../ad-assets/PastureEXCHANGELogo.jpg";
@@ -256,14 +255,6 @@ export const ads: AdCreative[] = [
     image: pestCon,
     name: "PestCon",
     alt: "PestCon",
-    href: PARTNER_DIRECTORY_PATH,
-  },
-  {
-    id: "mattress-banner",
-    slot: "banner",
-    image: mattressBanner,
-    name: "Mattress By Appointment",
-    alt: "Mattress By Appointment",
     href: PARTNER_DIRECTORY_PATH,
   },
   {
