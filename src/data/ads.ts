@@ -5,7 +5,6 @@ import becomeAPatriot2 from "../../ad-assets/BecomeAPatriot2.jpg";
 import guerrillaGear from "../../ad-assets/ad-guerilla-gear.png";
 import lemcInline from "../../ad-assets/LEMC250.jpg";
 import lemcBanner from "../../ad-assets/LEMC980.jpg";
-import mattressBanner from "../../ad-assets/matress-ad.jpg";
 import lawyersTitle from "../../ad-assets/LawyersTitle250.jpg";
 import patriotTrailer from "../../ad-assets/PatriotTrailerStore.jpg";
 import piaBanner from "../../ad-assets/PIA980.jpg";
@@ -465,14 +464,6 @@ export const ads: AdCreative[] = [
     href: PARTNER_DIRECTORY_PATH,
   },
   bookAd("women-who-guarded-the-bridge", "inline"),
-  {
-    id: "mattress-banner",
-    slot: "banner",
-    image: mattressBanner,
-    name: "Mattress By Appointment",
-    alt: "Mattress By Appointment",
-    href: PARTNER_DIRECTORY_PATH,
-  },
   bookAd("founding-of-america", "banner"),
   {
     id: "patriots-for-paper-banner",

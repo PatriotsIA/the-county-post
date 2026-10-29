@@ -187,7 +187,7 @@ test("books, The Ballot Box and the Texas statewide ads run spread between exist
       ["https://patriotsinaction.com/ken-paxton"],
       ["https://patriotsinaction.com/greg-abbott"],
     ],
-    spread: [{ squares: 1, feed: 1, banners: 3, firstBanner: "lemc-banner" }, { squares: 1, feed: 1, banners: 2, firstBanner: "lemc-banner" }],
+    spread: [{ squares: 1, feed: 1, banners: 4, firstBanner: "lemc-banner" }, { squares: 1, feed: 1, banners: 2, firstBanner: "lemc-banner" }],
     partners: [2, 3],
   });
 
