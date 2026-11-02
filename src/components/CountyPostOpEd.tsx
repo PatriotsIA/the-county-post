@@ -5,14 +5,15 @@ import { Link } from "react-router-dom";
 import type { CountyPostOpEd } from "../data/county-post-op-eds";
 
 // Paragraphs mark **bold**, _italic_ and [link text](https://…) without accepting HTML.
-const MARKUP = /(\[[^\]]+\]\(https:\/\/[^)\s]+\)|\*\*.+?\*\*|_.+?_)/g;
+// Italic marks sit at word edges, so underscores inside link URLs (utm_source) are not marks.
+const MARKUP = /(\[[^\]]+\]\(https:\/\/[^)\s]+\)|\*\*.+?\*\*|(?<!\w)_(?=\S).+?(?<=\S)_(?!\w))/g;
 
 function withMarkup(paragraph: string, autolink = true): ReactNode[] {
   return paragraph.split(MARKUP).map((part, index) => {
     const link = part.match(/^\[([^\]]+)\]\((https:\/\/[^)\s]+)\)$/);
     if (link) return <a key={index} href={link[2]}>{withMarkup(link[1], false)}</a>;
     if (/^\*\*.+\*\*$/.test(part)) return <strong key={index}>{withMarkup(part.slice(2, -2), autolink)}</strong>;
-    if (/^_.+_$/.test(part)) return <em key={index}>{withMarkup(part.slice(1, -1), autolink)}</em>;
+    if (/^_\S(.*\S)?_$/.test(part)) return <em key={index}>{withMarkup(part.slice(1, -1), autolink)}</em>;
     return autolink ? <span key={index}>{withAddressLinks(part)}</span> : part;
   });
 }
@@ -27,7 +28,7 @@ function withAddressLinks(text: string) {
 }
 
 function plainText(paragraph: string) {
-  return paragraph.replace(/^## /, "").replace(/\[([^\]]+)\]\(https:\/\/[^)\s]+\)/g, "$1").replace(/\*\*/g, "").replace(/_(.+?)_/g, "$1");
+  return paragraph.replace(/^## /, "").replace(/\[([^\]]+)\]\(https:\/\/[^)\s]+\)/g, "$1").replace(/\*\*/g, "").replace(/(?<!\w)_(?=\S)(.+?)(?<=\S)_(?!\w)/g, "$1");
 }
 
 export function CountyPostOpEdPage({ article }: { article: CountyPostOpEd }) {
