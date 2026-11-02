@@ -31,6 +31,9 @@ layouts. The run used the installed Playwright headless shell through
 `PLAYWRIGHT_CHROMIUM_EXECUTABLE`; system Chromium could not start because the
 managed scratch path exceeded its Unix socket-path limit.
 
+Release: [PR #37](https://github.com/PatriotsIA/the-county-post/pull/37).
+For subsequent submissions, preserve the `/gop` pin until the owner changes it.
+
 ## Sponsor contacts and referral tracking — October 6, 2026
 
 The sponsor brief supplies Stan Roberts' title (Senior Analyst), direct phone
