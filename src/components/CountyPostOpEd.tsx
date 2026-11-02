@@ -1,20 +1,33 @@
+import type { ReactNode } from "react";
 import { Seo } from "./Seo";
 import { jsonLdGraph, newsArticleLd, breadcrumbLd } from "../lib/seo";
 import { Link } from "react-router-dom";
 import type { CountyPostOpEd } from "../data/county-post-op-eds";
 
-// Paragraphs mark the author's emphasis with **double asterisks**.
-function withEmphasis(paragraph: string) {
-  return paragraph.split(/\*\*(.+?)\*\*/g).map((part, index) => (index % 2 ? <strong key={index}>{part}</strong> : part));
+// Paragraphs mark **bold**, _italic_ and [link text](https://…) without accepting HTML.
+const MARKUP = /(\[[^\]]+\]\(https:\/\/[^)\s]+\)|\*\*.+?\*\*|_.+?_)/g;
+
+function withMarkup(paragraph: string, autolink = true): ReactNode[] {
+  return paragraph.split(MARKUP).map((part, index) => {
+    const link = part.match(/^\[([^\]]+)\]\((https:\/\/[^)\s]+)\)$/);
+    if (link) return <a key={index} href={link[2]}>{withMarkup(link[1], false)}</a>;
+    if (/^\*\*.+\*\*$/.test(part)) return <strong key={index}>{withMarkup(part.slice(2, -2), autolink)}</strong>;
+    if (/^_.+_$/.test(part)) return <em key={index}>{withMarkup(part.slice(1, -1), autolink)}</em>;
+    return autolink ? <span key={index}>{withAddressLinks(part)}</span> : part;
+  });
 }
 
-// Link the supplied publication and polling-location addresses without accepting HTML.
-function withLinks(paragraph: string) {
-  return paragraph.split(/(https:\/\/theballotbox\.com|TheCountyPost\.com)/g).map((part, index) =>
+// Link the supplied publication and polling-location addresses where they appear bare.
+function withAddressLinks(text: string) {
+  return text.split(/(https:\/\/theballotbox\.com|TheCountyPost\.com)/g).map((part, index) =>
     part === "https://theballotbox.com" || part === "TheCountyPost.com"
       ? <a key={index} href={part === "TheCountyPost.com" ? "https://thecountypost.com" : part}>{part}</a>
-      : <span key={index}>{withEmphasis(part)}</span>,
+      : part,
   );
+}
+
+function plainText(paragraph: string) {
+  return paragraph.replace(/^## /, "").replace(/\[([^\]]+)\]\(https:\/\/[^)\s]+\)/g, "$1").replace(/\*\*/g, "").replace(/_(.+?)_/g, "$1");
 }
 
 export function CountyPostOpEdPage({ article }: { article: CountyPostOpEd }) {
@@ -34,7 +47,7 @@ export function CountyPostOpEdPage({ article }: { article: CountyPostOpEd }) {
             publishedAt: article.publishedAt,
             authorName: article.byline.replace(/^By\s+/, "").replace(/,\s*The County Post$/, ""),
             section: article.category,
-            body: article.paragraphs.join("\n\n").replace(/\*\*/g, "").replace(/^## /gm, ""),
+            body: article.paragraphs.map(plainText).join("\n\n"),
           }),
           breadcrumbLd([
             { name: "United States", path: "/" },
@@ -67,10 +80,10 @@ export function CountyPostOpEdPage({ article }: { article: CountyPostOpEd }) {
             </figure>
           )}
           {article.paragraphs.map((paragraph) => paragraph.startsWith("## ")
-            ? <h2 key={paragraph}>{withEmphasis(paragraph.slice(3))}</h2>
-            : <p key={paragraph}>{withLinks(paragraph)}</p>,
+            ? <h2 key={paragraph}>{withMarkup(paragraph.slice(3), false)}</h2>
+            : <p key={paragraph}>{withMarkup(paragraph)}</p>,
           )}
-          <p className="editorial-op-ed-author">{withLinks(article.authorBio)}</p>
+          <p className="editorial-op-ed-author">{withMarkup(article.authorBio)}</p>
         </div>
 
         <Link className="button-link editorial-op-ed-back" to="/op-eds">

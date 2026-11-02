@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { DIGNITY_MEMORIAL_AD_ID, getFeedSponsor, getInFeedAdRotation, type AdCreative } from "../data/ads";
 import { useAdEditionKey } from "../lib/useAdEditionKey";
 import { VideoAd } from "./VideoAd";
-import { prependFeaturedCountyPostOpEds } from "../data/county-post-op-eds";
+import { featuredCountyPostOpEds, prependFeaturedCountyPostOpEds } from "../data/county-post-op-eds";
 import { isTrustedCountyNativeNewsItem } from "../lib/local-news-sources";
 import { fetchNewsApiFeed, isNewsApiConfigured, type NewsFeedItem, type Topic } from "../lib/news-api";
 import { fetchNewsFeeds } from "../lib/rss";
@@ -857,12 +857,15 @@ function matchesTrustedHost(item: NewsFeedItem, trustedHosts?: string[]) {
   }
 }
 
+// County Post op-eds are distinct pieces even when their headlines share a subject.
+const pinnedOpEdIds = new Set(featuredCountyPostOpEds.map((article) => article.id));
+
 function dedupeTitles(items: NewsFeedItem[]) {
   const accepted: Array<{ title: string; image: string; item: NewsFeedItem }> = [];
   return items.filter((item) => {
     const title = normalizeDuplicateTitle(item.title, item.source);
     const image = normalizeImageKey(item.imageUrl);
-    if (!title || accepted.some((existing) => (image && existing.image === image) || isNearDuplicate(item, title, existing.item, existing.title))) return false;
+    if (!title || (!pinnedOpEdIds.has(item.id) && accepted.some((existing) => (image && existing.image === image) || isNearDuplicate(item, title, existing.item, existing.title)))) return false;
     accepted.push({ title, image, item });
     return true;
   });
