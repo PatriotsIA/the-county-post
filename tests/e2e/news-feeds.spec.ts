@@ -214,7 +214,7 @@ function makeRouteItems({
       });
 }
 
-test("pins County Post op-eds newest first on national, state, and county opinion desks", async ({ page }) => {
+test("keeps /gop first and Stan's newer op-ed second on national, state, and county opinion desks", async ({ page }) => {
   const opinionDesks = [
     { path: "/", heading: "Opinion & op-eds" },
     { path: "/op-eds", heading: "National opinion" },
@@ -229,12 +229,15 @@ test("pins County Post op-eds newest first on national, state, and county opinio
     const firstCard = section.locator(".feed-card").first();
     await expect(firstCard.locator(".feed-title")).toHaveText("Potter County GOP Asks Federal Court to Hand Count Paper Ballots in Statewide Race Before Certification");
     await expect(firstCard.locator(".feed-title")).toHaveAttribute("href", "/gop");
+    const secondStory = section.locator(".feed-card:not(.feed-ad-card)").nth(1);
+    await expect(secondStory.locator(".feed-title")).toHaveText("Is the Global AI Bubble Popping?");
+    await expect(secondStory.locator(".feed-title")).toHaveAttribute("href", "/op-eds/is-the-global-ai-bubble-popping");
     await expect(section.locator(".feed-title", { hasText: "Don't spray the kitchen" })).toHaveAttribute("href", "/op-eds/r");
     await expect(section.locator(".feed-title", { hasText: "Enough About The Other Guy" })).toHaveCount(1);
     await expect(section.locator(".feed-title", { hasText: "The Millennial Generation Has a Voice. Are We Using It?" })).toHaveCount(1);
     await expect(section.locator(".feed-title", { hasText: "The Data Centers and the Rest of Us" })).toHaveCount(1);
     await expect(firstCard.locator(".feed-publisher")).toContainText("The County Post · Original reporting");
-    await expect(section.locator(".feed-publisher", { hasText: "The County Post" })).toHaveCount(6);
+    await expect(section.locator(".feed-publisher", { hasText: "The County Post" })).toHaveCount(7);
   }
 
   await page.goto("/op-eds/the-data-centers-and-the-rest-of-us");

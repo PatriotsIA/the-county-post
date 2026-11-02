@@ -1,8 +1,11 @@
 import type { NewsFeedItem } from "../lib/news-api";
+import { ITM_TRADING_PATH } from "./itm-trading";
 
 export type CountyPostOpEd = {
   id: string; slug: string; path: string; category: string; title: string; deck: string;
   byline: string; publishedAt: string; paragraphs: readonly string[]; authorBio: string;
+  authorName?: string;
+  authorLink?: { path: string; label: string };
   video?: { src: string; poster: string; label: string; caption: string; moreUrl?: string };
 };
 
@@ -246,8 +249,41 @@ export const paxtonRallyOpEd = {
   authorBio: "Daniel L. Rogers, Publisher\nThe County Post\n1000 S. Jefferson Street, Amarillo, TX 79101\nTheCountyPost.com | dan@thecountypost.com\n(866) 756-1776 Office | (806) 646-6448 Direct",
 } as const;
 
-// Newest first; County Post originals appear on every opinion desk.
-export const countyPostOpEds: readonly CountyPostOpEd[] = [potterGopSuitOpEd, paxtonRallyOpEd, enoughAboutTheOtherGuyOpEd, texasMailerOpEd, millennialVoiceOpEd, dataCentersOpEd];
+// Submitted by Stan Roberts to the national desk on November 2, 2026.
+export const globalAiBubbleOpEd = {
+  id: "county-post-op-ed-is-the-global-ai-bubble-popping",
+  slug: "is-the-global-ai-bubble-popping",
+  path: "/op-eds/is-the-global-ai-bubble-popping",
+  category: "Opinion",
+  title: "Is the Global AI Bubble Popping?",
+  deck: "Stan Roberts of ITM Trading compares AI investment, debt and market concentration in China and the United States.",
+  byline: "By Stan Roberts, ITM Trading",
+  authorName: "Stan Roberts",
+  publishedAt: "2026-11-02T17:31:19.057Z",
+  paragraphs: [
+    "China may be the FIRST country to burst the AI bubble. Its stock market, the world’s 2nd-largest, is now OFFICIALLY in a bear market. Its blue-chip CSI 300 has now fallen -20% from its peak.",
+    "Mainland stocks have lost $2.4T since May. What caused? AI. Over the past 2 years, investors piled into Chinese AI stocks until they made up 42% of the entire market.",
+    "By the peak, the STAR 50, China’s AI index, shares sold for 250x earnings. But the profits never caught up to the prices, and investors started selling. By late October, the index had fallen 40%, erasing $480B.",
+    'AI makers MiniMax and Zhipu down over -85%. Unitree, Moore Threads, and MetaX all cut in half. "The stock market later evolved into a speculative crazy bull," said Beijing-based fund manager Dong Baozhen. "And now we see the bubble bursting."',
+    'With AI stocks running to 42% of China\'s market capitalization and 57% of turnover across mainland-listed A-shares and Hong Kong\'s H-shares, according to Goldman Sachs, few in a market dominated by small investors have escaped pain.',
+    "How big is the bubble in the US vs China? China Bubble vs USA Bubble stats:",
+    "China's broader non-financial sector credit (including corporate, local government, and household debt) has surpassed 300% of GDP (macro leverage ratio hitting ~308%), and China's national/official debt sits around $18.7 trillion (~$13,000 per citizen)",
+    "Non-financial sector credit has surpassed 259% of GDP in the US. The total U.S. national debt stands at roughly $40.34 trillion (~$120,406 per citizen).",
+    "China - Capex-to-operating-cash-flow for China's large platforms sits at around 50%",
+    "U.S. AI-related capital expenditures for top cloud players run around $600 billion to $700 billion, consuming roughly 93% of operating cash flow.",
+    "Right now, in the US industry trackers (like Compare the Cloud) estimate that AI-linked and AI-enabling companies make up about 62% of the S&P 500 market cap, with a tighter core of 58 direct AI-building companies (chips, models, software, security) representing 47.13% of the index weight.",
+    "Contagion appears to be spreading, and the bubble is a lot larger than previous cycles.",
+    "Source: [Reuters — China’s AI bubble has already burst](https://www.reuters.com/world/china/china-ai-bubble-has-already-burst-2026-10-26/)",
+  ],
+  authorBio: "Stan Roberts is a Senior Analyst at ITM Trading, a sponsor of The County Post. The views expressed in this column are those of the author.",
+  authorLink: {
+    path: ITM_TRADING_PATH,
+    label: "Learn More About The Author Stan Roberts & ITM Trading",
+  },
+} as const;
+
+// /gop stays pinned first; the remaining originals are newest first on every opinion desk.
+export const countyPostOpEds: readonly CountyPostOpEd[] = [potterGopSuitOpEd, globalAiBubbleOpEd, paxtonRallyOpEd, enoughAboutTheOtherGuyOpEd, texasMailerOpEd, millennialVoiceOpEd, dataCentersOpEd];
 
 export const featuredCountyPostOpEds: NewsFeedItem[] = countyPostOpEds.map((article) => ({
   id: article.id,
