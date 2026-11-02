@@ -501,10 +501,10 @@ export function crumbTrail(pathname: string, county?: CountySite, state?: StateS
     return trail;
   }
 
-  // A published op-ed sits under the opinion desk.
-  if (segments[0] === "op-eds" && segments[1]) {
+  // A published op-ed sits under the opinion desk, including one with a short top-level path.
+  const article = countyPostOpEds.find((entry) => entry.path === `/${segments.join("/")}`);
+  if (article || (segments[0] === "op-eds" && segments[1])) {
     trail.push({ name: "Op-Eds", path: "/op-eds" });
-    const article = countyPostOpEds.find((entry) => entry.slug === segments[1]);
     if (article) {
       trail.push({ name: article.title, path: article.path });
     }

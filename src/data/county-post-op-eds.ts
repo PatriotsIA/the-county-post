@@ -176,6 +176,35 @@ export const enoughAboutTheOtherGuyOpEd = {
   "authorBio": "Kristin Griswold is a contributor to The County Post. The views expressed in this column are those of the author."
 } as const;
 
+// Published at the short path /gop. Paragraphs use **bold**, _italic_ and [link](https://…) marks.
+export const potterGopSuitOpEd = {
+  "id": "county-post-potter-county-gop-hand-count-suit",
+  "slug": "gop",
+  "path": "/gop",
+  "category": "Opinion",
+  "title": "Potter County GOP Asks Federal Court to Hand Count Paper Ballots in Statewide Race Before Certification",
+  "deck": "The 27-page complaint, filed Oct. 27 in Amarillo, seeks no damages and does not challenge any past result. Read the full filing below.",
+  "byline": "By Kristin Griswold, The County Post",
+  "publishedAt": "2026-11-02T11:30:00-06:00",
+  "paragraphs": [
+    "_Editor's note: The publisher of The County Post, Daniel L. Rogers, is a named plaintiff in this case and the Chairman of the Potter County Republican Party. This story is drawn from the court filing, which is linked in full._",
+    "_Election Day is Tuesday, Nov. 3. Polls are open 7 a.m. to 7 p.m. Find your polling place and sample ballot at [TheBallotBox.com](https://theballotbox.com)._",
+    "AMARILLO — The Potter County Republican Party and its chairman filed a class-action lawsuit in federal court here Oct. 27 asking a judge to require Texas county election officials to hand count the paper ballots in the statewide federal race and compare the count to machine totals before the results are certified.",
+    "The case, _Potter County Republican Party v. Benge_, No. 2:26-cv-00215, was filed in the Amarillo Division of the U.S. District Court for the Northern District of Texas. It names Potter County Elections Administrator Christy Benge in her official capacity only, as the proposed representative of a defendant class of all Texas county election administrators. The complaint states that \"no damages are being sought against Defendant Benge.\"",
+    "**What the suit asks for.** The plaintiffs seek a preliminary and permanent injunction barring certification of the statewide federal race until all paper ballots have been hand-counted and compared to the electronic tabulation. If the hand count differs from the machine results, the complaint asks that the certified result be based on the paper count. If it does not, the machine results would stand.",
+    "**What it does not ask for.** Paragraph 8 of the complaint states that the plaintiffs \"do not seek to prevent voting, postpone Election Day, invalidate lawfully cast ballots, or require wholesale replacement of voting equipment,\" and \"do not seek to challenge and do not seek to invalidate any provision of the Texas election code.\" Paragraph 32 states that the plaintiffs do not \"allege that any past Potter County election results were altered, or inaccurately reported.\"",
+    "**The basis for the claim.** The suit is brought under 42 U.S.C. § 1983 and the Due Process and Equal Protection Clauses of the Fourteenth Amendment. It argues that where a voting system tabulates votes from a barcode or QR code the voter cannot read, certifying results without a complete comparison to the human-readable paper record creates \"an unjustified and avoidable risk of undetected tabulation error\" in federal elections.",
+    "The complaint relies on recent federal actions. It cites July 2026 Department of Homeland Security grant conditions requiring a post-election manual audit of at least 5 percent of paper ballots in federal elections and a transition away from barcode and QR-code systems; letters from Homeland Security Secretary Markwayne Mullin dated Aug. 24 and Sept. 2, 2026, concerning foreign-made components in voting equipment and the Help America Vote Act's paper-record requirement; and a 2024 Office of the Director of National Intelligence assessment that China, Iran and Russia \"have the technical capability to access some U.S. election-related networks and systems.\"",
+    "**Existing Texas law.** Texas already requires a post-election hand-count audit when electronic voting systems are used, under Election Code § 127.201. The audit covers randomly selected locations with a statutory minimum of 1 percent or three locations, whichever is greater. The complaint contends that the sample is insufficient for the one race that appears on every ballot in the state.",
+    "**Who is involved.** The plaintiffs are the Potter County Republican Party and Daniel Rogers, individually and as a registered Potter County voter. The complaint states that Rogers intends to vote in the Nov. 3 election and that the Potter County voting system will tabulate his ballot. Plaintiffs are represented by the Woodfill Law Firm of Houston, Decker Jones of Fort Worth, and the Dick Law Firm of Houston. The case is assigned to Judge Matthew J. Kacsmaryk. Questions about the case are being referred to lead counsel Jared Woodfill of the Woodfill Law Firm.",
+    "Christy Benge, the Elections Administrator with the Potter County Elections Office, declined to comment this morning when reached by The County Post staff.",
+    "**[Read the full complaint](https://mylocalgop.com/tx/potter/statement)**",
+    "Election Day is Tuesday, Nov. 3. Polls are open 7 a.m. to 7 p.m. Find your polling place and sample ballot at [TheBallotBox.com](https://theballotbox.com).",
+    "_Source documents cited in the complaint:_ [ODNI 2024 Annual Threat Assessment](https://www.dni.gov/files/ODNI/documents/assessments/ATA-2024-Unclassified-Report.pdf) · [NIC declassified memorandum on foreign threats to U.S. elections](https://www.dni.gov/files/ODNI/documents/assessments/NICM-Declassified-Foreign-Threats-to-US-Elections-After-Voting-Ends-in-2024.pdf) · [Tex. Elec. Code § 127.201](https://statutes.capitol.texas.gov/Docs/EL/htm/EL.127.htm#127.201) · [2020 House Administration Committee hearing on voting system vendors](https://nsarchive.gwu.edu/document/24853-document-75-house-committee-house-administration-2020-election-security-perspectives)"
+  ],
+  "authorBio": "Kristin Griswold is a contributor to The County Post."
+} as const;
+
 export const paxtonRallyOpEd = {
   id: "county-post-op-ed-paxton-rally-dont-spray-the-kitchen",
   slug: "r",
@@ -218,7 +247,7 @@ export const paxtonRallyOpEd = {
 } as const;
 
 // Newest first; County Post originals appear on every opinion desk.
-export const countyPostOpEds: readonly CountyPostOpEd[] = [paxtonRallyOpEd, enoughAboutTheOtherGuyOpEd, texasMailerOpEd, millennialVoiceOpEd, dataCentersOpEd];
+export const countyPostOpEds: readonly CountyPostOpEd[] = [potterGopSuitOpEd, paxtonRallyOpEd, enoughAboutTheOtherGuyOpEd, texasMailerOpEd, millennialVoiceOpEd, dataCentersOpEd];
 
 export const featuredCountyPostOpEds: NewsFeedItem[] = countyPostOpEds.map((article) => ({
   id: article.id,
