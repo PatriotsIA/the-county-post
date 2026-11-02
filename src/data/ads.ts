@@ -6,9 +6,9 @@ import guerrillaGear from "../../ad-assets/ad-guerilla-gear.png";
 import lemcInline from "../../ad-assets/LEMC250.jpg";
 import lemcBanner from "../../ad-assets/LEMC980.jpg";
 import lawyersTitle from "../../ad-assets/LawyersTitle250.jpg";
-import patriotTrailer from "../../ad-assets/PatriotTrailerStore.jpg";
 import piaBanner from "../../ad-assets/PIA980.jpg";
 import piaMerchStore from "../../ad-assets/pia-merch-store-ad.jpg";
+import piaEvents from "../../ad-assets/pia-events-inline.jpg";
 import plainsBank from "../../ad-assets/PlainsBank250.jpg";
 import loriHorner from "../../ad-assets/lori-horner-ad.png";
 import freedomPavementBanner from "../../ad-assets/freedom-pavement-banner.png";
@@ -319,11 +319,11 @@ export const ads: AdCreative[] = [
   },
   bookAd("founding-fathers", "inline"),
   {
-    id: "patriot-trailer-inline",
+    id: "pia-events-inline",
     slot: "inline",
-    image: patriotTrailer,
-    name: "Patriot Trailer Store",
-    alt: "Patriot Trailer Store",
+    image: piaEvents,
+    name: "PIA Events",
+    alt: "PIA Events: Where Patriots Show Up. Find our next event at PIAEvents.com",
     href: "https://piaevents.com/",
   },
   bookAd("founding-of-america", "inline"),
