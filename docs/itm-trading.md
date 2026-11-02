@@ -10,6 +10,27 @@ The sponsor page uses the full County Post masthead, global primary navigation,
 and national desk navigation, including the shared mobile menu. Its sponsor
 content and spot-price tools remain below the global header.
 
+## Office hours and Stan's op-ed — November 2, 2026
+
+The owner supplied the office hours: Monday–Friday, **10am - 7pm EST
+(7am - 4pm PST)**. These replace the previous hours in Stan's contact section.
+
+Stan's national-desk submission, **Is the Global AI Bubble Popping?**, is
+published at `/op-eds/is-the-global-ai-bubble-popping` with his ITM Trading
+byline and supplied Reuters source link. The top and bottom buttons both read
+"Learn More About The Author Stan Roberts & ITM Trading" and link to
+`/itm-trading`. The shared opinion feed keeps `/gop` pinned first and Stan's
+article second on national, state and county desks. The article is included
+automatically in routing, breadcrumbs and the generated sitemap.
+
+Validation: `npm run lint` completed with the four existing hook warnings;
+`npm run build` passed and emitted the article in `sitemap-core.xml`. All 107
+Playwright tests passed, including the five opinion desks, the article's author
+metadata, both author-button destinations, the new hours, and 1280px/320px
+layouts. The run used the installed Playwright headless shell through
+`PLAYWRIGHT_CHROMIUM_EXECUTABLE`; system Chromium could not start because the
+managed scratch path exceeded its Unix socket-path limit.
+
 ## Sponsor contacts and referral tracking — October 6, 2026
 
 The sponsor brief supplies Stan Roberts' title (Senior Analyst), direct phone

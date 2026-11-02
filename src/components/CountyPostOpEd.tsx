@@ -45,7 +45,7 @@ export function CountyPostOpEdPage({ article }: { article: CountyPostOpEd }) {
             headline: article.title,
             description: article.deck,
             publishedAt: article.publishedAt,
-            authorName: article.byline.replace(/^By\s+/, "").replace(/,\s*The County Post$/, ""),
+            authorName: article.authorName ?? article.byline.replace(/^By\s+/, "").replace(/,\s*The County Post$/, ""),
             section: article.category,
             body: article.paragraphs.map(plainText).join("\n\n"),
           }),
@@ -62,6 +62,11 @@ export function CountyPostOpEdPage({ article }: { article: CountyPostOpEd }) {
           <h1>{article.title}</h1>
           <p className="editorial-op-ed-deck">{article.deck}</p>
           <p className="editorial-op-ed-byline">{article.byline}</p>
+          {article.authorLink && (
+            <Link className="button-link editorial-op-ed-author-link" to={article.authorLink.path}>
+              {article.authorLink.label}
+            </Link>
+          )}
         </header>
 
         <div className="editorial-op-ed-body">
@@ -84,6 +89,11 @@ export function CountyPostOpEdPage({ article }: { article: CountyPostOpEd }) {
             : <p key={paragraph}>{withMarkup(paragraph)}</p>,
           )}
           <p className="editorial-op-ed-author">{withMarkup(article.authorBio)}</p>
+          {article.authorLink && (
+            <Link className="button-link editorial-op-ed-author-link" to={article.authorLink.path}>
+              {article.authorLink.label}
+            </Link>
+          )}
         </div>
 
         <Link className="button-link editorial-op-ed-back" to="/op-eds">

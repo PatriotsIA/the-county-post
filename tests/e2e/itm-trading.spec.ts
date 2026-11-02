@@ -54,6 +54,7 @@ test("editions and ITM tools share the same spot prices and browser cache", asyn
   await expect(page).toHaveTitle("ITM Trading & Metal Prices | The County Post");
   await expect(page.locator('.itm-disclosure').first()).toContainText("ITM Trading is a sponsor of The County Post");
   await expect(page.locator('.itm-role')).toHaveText("Senior Analyst · ITM Trading");
+  await expect(page.locator('.itm-contact-details')).toContainText("ITM office hours: Monday–Friday, 10am - 7pm EST (7am - 4pm PST).");
   await expect(page.locator('#stan-roberts a[href="tel:+16232087493"]')).toHaveText("623-208-7493");
   await expect(page.getByRole("link", { name: "stanr@itmtrading.com", exact: true })).toHaveAttribute("href", "mailto:stanr@itmtrading.com?subject=The%20County%20Post%20inquiry");
   for (const [name, email] of [["Fernando Grijalva", "fernando@itmtrading.com"], ["Keely Caul", "keelyc@itmtrading.com"], ["Nate Batiste", "nathanb@itmtrading.com"]]) {
