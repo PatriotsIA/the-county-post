@@ -55,10 +55,15 @@ Resources:
       AttributeDefinitions:
         - {AttributeName: pk, AttributeType: S}
         - {AttributeName: activeZone, AttributeType: S}
+        - {AttributeName: status, AttributeType: S}
+        - {AttributeName: createdAt, AttributeType: S}
       KeySchema: [{AttributeName: pk, KeyType: HASH}]
       GlobalSecondaryIndexes:
         - IndexName: active-zone
           KeySchema: [{AttributeName: activeZone, KeyType: HASH}, {AttributeName: pk, KeyType: RANGE}]
+          Projection: {ProjectionType: KEYS_ONLY}
+        - IndexName: subscription-status
+          KeySchema: [{AttributeName: status, KeyType: HASH}, {AttributeName: createdAt, KeyType: RANGE}]
           Projection: {ProjectionType: KEYS_ONLY}
       TimeToLiveSpecification: {AttributeName: expires, Enabled: true}
       PointInTimeRecoverySpecification: {PointInTimeRecoveryEnabled: true}
@@ -130,6 +135,15 @@ Resources:
               Condition:
                 StringEquals: {ses:FromAddress: newsletters@thecountypost.com}
       Events:
+        ConfirmationReminders:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: rate(15 minutes)
+            FlexibleTimeWindow: {Mode: 'OFF'}
+            State: !If [Enabled, ENABLED, DISABLED]
+            Input: '{"kind":"reminder-plan"}'
+            RetryPolicy: {MaximumRetryAttempts: 3, MaximumEventAgeInSeconds: 3600}
+            DeadLetterConfig: {Arn: !GetAtt DeadLetters.Arn}
         Queue:
           Type: SQS
           Properties:

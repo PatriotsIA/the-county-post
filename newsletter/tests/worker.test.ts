@@ -1,12 +1,12 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import type { SQSEvent } from 'aws-lambda';
-const mock = vi.hoisted(() => ({ records: new Map<string, any>(), ses: vi.fn(), s3: vi.fn(), sqs: vi.fn(), rate: vi.fn(), query: vi.fn(), db: vi.fn(), get: vi.fn() }));
+const mock = vi.hoisted(() => ({ records: new Map<string, any>(), ses: vi.fn(), s3: vi.fn(), sqs: vi.fn(), rate: vi.fn(), query: vi.fn(), reminders: vi.fn(), db: vi.fn(), get: vi.fn() }));
 vi.mock('../src/store', () => ({
   get: mock.get,
   put: async (item: any, condition?: string) => { if (condition && mock.records.has(item.pk)) throw { name: 'ConditionalCheckFailedException' }; mock.records.set(item.pk, item); },
   remove: async (pk: string) => { mock.records.delete(pk); },
   conditional: (error: any) => error.name === 'ConditionalCheckFailedException',
-  rateLimit: mock.rate, activePage: mock.query, seconds: () => Math.floor(Date.now() / 1000), db: { send: mock.db }, table: () => 'test',
+  rateLimit: mock.rate, activePage: mock.query, confirmationReminderPage: mock.reminders, seconds: () => Math.floor(Date.now() / 1000), db: { send: mock.db }, table: () => 'test',
 }));
 vi.mock('@aws-sdk/client-sesv2', () => ({ SESv2Client: class { send = mock.ses; }, SendEmailCommand: class { constructor(public input: any) {} } }));
 vi.mock('@aws-sdk/client-s3', () => ({ S3Client: class { send = mock.s3; }, GetObjectCommand: class { constructor(public input: any) {} }, PutObjectCommand: class { constructor(public input: any) {} } }));
@@ -21,6 +21,8 @@ beforeEach(() => {
   process.env.SENDING_ENABLED = 'true'; process.env.NEWSLETTER_ADDRESS = 'Public business address'; process.env.FROM_EMAIL = 'newsletters@thecountypost.com'; process.env.PUBLIC_API_URL = 'https://newsletter.example';
   mock.records.set(sub.pk, { ...sub }); mock.get.mockImplementation(async (key: string) => mock.records.get(key));
   mock.ses.mockResolvedValue({ MessageId: 'ses-id' });
+  mock.sqs.mockReset().mockResolvedValue({});
+  mock.reminders.mockReset().mockResolvedValue({ Items: [] });
   mock.s3.mockResolvedValue({ Body: { transformToString: async () => JSON.stringify({ edition: sub, label: 'National', url: 'https://thecountypost.com/', builtAt: '2026-10-12T11:15:00Z', forecasts: [], sections: [{ title: 'Headlines', url: 'https://thecountypost.com/#desk-general', stories: [] }, { title: 'Sports', url: 'https://thecountypost.com/#desk-sports', stories: [] }] }) } });
 });
 it('sends once despite duplicate jobs and includes one-click unsubscribe', async () => {
@@ -135,4 +137,100 @@ it.each(['unsubscribed', 'active', 'expired', 'superseded', 'suppressed'])('does
     mock.records.set(`SUPPRESS#${hash(sub.email)}`, { reason: 'Complaint' });
   }
   await handler(giftJob); expect(mock.ses).not.toHaveBeenCalled();
+});
+
+const pendingSub = { ...sub, status: 'pending' as const, createdAt: '2026-10-11T11:15:00.000Z', confirmExpires: Date.parse('2026-10-13T11:15:00Z') / 1000 };
+const reminderJob = { kind: 'reminder' as const, subscriber: sub.pk, version: sub.confirmToken };
+it('sends a single reminder at 24 hours with the original token, actual deadline and both confirmation steps', async () => {
+  mock.records.set(sub.pk, pendingSub);
+  vi.setSystemTime(new Date('2026-10-12T11:14:59Z'));
+  await handler(reminderJob); expect(mock.ses).not.toHaveBeenCalled();
+  vi.setSystemTime(new Date('2026-10-12T11:15:00Z'));
+  await handler(reminderJob); await handler({ ...reminderJob, request: 'duplicate-schedule' });
+  expect(mock.ses).toHaveBeenCalledOnce();
+  const message = mock.ses.mock.calls[0][0].input;
+  expect(message.EmailTags).toContainEqual({ Name: 'kind', Value: 'reminder' });
+  expect(message.Content.Simple.Subject.Data).toBe('Reminder: confirm your National Morning Post');
+  for (const body of [message.Content.Simple.Body.Html.Data, message.Content.Simple.Body.Text.Data]) {
+    for (const text of ['one-time reminder', 'Confirm my subscription', 'Confirm subscription', 'Spam or Junk', 'newsletters@thecountypost.com', '/newsletter#confirm=confirm', 'Oct 13, 2026', 'Cancel this signup', '/newsletter#unsubscribe=opaque']) expect(body).toContain(text);
+    expect(body).not.toContain('expires in 48 hours');
+  }
+  expect(mock.records.get(sub.pk)).toEqual(pendingSub);
+});
+it.each(['active', 'unsubscribed', 'expired', 'superseded', 'suppressed', 'renewed', 'invalid-created-date'])('does not remind a subscription that is %s', async reason => {
+  mock.records.set(sub.pk, { ...pendingSub,
+    ...(reason === 'active' || reason === 'unsubscribed' ? { status: reason } : {}),
+    ...(reason === 'expired' ? { confirmExpires: Date.now() / 1000 } : {}),
+    ...(reason === 'superseded' ? { confirmToken: 'new-token' } : {}),
+    ...(reason === 'renewed' ? { createdAt: new Date().toISOString() } : {}),
+    ...(reason === 'invalid-created-date' ? { createdAt: 'invalid' } : {}),
+  });
+  if (reason === 'suppressed') {
+    const { hash } = await import('../src/model');
+    mock.records.set(`SUPPRESS#${hash(sub.email)}`, { reason: 'Bounce' });
+  }
+  await handler(reminderJob); expect(mock.ses).not.toHaveBeenCalled();
+});
+it.each(['active', 'unsubscribed', 'expired', 'superseded'])('rechecks %s immediately before a reminder send', async reason => {
+  let reads = 0;
+  mock.get.mockImplementation(async (key: string) => key !== sub.pk ? mock.records.get(key) : ++reads === 1 ? pendingSub : {
+    ...pendingSub, ...(reason === 'active' || reason === 'unsubscribed' ? { status: reason } : {}),
+    ...(reason === 'expired' ? { confirmExpires: 1 } : {}),
+    ...(reason === 'superseded' ? { confirmToken: 'new-token' } : {}),
+  });
+  await handler(reminderJob); expect(mock.ses).not.toHaveBeenCalled();
+});
+it('preserves gift attribution and decline instructions in the follow-up', async () => {
+  mock.records.set(sub.pk, { ...pendingSub, invitedBy: giftSub.invitedBy });
+  await handler(reminderJob);
+  const body = mock.ses.mock.calls[0][0].input.Content.Simple.Body;
+  expect(body.Html.Data).toContain('Jamie &lt;Reader&gt; &amp; family');
+  expect(body.Text.Data).toContain('Confirm my free subscription');
+  expect(body.Text.Data).toContain('Decline this invitation');
+});
+it('plans existing due signups, skips stale or previously claimed entries, and continues pagination', async () => {
+  const { hash } = await import('../src/model');
+  const examples = [pendingSub, { ...pendingSub, pk: 'SUB#confirmed', status: 'active' }, { ...pendingSub, pk: 'SUB#renewed', createdAt: new Date().toISOString() }, { ...pendingSub, pk: 'SUB#sent' }, { ...pendingSub, pk: 'SUB#ambiguous' }, { ...pendingSub, pk: 'SUB#suppressed', email: 'bounced@example.com' }];
+  for (const example of examples) mock.records.set(example.pk, example);
+  mock.records.set(`SEND#reminder#SUB#sent#${hash(sub.confirmToken)}`, { status: 'sent' });
+  mock.records.set(`SEND#reminder#SUB#ambiguous#${hash(sub.confirmToken)}`, { status: 'sending' });
+  mock.records.set(`SUPPRESS#${hash('bounced@example.com')}`, { reason: 'Bounce' });
+  const cursor = { pk: 'SUB#last', status: 'pending', createdAt: pendingSub.createdAt };
+  mock.reminders.mockResolvedValue({ Items: [...examples.map(({ pk }) => ({ pk })), { pk: 'SUB#deleted' }], LastEvaluatedKey: cursor });
+  await handler({ kind: 'reminder-plan' });
+  expect(mock.sqs.mock.calls.map(call => JSON.parse(call[0].input.MessageBody))).toEqual([reminderJob, { kind: 'reminder-plan', cursor }]);
+  mock.reminders.mockResolvedValue({ Items: [] });
+  await handler({ kind: 'reminder-plan', cursor });
+  expect(mock.reminders).toHaveBeenLastCalledWith(cursor);
+});
+it('retries a failed reminder enqueue without duplicating email', async () => {
+  mock.records.set(sub.pk, pendingSub);
+  mock.reminders.mockResolvedValue({ Items: [{ pk: sub.pk }] });
+  mock.sqs.mockRejectedValueOnce(new Error('Queue unavailable'));
+  await expect(handler({ kind: 'reminder-plan' })).rejects.toThrow('Queue unavailable');
+  await handler({ kind: 'reminder-plan' });
+  await handler(reminderJob);
+  await handler({ kind: 'reminder-plan' });
+  expect(mock.sqs).toHaveBeenCalledTimes(2);
+  expect(mock.ses).toHaveBeenCalledOnce();
+});
+it('prevents concurrent reminder jobs from sending twice', async () => {
+  mock.records.set(sub.pk, pendingSub);
+  await Promise.allSettled([handler(reminderJob), handler(reminderJob)]);
+  expect(mock.ses).toHaveBeenCalledOnce();
+});
+it('retries a known reminder rejection but preserves ambiguous send claims for review', async () => {
+  mock.records.set(sub.pk, pendingSub);
+  mock.ses.mockRejectedValueOnce(Object.assign(new Error('Throttle'), { name: 'TooManyRequestsException' }));
+  await expect(handler(reminderJob)).rejects.toThrow('Throttle');
+  mock.ses.mockRejectedValueOnce(new Error('Network timeout'));
+  await expect(handler(reminderJob)).rejects.toThrow('Network timeout');
+  await expect(handler(reminderJob)).rejects.toThrow('Ambiguous prior send');
+  expect(mock.ses).toHaveBeenCalledTimes(2);
+});
+it('does not plan or send reminders while delivery is disabled', async () => {
+  process.env.SENDING_ENABLED = 'false';
+  mock.records.set(sub.pk, pendingSub);
+  await handler({ kind: 'reminder-plan' }); await handler(reminderJob);
+  expect(mock.reminders).not.toHaveBeenCalled(); expect(mock.ses).not.toHaveBeenCalled();
 });

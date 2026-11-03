@@ -4,6 +4,7 @@ import type { CountySite } from '../data/counties';
 import type { StateSite } from '../data/states';
 import { NewsletterEditionSearch } from './NewsletterEditionSearch';
 import { NewsletterGift } from './NewsletterGift';
+import { NewsletterConfirmationHelp } from './NewsletterConfirmationHelp';
 import { MORNING_POST_TITLE, MORNING_POST_DESCRIPTION, MORNING_POST_GIFT_PATH, nationalEdition, type EditionChoice } from '../data/morning-post';
 import { newsletterRequest, newsletterZones, type NewsletterEdition } from '../lib/newsletter-api';
 import { Seo } from './Seo';
@@ -50,7 +51,7 @@ export function NewsletterSignup({ county, state, footer = false }: { county?: C
     <div className="newsletter-intro"><h2 id={`${id}-title`}><Link to="/morning-post">The Morning Post</Link></h2>
       <p>{footer ? `${choice?.label} · News & weather at 6:15 a.m.` : <>Your morning news & weather, free at 6:15 a.m. <Link to="/morning-post">Meet the Morning Post →</Link></>}</p>
     </div>
-    {success ? <div role="status"><p>{message}</p>{footer ? <Link to="/morning-post">Explore other editions →</Link> : <button className="newsletter-button" onClick={() => { setSuccess(false); setMessage(''); }}>Subscribe to another edition</button>}</div> : <form onSubmit={submit} className="newsletter-form" aria-label={footer ? 'Footer Morning Post signup' : 'Morning Post signup'}>
+    {success ? <div role="status"><p>{message}</p><NewsletterConfirmationHelp />{footer ? <Link to="/morning-post">Explore other editions →</Link> : <button className="newsletter-button" onClick={() => { setSuccess(false); setMessage(''); }}>Subscribe to another edition</button>}</div> : <form onSubmit={submit} className="newsletter-form" aria-label={footer ? 'Footer Morning Post signup' : 'Morning Post signup'}>
       <div className="newsletter-fields">
         {!footer ? <NewsletterEditionSearch selected={choice} onChange={next => { setChoice(next); setCustomZone(false); setTimeZone(browserZone()); setError(''); }} /> : null}
         <label htmlFor={`${id}-email`}>Email address<input id={`${id}-email`} name="email" type="email" autoComplete="email" placeholder="you@example.com" required maxLength={254} value={email} onChange={event => setEmail(event.target.value)} /></label>
@@ -82,7 +83,7 @@ export function MorningPostPage() {
       <article><p className="kicker">02 · Plan ahead</p><h2>Weather before you head out</h2><p>A weather and precipitation preview alongside your news. County editions show local forecasts; state and national editions identify the locations in their forecast roundup.</p></article>
       <article><p className="kicker">03 · Make it yours</p><h2>As local as you like</h2><p>Follow your home county, your state, or the country. Subscribe to multiple editions to keep up with places that matter to you, and support the businesses featured in each edition.</p></article>
     </section>
-    <section className="morning-post-details"><h2>A simple morning routine</h2><p>Choose an edition, enter your email, and confirm the link in your inbox. We’ll send that day’s edition as soon as you confirm, then continue daily delivery at 6:15 a.m. in your edition’s local timezone; national readers can choose their timezone. Mailbox arrival can vary.</p><p>Always free to subscribe. Every email includes links to manage your delivery timezone or unsubscribe. We measure email opens and link clicks to improve the newsletter. <Link to="/privacy">Read our privacy policy.</Link></p></section>
+    <section className="morning-post-details"><h2>A simple morning routine</h2><p>Choose an edition and enter your email. Check your inbox, Spam or Junk folder for an email from newsletters@thecountypost.com. Open its confirmation link, then click <strong>Confirm subscription</strong> on our website. We’ll send that day’s edition as soon as you confirm, then continue daily delivery at 6:15 a.m. in your edition’s local timezone; national readers can choose their timezone. Mailbox arrival can vary.</p><p>Always free to subscribe. Every email includes links to manage your delivery timezone or unsubscribe. We measure email opens and link clicks to improve the newsletter. <Link to="/privacy">Read our privacy policy.</Link></p></section>
   </div>;
 }
 
@@ -116,10 +117,10 @@ export function NewsletterPage() {
   return <div className="layout-grid">
     <Seo title="The Morning Post Newsletter" description="Choose a national, state, or county edition for your free 6:15 a.m. daily news and weather email." policy="submit" />
     {mode ? <section className="newsletter card"><p className="kicker">The Morning Post</p><h1>{mode === 'confirm' ? 'Confirm your subscription' : mode === 'unsubscribe' ? 'Unsubscribe from this edition' : 'Manage your newsletter'}</h1>
-      {mode === 'confirm' && !message ? <><p>Confirm below to receive today’s edition now, followed by your daily edition at 6:15 a.m.</p><button className="newsletter-button" disabled={busy} onClick={() => action('/confirm')}>Confirm subscription</button></> : null}
+      {mode === 'confirm' && !message ? <><p><strong>One more step:</strong> click <strong>Confirm subscription</strong> below and wait for the confirmation message. Opening the email link does not complete your signup.</p><p>Once confirmed, you’ll receive today’s edition, followed by your daily edition at 6:15 a.m. If an email is missing, check Spam or Junk and add newsletters@thecountypost.com to your contacts.</p><button className="newsletter-button" disabled={busy} onClick={() => action('/confirm')}>{busy ? 'Confirming…' : 'Confirm subscription'}</button></> : null}
       {mode === 'unsubscribe' && !message ? <><p>This stops delivery of the edition associated with this link.</p><button className="newsletter-button" disabled={busy} onClick={() => action('/unsubscribe')}>Unsubscribe</button></> : null}
       {preferences ? <><h2>{preferences.label}</h2><p>Status: {preferences.status}</p><label>Delivery timezone<select value={preferences.edition.timeZone} onChange={e => setPreferences({ ...preferences, edition: { ...preferences.edition, timeZone: e.target.value } })}>{newsletterZones.map(([zone, label]) => <option key={zone} value={zone}>{label}</option>)}</select></label><div className="newsletter-actions"><button className="newsletter-button" disabled={busy} onClick={() => action('/preferences', { timeZone: preferences.edition.timeZone })}>Save timezone</button>{preferences.status === 'active' ? <button disabled={busy} onClick={() => action('/unsubscribe')}>Unsubscribe from this edition</button> : null}</div><p>To change the edition, unsubscribe here and choose another edition below.</p></> : null}
-      {message ? <p role="status">{message}</p> : null}{error ? <p role="alert">{error}</p> : null}
+      {message ? <p role="status">{message}</p> : null}{error ? <p role="alert">{error}{mode === 'confirm' ? <> If this link has expired, <Link to="/morning-post#morning-post-signup">request a new confirmation email</Link> by signing up again.</> : null}</p> : null}
       {manageToken ? <Link to={`/newsletter#manage=${manageToken}`}>Manage your newsletter</Link> : null}
     </section> : null}
     <NewsletterSignup />
