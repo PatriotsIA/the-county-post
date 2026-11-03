@@ -33,6 +33,8 @@ test('compact live edition search supports county, state and national subscripti
   });
   await form.getByRole('button', { name: 'Subscribe free' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Check your inbox' })).toBeVisible();
+  await expect(page.locator('main .newsletter-confirmation-help')).toContainText('Spam or Junk');
+  await expect(page.locator('main .newsletter-confirmation-help')).toContainText('Confirm subscription');
   expect(sent).toMatchObject({ consent: true, edition: { level: 'state', state: 'arizona', timeZone: 'America/Phoenix' } });
   await page.getByRole('button', { name: 'Subscribe to another edition' }).click();
   await search.fill('national');
@@ -76,6 +78,7 @@ test('footer signup follows the current county, state or national page with no e
     await form.getByRole('checkbox').check();
     await form.getByRole('button', { name: 'Subscribe free' }).click();
     await expect(page.locator('footer').getByRole('status')).toContainText('Check your inbox');
+    await expect(page.locator('footer .newsletter-confirmation-help')).toContainText('newsletters@thecountypost.com');
     expect(sent.at(-1)).toMatchObject({ consent: true, edition: expected });
     if (expected.level !== 'national') expect((sent.at(-1)!.edition as Record<string, unknown>).timeZone).toBeUndefined();
   }
@@ -101,6 +104,7 @@ test('confirmation and unsubscribe pages need deliberate actions, and tokens sta
   await page.route('http://localhost:8788/confirm', route => { posts++; return route.fulfill({ json: { message: 'Subscription confirmed.' } }); });
   await page.goto(`/newsletter#confirm=${token}`);
   await expect(page.getByRole('button', { name: 'Confirm subscription', exact: true })).toBeVisible();
+  await expect(page.getByText('Opening the email link does not complete your signup.', { exact: false })).toBeVisible();
   expect(posts).toBe(0);
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
   const analytics = await page.evaluate(() => JSON.stringify((window as unknown as { dataLayer: unknown[] }).dataLayer));
@@ -133,6 +137,28 @@ test('signup errors are honest and mobile form fits small phones', async ({ page
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.locator('.morning-post-page').screenshot({ path: 'test-results/morning-post-mobile.png' });
   await page.locator('footer .newsletter').screenshot({ path: 'test-results/morning-post-footer-mobile.png' });
+});
+
+test('signup instructions fit mobile and explain both confirmation steps and the single follow-up', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.route('http://localhost:8788/subscribe', route => route.fulfill({ status: 202, json: { message: 'Check your inbox for a confirmation or management email.' } }));
+  await page.goto('/morning-post');
+  for (const name of ['Morning Post signup', 'Footer Morning Post signup']) {
+    const form = page.getByRole('form', { name, exact: true });
+    await form.getByLabel('Email address', { exact: true }).fill('reader@example.com');
+    await form.getByRole('checkbox').check();
+    await form.getByRole('button', { name: 'Subscribe free' }).click();
+  }
+  for (const scope of ['main .newsletter-signup', 'footer .newsletter']) {
+    const help = page.locator(`${scope} .newsletter-confirmation-help`);
+    await expect(help).toContainText('Spam or Junk');
+    await expect(help).toContainText('newsletters@thecountypost.com');
+    await expect(help.locator('li')).toHaveText(['Open the email and click its confirmation link.', 'On The County Post website, click Confirm subscription. Wait for the confirmation message.']);
+    await expect(help).toContainText('one follow-up after 24 hours');
+    await expect(help).toContainText('valid for 48 hours');
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.locator('main .newsletter-signup').screenshot({ path: 'test-results/newsletter-confirmation-help-mobile.png' });
 });
 
 test('sponsor handoff records the edition and campaign and rejects ineligible advertisers', async ({ page }) => {

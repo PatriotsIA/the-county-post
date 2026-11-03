@@ -84,6 +84,54 @@ Before enabling delivery, set `MailingAddress` to the owner's public business ad
 
 AWS SES us-east-2 was inspected October 12, 2026: production access, sending enabled, healthy, 50,000 messages/day and 14 messages/second. County Post's domain was not yet verified at initial inspection.
 
+## Confirmation follow-up — November 3, 2026
+
+Each pending signup or gift receives one follow-up after 24 hours if its original
+confirmation is still valid. The `ConfirmationReminders` schedule runs every
+15 minutes when `SendingEnabled=true`, so normal delivery is 24–24¼ hours after
+the signup. It queries the `subscription-status` DynamoDB index by pending status
+and the 24–48-hour creation window, 100 records per page, with queued pagination.
+The index automatically includes existing subscriptions; no subscriber backfill
+or repeated full-table scan is needed.
+
+The planner and sender read current consent. Confirmed, unsubscribed, suppressed,
+renewed and expired requests are skipped. A `SEND#reminder` claim keyed by the
+subscription and hashed confirmation-token version prevents duplicate sends
+across overlapping schedules, pagination and SQS retries. Existing delivery
+throttling, the daily sending budget, and the failed-delivery queue also apply.
+An ambiguous SES send stays claimed for manual review. An explicit rejection
+can retry. Reminder emails use the original confirmation link and actual
+expiry time; they do not renew the original 48-hour deadline or activate anyone.
+Expired signups can request a fresh link through `/morning-post`.
+
+Initial emails, reminders, signup success messages, gift success messages and
+the confirmation page explain both steps: open the email link, then click
+**Confirm subscription** on the website and wait for success. They identify
+`newsletters@thecountypost.com`, explain checking Spam/Junk and marking the email
+as Not spam, and recommend adding the sender to contacts. Confirmation emails
+also offer cancellation through the existing deliberate unsubscribe page.
+
+Deployment requires the newsletter stack update (new index, schedule and worker)
+and the frontend release. Preserve every existing stack parameter with
+`UsePreviousValue`; inspect the CloudFormation change set before execution and
+wait for the new index to become `ACTIVE`. Verify with SES simulator recipients
+only, remove their temporary subscription/token/send records afterward, and
+check reminder send logs and the failed-delivery queue. Real reminders are sent
+by the enabled schedule according to the rule above.
+
+Deployed November 3, 2026 with all production parameters preserved. The index is
+`ACTIVE` and the reminder schedule is enabled. A live SES simulator check verified
+that a fresh signup is skipped, an eligible signup is indexed and receives one
+reminder, and retrying preserves the same SES message ID. Consent, token and
+expiration remained unchanged; temporary simulator records were removed. The
+initial planner invocation ran during index backfill; after the index became
+active, that known failure was replayed successfully and removed from the failed
+delivery queue. Validation: 75 backend tests, typecheck, both builds and frontend
+lint passed (four existing hook warnings). All 13 newsletter browser checks
+passed, with the gift navigation check passing on retry. The broader 108-test
+browser run had one unrelated existing canonical-tag timing failure in
+`editorial-video.spec.ts`.
+
 ## Analytics
 
 Current rollout: **click tracking first; connect GA4 opens later** (owner's October 12 choice).

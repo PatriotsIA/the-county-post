@@ -71,7 +71,7 @@ export async function handler(event: APIGatewayProxyEventV2) {
       if (sub) await queue(sub, 'confirm');
       return response(202, { message: invitationMessage }, origin);
     }
-    const generic = { message: 'Check your inbox for a confirmation or management link. Only confirmed subscriptions receive the morning newsletter.' };
+    const generic = { message: 'Check your inbox, Spam or Junk folder for an email from newsletters@thecountypost.com. Open the confirmation link, then click “Confirm subscription” on the website to finish. If you already subscribe to this edition, use the management link in your email.' };
     if (body.website) return response(202, generic, origin);
     if (body.consent !== true) throw new InputError('Please agree to receive the daily newsletter.');
     const email = validateEmail(body.email);

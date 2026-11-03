@@ -53,3 +53,17 @@ export async function unsubscribe(sub: Subscriber) {
 export async function activePage(zone: string, cursor?: Record<string, unknown>) {
   return db.send(new QueryCommand({ TableName: table(), IndexName: 'active-zone', KeyConditionExpression: 'activeZone = :zone', ExpressionAttributeValues: { ':zone': zone }, Limit: 100, ExclusiveStartKey: cursor }));
 }
+
+export async function confirmationReminderPage(cursor?: Record<string, unknown>, now = new Date()) {
+  return db.send(new QueryCommand({
+    TableName: table(), IndexName: 'subscription-status',
+    KeyConditionExpression: '#status = :pending AND createdAt BETWEEN :oldest AND :due',
+    ExpressionAttributeNames: { '#status': 'status' },
+    ExpressionAttributeValues: {
+      ':pending': 'pending',
+      ':oldest': new Date(now.getTime() - 48 * 3600_000).toISOString(),
+      ':due': new Date(now.getTime() - 24 * 3600_000).toISOString(),
+    },
+    Limit: 100, ExclusiveStartKey: cursor,
+  }));
+}

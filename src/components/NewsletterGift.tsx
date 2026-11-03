@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { nationalEdition, type EditionChoice } from '../data/morning-post';
 import { newsletterRequest, newsletterZones } from '../lib/newsletter-api';
 import { NewsletterEditionSearch } from './NewsletterEditionSearch';
+import { NewsletterConfirmationHelp } from './NewsletterConfirmationHelp';
 
 export function NewsletterGift() {
   const location = useLocation();
@@ -63,7 +64,7 @@ function GiftForm({ initialChoice, senderEmail, onSenderEmailChange }: { initial
     } catch (e) { setError((e as Error).message); }
     finally { setPending(false); }
   }
-  return message ? <div role="status"><p>{message}</p><button type="button" className="newsletter-gift-toggle" onClick={() => setMessage('')}>Give another gift</button></div> : <form className="newsletter-gift-form" aria-label="Give the Gift of The Morning Post" onSubmit={submit}>
+  return message ? <div role="status"><p>{message}</p><NewsletterConfirmationHelp gift /><button type="button" className="newsletter-gift-toggle" onClick={() => setMessage('')}>Give another gift</button></div> : <form className="newsletter-gift-form" aria-label="Give the Gift of The Morning Post" onSubmit={submit}>
     <p>Share a little morning news with someone you know. We’ll email them an invitation from you to a free national, state, or county edition. Once they confirm, they’ll receive that day’s Morning Post, then their daily edition at 6:15 a.m.</p>
     <div className="newsletter-gift-fields">
       <label>Your name<input name="senderName" autoComplete="name" required maxLength={80} /></label>

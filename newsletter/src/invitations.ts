@@ -3,7 +3,7 @@ import { TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
 import { createSubscriber, db, get, rateLimit, seconds, table } from './store';
 import { editionKey, hash, InputError, validateEdition, validateEmail, type Subscriber } from './model';
 
-export const invitationMessage = 'Your invitation request has been received. Eligible recipients will receive an email with your name and email address. Their free subscription starts only after they confirm.';
+export const invitationMessage = 'Your invitation request has been received. Ask the recipient to check their inbox, Spam or Junk folder for an email from newsletters@thecountypost.com. They must open the confirmation link, then click “Confirm subscription” on the website. Their free subscription starts only after they confirm.';
 
 /** Invitations never replace a reader's current signup, subscription, or opt-out. */
 export async function prepareInvitation(body: Record<string, unknown>, sourceIp: string): Promise<Subscriber | undefined> {

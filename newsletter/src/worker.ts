@@ -7,14 +7,14 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { buildDigest, renderDigest, storyRecords, type Digest } from './content';
 import { SITE, ZONES, editionKey, localDate, hash, type Subscriber } from './model';
 import { renderSubscriptionMessage } from './subscription-message';
-import { db, table, get, put, remove, conditional, activePage, rateLimit, seconds } from './store';
+import { db, table, get, put, remove, conditional, activePage, confirmationReminderPage, rateLimit, seconds } from './store';
 import { recordEngagement } from './analytics';
 
 const sqs = new SQSClient({});
 const s3 = new S3Client({});
 // SES has no idempotency key. Do not let SDK retries duplicate an ambiguous send.
 const ses = new SESv2Client({ maxAttempts: 1 });
-type Job = { kind: 'plan' | 'daily' | 'confirm' | 'manage'; trigger?: 'confirmation'; timeZone?: string; date?: string; cursor?: Record<string, unknown>; subscriber?: string; version?: string; request?: string };
+type Job = { kind: 'plan' | 'reminder-plan' | 'daily' | 'confirm' | 'reminder' | 'manage'; trigger?: 'confirmation'; timeZone?: string; date?: string; cursor?: Record<string, unknown>; subscriber?: string; version?: string; request?: string };
 export async function enqueue(job: Job) { await sqs.send(new SendMessageCommand({ QueueUrl: process.env.QUEUE_URL!, MessageBody: JSON.stringify(job) })); }
 export async function snapshot(sub: Subscriber, date: string, beforeMorning = false) {
   // A pre-6:15 confirmation must not freeze the scheduled morning's content early.
@@ -52,8 +52,25 @@ export function dailyJobIsCurrent(job: Job, sub: Subscriber, now = new Date()) {
   // request may deliver at another time, and never on a later local date.
   return localMinutes(sub.timeZone, now) >= 375 && localMinutes(sub.timeZone, now) < 495;
 }
+function confirmationIsCurrent(job: Job, sub: Subscriber) {
+  return sub.status === 'pending' && sub.confirmToken === job.version && sub.confirmExpires > seconds()
+    && (job.kind !== 'reminder' || Date.parse(sub.createdAt) <= Date.now() - 24 * 3600_000);
+}
+const reminderSendKey = (sub: Subscriber) => `SEND#reminder#${sub.pk}#${hash(sub.confirmToken)}`;
 async function processJob(job: Job) {
   if (process.env.SENDING_ENABLED !== 'true') return;
+  if (job.kind === 'reminder-plan') {
+    const current = await confirmationReminderPage(job.cursor);
+    for (const item of current.Items || []) {
+      // The index is eventually consistent; read the current consent and token before queueing.
+      const sub = await get<Subscriber>(item.pk);
+      if (!sub || !confirmationIsCurrent({ kind: 'reminder', version: sub.confirmToken }, sub)) continue;
+      if (await get(`SUPPRESS#${hash(sub.email)}`) || await get(reminderSendKey(sub))) continue;
+      await enqueue({ kind: 'reminder', subscriber: sub.pk, version: sub.confirmToken });
+    }
+    if (current.LastEvaluatedKey) await enqueue({ kind: 'reminder-plan', cursor: current.LastEvaluatedKey });
+    return;
+  }
   if (job.kind === 'plan') {
     if (!ZONES.includes(job.timeZone as typeof ZONES[number])) throw new Error('Unknown schedule timezone');
     const date = job.date || localDate(job.timeZone!);
@@ -67,7 +84,8 @@ async function processJob(job: Job) {
   let sub = await get<Subscriber>(job.subscriber!);
   if (!sub || await get(`SUPPRESS#${hash(sub.email)}`)) return;
   if (job.kind === 'daily' && (sub.status !== 'active' || !dailyJobIsCurrent(job, sub))) return;
-  if (job.kind === 'confirm' && (sub.status !== 'pending' || sub.confirmToken !== job.version || sub.confirmExpires < seconds())) return;
+  const confirming = job.kind === 'confirm' || job.kind === 'reminder';
+  if (confirming && !confirmationIsCurrent(job, sub)) return;
   if (job.kind === 'manage' && sub.status !== 'active') return;
   if (!process.env.NEWSLETTER_ADDRESS || !process.env.FROM_EMAIL) throw new Error('Sender and mailing address are required before delivery.');
   const manageUrl = `${SITE}/newsletter#manage=${sub.manageToken}`;
@@ -77,12 +95,12 @@ async function processJob(job: Job) {
   if (job.kind === 'daily') {
     content = renderDigest(await snapshot(sub, job.date!, localMinutes(sub.timeZone) < 375), { date: job.date!, timeZone: sub.timeZone, manageUrl, unsubscribeUrl: unsubscribePage, address: process.env.NEWSLETTER_ADDRESS });
   } else {
-    content = renderSubscriptionMessage(sub, job.kind === 'confirm', process.env.NEWSLETTER_ADDRESS);
+    content = renderSubscriptionMessage(sub, confirming, process.env.NEWSLETTER_ADDRESS, job.kind === 'reminder');
   }
   // Recheck consent after feed generation, immediately before the send claim.
   sub = await get<Subscriber>(job.subscriber!);
-  if (!sub || await get(`SUPPRESS#${hash(sub.email)}`) || (job.kind === 'daily' && (sub.status !== 'active' || !dailyJobIsCurrent(job, sub))) || (job.kind === 'confirm' && (sub.status !== 'pending' || sub.confirmToken !== job.version))) return;
-  const key = `SEND#${job.kind}#${sub.pk}#${job.kind === 'daily' ? job.date : job.request}`;
+  if (!sub || await get(`SUPPRESS#${hash(sub.email)}`) || (job.kind === 'daily' && (sub.status !== 'active' || !dailyJobIsCurrent(job, sub))) || (confirming && !confirmationIsCurrent(job, sub))) return;
+  const key = job.kind === 'reminder' ? reminderSendKey(sub) : `SEND#${job.kind}#${sub.pk}#${job.kind === 'daily' ? job.date : job.request}`;
   const previous = await get<{ status: string }>(key);
   if (previous?.status === 'sent') return;
   if (previous) throw new Error('Ambiguous prior send: manual review required; refusing duplicate.');

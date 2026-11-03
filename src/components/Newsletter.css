@@ -13,6 +13,9 @@
 .newsletter a { color: var(--news-blue); }
 .newsletter [role="alert"] { border-left: 3px solid var(--news-red); padding: 12px; }
 .newsletter [role="status"] { border-left: 3px solid var(--news-blue); padding: 12px; }
+.newsletter-confirmation-help { max-width: 75ch; overflow-wrap: anywhere; }
+.newsletter-confirmation-help ol { padding-left: 24px; line-height: 1.7; }
+.newsletter-confirmation-help li + li { margin-top: 8px; }
 .newsletter :is(input, select, button, a):focus-visible { outline: 3px solid var(--news-blue); outline-offset: 3px; }
 .newsletter-trap { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
 .newsletter-actions { display: flex; gap: 14px; flex-wrap: wrap; margin: 16px 0; }
