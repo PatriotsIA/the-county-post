@@ -214,7 +214,7 @@ function makeRouteItems({
       });
 }
 
-test("keeps /gop first and Stan's newer op-ed second on national, state, and county opinion desks", async ({ page }) => {
+test("keeps /gop first and the midterms press release second on national, state, and county opinion desks", async ({ page }) => {
   const opinionDesks = [
     { path: "/", heading: "Opinion & op-eds" },
     { path: "/op-eds", heading: "National opinion" },
@@ -230,8 +230,10 @@ test("keeps /gop first and Stan's newer op-ed second on national, state, and cou
     await expect(firstCard.locator(".feed-title")).toHaveText("Potter County GOP Asks Federal Court to Hand Count Paper Ballots in Statewide Race Before Certification");
     await expect(firstCard.locator(".feed-title")).toHaveAttribute("href", "/gop");
     const secondStory = section.locator(".feed-card:not(.feed-ad-card)").nth(1);
-    await expect(secondStory.locator(".feed-title")).toHaveText("Is the Global AI Bubble Popping?");
-    await expect(secondStory.locator(".feed-title")).toHaveAttribute("href", "/op-eds/is-the-global-ai-bubble-popping");
+    await expect(secondStory.locator(".feed-title")).toHaveText("We Held the Line. Now the Work Starts.");
+    await expect(secondStory.locator(".feed-title")).toHaveAttribute("href", "/2026-midterms");
+    await expect(secondStory.locator(".feed-publisher")).toHaveText("Potter County Republican Party · Press release");
+    await expect(section.locator(".feed-title", { hasText: "Is the Global AI Bubble Popping?" })).toHaveAttribute("href", "/op-eds/is-the-global-ai-bubble-popping");
     await expect(section.locator(".feed-title", { hasText: "Don't spray the kitchen" })).toHaveAttribute("href", "/op-eds/r");
     await expect(section.locator(".feed-title", { hasText: "Enough About The Other Guy" })).toHaveCount(1);
     await expect(section.locator(".feed-title", { hasText: "The Millennial Generation Has a Voice. Are We Using It?" })).toHaveCount(1);

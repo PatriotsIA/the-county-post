@@ -339,6 +339,7 @@ function App() {
           <Route path="/texas/:countySlug/texas-legends" element={<LegacyLegendsRedirect countyScoped />} />
           <Route path="/op-eds/potter-county-gop-chairman-paxton-rally-dont-spray-the-kitchen" element={<Navigate to="/op-eds/r" replace />} />
           <Route path="/op-eds/paxton-rally" element={<Navigate to="/op-eds/r" replace />} />
+          <Route path="/op-eds/2026-midterms" element={<Navigate to="/2026-midterms" replace />} />
           {countyPostOpEds.map((article) => <Route key={article.slug} path={article.path} element={<CountyPostOpEdPage article={article} />} />)}
           <Route path="/op-eds" element={<OpEdPage />} />
           <Route path="/about" element={<AboutPage />} />

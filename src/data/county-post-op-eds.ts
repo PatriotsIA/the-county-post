@@ -1,10 +1,13 @@
 import type { NewsFeedItem } from "../lib/news-api";
 import { ITM_TRADING_PATH } from "./itm-trading";
+import { midtermsPressRelease } from "./midterms-press-release";
 
 export type CountyPostOpEd = {
   id: string; slug: string; path: string; category: string; title: string; deck: string;
   byline: string; publishedAt: string; paragraphs: readonly string[]; authorBio: string;
   authorName?: string;
+  source?: string;
+  document?: { href: string; label: string };
   authorLink?: { path: string; label: string };
   video?: { src: string; poster: string; label: string; caption: string; moreUrl?: string };
 };
@@ -283,14 +286,30 @@ export const globalAiBubbleOpEd = {
   },
 } as const;
 
-// /gop stays pinned first; the remaining originals are newest first on every opinion desk.
-export const countyPostOpEds: readonly CountyPostOpEd[] = [potterGopSuitOpEd, globalAiBubbleOpEd, paxtonRallyOpEd, enoughAboutTheOtherGuyOpEd, texasMailerOpEd, millennialVoiceOpEd, dataCentersOpEd];
+export const midtermsOpEd: CountyPostOpEd = {
+  id: "potter-county-gop-2026-midterms-press-release",
+  slug: "2026-midterms",
+  path: "/2026-midterms",
+  category: "Press release",
+  title: midtermsPressRelease.title,
+  deck: midtermsPressRelease.releaseLine,
+  byline: midtermsPressRelease.contact,
+  authorName: "Dan Rogers",
+  source: "Potter County Republican Party · Press release",
+  publishedAt: midtermsPressRelease.publishedAt,
+  paragraphs: midtermsPressRelease.paragraphs.map(({ text, heading }) => heading ? `## ${text}` : text),
+  authorBio: "",
+  document: { href: midtermsPressRelease.documentPath, label: "Download the original press release (.docx)" },
+};
+
+// /gop stays pinned first; the remaining articles are newest first on every opinion desk.
+export const countyPostOpEds: readonly CountyPostOpEd[] = [potterGopSuitOpEd, midtermsOpEd, globalAiBubbleOpEd, paxtonRallyOpEd, enoughAboutTheOtherGuyOpEd, texasMailerOpEd, millennialVoiceOpEd, dataCentersOpEd];
 
 export const featuredCountyPostOpEds: NewsFeedItem[] = countyPostOpEds.map((article) => ({
   id: article.id,
   title: article.title,
   link: article.path,
-  source: "The County Post",
+  source: article.source ?? "The County Post",
   publishedAt: article.publishedAt,
   description: article.deck,
   categories: ["Opinion", "The County Post"],

@@ -89,7 +89,8 @@ export function CountyPostOpEdPage({ article }: { article: CountyPostOpEd }) {
             ? <h2 key={paragraph}>{withMarkup(paragraph.slice(3), false)}</h2>
             : <p key={paragraph}>{withMarkup(paragraph)}</p>,
           )}
-          <p className="editorial-op-ed-author">{withMarkup(article.authorBio)}</p>
+          {article.authorBio && <p className="editorial-op-ed-author">{withMarkup(article.authorBio)}</p>}
+          {article.document && <p><a href={article.document.href} download>{article.document.label}</a></p>}
           {article.authorLink && (
             <Link className="button-link editorial-op-ed-author-link" to={article.authorLink.path}>
               {article.authorLink.label}
