@@ -7,6 +7,14 @@ to be true outside it for any of it to work.
 
 **The Amplify SPA rewrite must return 200.**
 
+The static-extension exclusions in that rewrite must include `docx`. The
+November 4, 2026 midterms press release at `/2026-midterms` includes the original
+Word document under `/press-releases/`; without this exclusion, Amplify returns
+the HTML app shell with status 200 instead of the document. Preserve the other
+extension exclusions and all preceding domain and landing-page rules. The
+download must match the SHA-256 of the committed original:
+`067185a04d516975929983dc9ef4ec21984b4d97d41ccecbe4619f2ebecaeb9c`.
+
 At the time this was written, every deep route on the production site returned
 `301` to a trailing-slash URL and then `404`, with the SPA shell as the body.
 Readers saw a working page; Googlebot saw a 404 and dropped the URL. That is
