@@ -258,11 +258,15 @@ test("millennial op-ed preserves the full contribution and confirmed author meta
   await expect(page.locator(".editorial-op-ed-body a[href^='mailto:']")).toHaveCount(0);
 });
 
-test("Stan's op-ed credits him and links both author buttons to ITM on desktop and mobile", async ({ page }) => {
+for (const submission of [
+  { slug: "is-the-global-ai-bubble-popping", title: "Is the Global AI Bubble Popping?", opening: "China may be the FIRST country to burst the AI bubble.", source: "https://www.reuters.com/world/china/china-ai-bubble-has-already-burst-2026-10-26/" },
+  { slug: "stock-market-wipeout-ai-debt", title: "Biggest Single Day Wipeout in U.S. Stock Market History (Over $2 Trillion Lost in first hour of trading)", opening: "Biggest Single Day Wipeout in U.S. Stock Market History: $2.8 Trillion.", source: "https://x.com/macropaperr/status/2118440694738198547?s=19" },
+]) {
+test(`Stan's ${submission.slug} op-ed credits him and links both author buttons to ITM on desktop and mobile`, async ({ page }) => {
   await page.route("https://**", route => route.abort());
   await page.route("http://localhost:8787/**", route => route.fulfill({ status: 503, json: { error: "Not in fixture" } }));
-  const path = "/op-eds/is-the-global-ai-bubble-popping";
-  const title = "Is the Global AI Bubble Popping?";
+  const path = `/op-eds/${submission.slug}`;
+  const title = submission.title;
   const label = "Learn More About The Author Stan Roberts & ITM Trading";
   for (const width of [1280, 320]) {
     await page.setViewportSize({ width, height: 800 });
@@ -274,9 +278,14 @@ test("Stan's op-ed credits him and links both author buttons to ITM on desktop a
     await expect(page.locator(".editorial-op-ed-header").getByRole("link", { name: label })).toHaveAttribute("href", "/itm-trading");
     await expect(page.locator(".editorial-op-ed-body > a:last-child")).toHaveText(label);
     const paragraphs = page.locator(".editorial-op-ed-body > p:not(.editorial-op-ed-author)");
-    await expect(paragraphs.first()).toContainText("China may be the FIRST country to burst the AI bubble.");
-    await expect(paragraphs.nth(11)).toHaveText("Contagion appears to be spreading, and the bubble is a lot larger than previous cycles.");
-    await expect(paragraphs.last().getByRole("link")).toHaveAttribute("href", "https://www.reuters.com/world/china/china-ai-bubble-has-already-burst-2026-10-26/");
+    await expect(paragraphs.first()).toContainText(submission.opening);
+    if (submission.slug === "is-the-global-ai-bubble-popping") {
+      await expect(paragraphs.nth(11)).toHaveText("Contagion appears to be spreading, and the bubble is a lot larger than previous cycles.");
+    } else {
+      await expect(paragraphs.nth(12)).toContainText("Call or text Stan Roberts @ ITM Trading: 623-208-7493 (direct line)");
+    }
+    await expect(paragraphs.last().getByRole("link")).toHaveAttribute("href", submission.source);
+    await expect(page.locator(".editorial-op-ed-author")).toContainText("ITM Trading, a sponsor of The County Post");
     const head = await readHead(page);
     expect(head.canonical).toBe(`https://thecountypost.com${path}`);
     expect(head.title).toBe(`${title} | The County Post`);
@@ -284,7 +293,7 @@ test("Stan's op-ed credits him and links both author buttons to ITM on desktop a
     expect(article.author.name).toBe("Stan Roberts");
     expect(article.articleBody).toBe((await paragraphs.allTextContents()).join("\n\n"));
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-    await page.locator(".editorial-op-ed-header").screenshot({ path: `test-results/stan-op-ed-${width}.png` });
+    await page.locator(".editorial-op-ed-header").screenshot({ path: `test-results/stan-${submission.slug}-${width}.png` });
     await authorLinks.nth(width === 1280 ? 0 : 1).click();
     await expect(page).toHaveURL(/\/itm-trading$/);
     await expect(page.locator(".itm-contact-details")).toContainText("10am - 7pm EST (7am - 4pm PST)");
@@ -292,3 +301,4 @@ test("Stan's op-ed credits him and links both author buttons to ITM on desktop a
   await page.goto("/gop");
   await expect(page.locator(".editorial-op-ed-author-link")).toHaveCount(0);
 });
+}

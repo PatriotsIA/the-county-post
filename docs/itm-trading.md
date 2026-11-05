@@ -10,6 +10,28 @@ The sponsor page uses the full County Post masthead, global primary navigation,
 and national desk navigation, including the shared mobile menu. Its sponsor
 content and spot-price tools remain below the global header.
 
+## Stan's stock market op-ed — November 5, 2026
+
+Stan's national-desk submission, **Biggest Single Day Wipeout in U.S. Stock
+Market History (Over $2 Trillion Lost in first hour of trading)**, is at
+`/op-eds/stock-market-wipeout-ai-debt`. The headline and article wording are
+preserved as submitted, including the direct phone number and supplied X URL.
+It uses the existing Stan Roberts / ITM Trading byline, sponsor identification,
+and top and bottom author buttons linking to `/itm-trading`.
+
+The owner's editorial instruction on November 5 is to publish contributors'
+op-eds in their own words, without fact-checking or rewriting their copy.
+The existing `/gop` pin remains first; this newest op-ed follows it on national,
+state and county opinion desks, with the midterms press release next. Routing,
+article metadata and the core sitemap include the new article automatically.
+
+Validation: build and sitemap generation passed; lint reported only the four
+existing hook warnings. A text comparison matched the submitted body exactly
+apart from paragraph whitespace. The 109-test browser run passed 108 tests;
+the existing rally canonical-tag timing failure passed on retry. All four
+focused checks passed, covering both Stan articles at 1280px/320px, both author
+links, article metadata, the five opinion desks and the rally page.
+
 ## Office hours and Stan's op-ed — November 2, 2026
 
 The owner supplied the office hours: Monday–Friday, **10am - 7pm EST

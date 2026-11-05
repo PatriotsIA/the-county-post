@@ -286,6 +286,40 @@ export const globalAiBubbleOpEd = {
   },
 } as const;
 
+// Submitted by Stan Roberts to the national desk on November 5, 2026.
+export const stockMarketWipeoutOpEd = {
+  id: "county-post-op-ed-stock-market-wipeout-ai-debt",
+  slug: "stock-market-wipeout-ai-debt",
+  path: "/op-eds/stock-market-wipeout-ai-debt",
+  category: "Opinion",
+  title: "Biggest Single Day Wipeout in U.S. Stock Market History (Over $2 Trillion Lost in first hour of trading)",
+  deck: "Stan Roberts of ITM Trading weighs in on the stock market selloff, AI data center debt and the risks of construction and power delays.",
+  byline: "By Stan Roberts, ITM Trading",
+  authorName: "Stan Roberts",
+  publishedAt: "2026-11-05T21:39:27.114Z",
+  paragraphs: [
+    "Biggest Single Day Wipeout in U.S. Stock Market History: $2.8 Trillion. - The previous record was during the Covid crash ($2.69 Trillion).",
+    "- It could get worse - On X: @marcopaper - AI stocks are already under heavy selling pressure today, with growing fears of a Democratic crackdown on advanced AI.",
+    "- But an even bigger problem is developing in the $45.6 BILLION AI data center debt market.",
+    "Companies have borrowed billions to build massive AI data centers, but investors are now getting worried about whether these projects will generate enough money to repay their debts.",
+    "- And the warning signs are already showing up.",
+    "• CoreWeave's unsecured bonds have traded at yields near 15%, a sign of serious financial stress.",
+    "• Some CoreWeave bonds have already lost over 10 points in price since September.",
+    "• Only 1 out of 20 tracked data center bonds requires tenants to start paying rent once buildings are ready, even without electricity.",
+    "- This means construction or power delays could leave companies with huge debt payments but little rental income. And some Democratic lawmakers have already pushed to prevent taxpayer bailouts for failing AI companies.",
+    "- With Democrats now controlling Congress, AI companies could face tougher restrictions, rising borrowing costs and less political support if their projects run into serious financial trouble.",
+    "- If these problems continue, some projects could face defaults, potentially triggering even more selling across AI stocks and bonds.",
+    "(One of my colleagues texted a reminder that AI and Chip stocks lost approx. $5 trillion in October....",
+    "Time to seriously consider protecting what you do have. Call or text Stan Roberts @ ITM Trading: 623-208-7493 (direct line)",
+    "[https://x.com/macropaperr/status/2118440694738198547?s=19](https://x.com/macropaperr/status/2118440694738198547?s=19)",
+  ],
+  authorBio: "Stan Roberts is a Senior Analyst at ITM Trading, a sponsor of The County Post. The views expressed in this column are those of the author.",
+  authorLink: {
+    path: ITM_TRADING_PATH,
+    label: "Learn More About The Author Stan Roberts & ITM Trading",
+  },
+} as const;
+
 export const midtermsOpEd: CountyPostOpEd = {
   id: "potter-county-gop-2026-midterms-press-release",
   slug: "2026-midterms",
@@ -303,7 +337,7 @@ export const midtermsOpEd: CountyPostOpEd = {
 };
 
 // /gop stays pinned first; the remaining articles are newest first on every opinion desk.
-export const countyPostOpEds: readonly CountyPostOpEd[] = [potterGopSuitOpEd, midtermsOpEd, globalAiBubbleOpEd, paxtonRallyOpEd, enoughAboutTheOtherGuyOpEd, texasMailerOpEd, millennialVoiceOpEd, dataCentersOpEd];
+export const countyPostOpEds: readonly CountyPostOpEd[] = [potterGopSuitOpEd, stockMarketWipeoutOpEd, midtermsOpEd, globalAiBubbleOpEd, paxtonRallyOpEd, enoughAboutTheOtherGuyOpEd, texasMailerOpEd, millennialVoiceOpEd, dataCentersOpEd];
 
 export const featuredCountyPostOpEds: NewsFeedItem[] = countyPostOpEds.map((article) => ({
   id: article.id,
