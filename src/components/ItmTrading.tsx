@@ -13,6 +13,13 @@ const stanOpEds = countyPostOpEds
   .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
 const opEdDate = new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "America/Chicago" });
 
+function StanContactActions() {
+  return <div className="itm-contact-actions">
+    <a className="itm-button itm-button-text" href={itmTrading.smsHref}>Text Stan <span aria-hidden="true">→</span></a>
+    <a className="itm-button itm-button-call" href={itmTrading.phoneHref}>Call Stan</a>
+  </div>;
+}
+
 export function ItmTrading() {
   return <div className="itm-page">
     <Seo title={ITM_TRADING_TITLE} description={ITM_TRADING_DESCRIPTION} canonicalPath={ITM_TRADING_PATH} policy="sponsor" jsonLd={jsonLdGraph({
@@ -32,8 +39,16 @@ export function ItmTrading() {
     <nav className="itm-page-nav" aria-label="ITM Trading page sections"><a href="#stan-roberts">Meet Stan Roberts</a><a href="#stan-op-eds">Stan’s Op-Eds</a><a href="#stan-team">Stan’s Team</a><a href="#metal-prices">Metal prices</a><a href="#about-itm">About ITM</a><a href="#itm-videos">Videos &amp; education</a></nav>
 
     <section id="stan-roberts" className="card itm-contact" aria-labelledby="itm-stan-title">
-      <div className="itm-profile"><p className="kicker">Your contact at ITM Trading</p><h2 id="itm-stan-title">Stan Roberts</h2><p className="itm-role">{itmTrading.title} · ITM Trading</p><p>Stan will walk through your savings and retirement picture with you, answer your questions and explain how physical gold and silver fit into a long-term wealth protection plan.</p><p>Call or email Stan directly, or choose a day and time for a 30-minute appointment. <strong>Mention The County Post when you connect.</strong></p></div>
-      <div className="itm-contact-details"><p className="kicker">Call or Text Stan Directly</p><a className="itm-phone" href={itmTrading.phoneHref}>{itmTrading.phone}</a><a href={itmTrading.emailHref}>{itmTrading.email}</a><a className="itm-button" href={itmTrading.appointmentUrl} target="_blank" rel="noreferrer sponsored">Book 30 minutes with Stan <span aria-hidden="true">↗</span></a><p className="itm-small">Choose an appointment time online through Calendly.</p><p className="itm-small">ITM office hours: Monday–Friday, 10am - 7pm EST (7am - 4pm PST).<br />11201 N Tatum Blvd, Suite 250<br />Phoenix, AZ 85028 · By appointment.</p></div>
+      <div className="itm-profile"><p className="kicker">Your contact at ITM Trading</p><h2 id="itm-stan-title">Stan Roberts</h2><p className="itm-role">{itmTrading.title} · ITM Trading</p><p>Stan will walk through your savings and retirement picture with you, answer your questions and explain how physical gold and silver fit into a long-term wealth protection plan.</p><p>Text or call Stan directly, email him, or choose a day and time for a 30-minute appointment. <strong>Mention The County Post when you connect.</strong></p></div>
+      <div className="itm-contact-details">
+        <p className="kicker itm-contact-title"><span className="itm-call-label">Call</span> or <span className="itm-text-label">Text</span> Stan Directly</p>
+        <a className="itm-phone" href={itmTrading.phoneHref}>{itmTrading.phone}</a>
+        <StanContactActions />
+        <a href={itmTrading.emailHref}>{itmTrading.email}</a>
+        <a className="itm-button itm-button-light" href={itmTrading.appointmentUrl} target="_blank" rel="noreferrer sponsored">Book 30 minutes with Stan <span aria-hidden="true">↗</span></a>
+        <p className="itm-small">Choose an appointment time online through Calendly.</p>
+        <p className="itm-small">ITM office hours: Monday–Friday, 10am - 7pm EST (7am - 4pm PST).<br />11201 N Tatum Blvd, Suite 250<br />Phoenix, AZ 85028 · By appointment.</p>
+      </div>
     </section>
 
     <section id="stan-op-eds" className="itm-op-eds" aria-labelledby="stan-op-eds-title">
@@ -70,9 +85,11 @@ export function ItmTrading() {
 
     <section id="itm-videos" className="itm-education" aria-labelledby="itm-videos-title">
       <header className="itm-section-heading"><div><p className="kicker">ITM Trading video desk</p><h2 id="itm-videos-title">Videos &amp; education</h2></div></header>
-      <p className="itm-education-copy">Contact Stan and his team for highly educational, informational videos.</p>
-      <a className="itm-button" href="#stan-roberts">Contact Stan <span aria-hidden="true">→</span></a>
+      <div className="itm-education-contact">
+        <div><p className="itm-education-copy">Contact Stan and his team for highly educational, informational videos.</p><a className="itm-text-link" href="#stan-roberts">Contact Stan <span aria-hidden="true">→</span></a></div>
+        <div><StanContactActions /><p className="itm-small itm-direct-line">Stan’s direct line: {itmTrading.phone}</p></div>
+      </div>
     </section>
-    <p className="itm-page-note">Company information supplied by ITM Trading, with office details from its <a href={itmTrading.contactUrl} target="_blank" rel="noreferrer sponsored">Contact page</a>. Stan’s profile updated October 6, 2026; team contacts updated October 12, 2026; page copy updated October 20, 2026. Educational information, prices, and product values are subject to change. Contact Stan at ITM Trading for current terms and quotes.</p>
+    <p className="itm-page-note">Company information supplied by ITM Trading, with office details from its <a href={itmTrading.contactUrl} target="_blank" rel="noreferrer sponsored">Contact page</a>. Stan’s profile updated October 6, 2026; team contacts updated October 12, 2026; page copy updated November 6, 2026. Educational information, prices, and product values are subject to change. Contact Stan at ITM Trading for current terms and quotes.</p>
   </div>;
 }

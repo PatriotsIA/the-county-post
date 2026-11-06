@@ -10,6 +10,21 @@ The sponsor page uses the full County Post masthead, global primary navigation,
 and national desk navigation, including the shared mobile menu. Its sponsor
 content and spot-price tools remain below the global header.
 
+## Red and blue styling and direct texting — November 6, 2026
+
+The page uses the homepage's navy and red palette: a navy hero with white type,
+red and blue section headings, card borders, and lightly tinted contact areas.
+Stan's main contact panel and the videos/education section both put a red
+**Text Stan** button before a blue **Call Stan** button. The text button opens
+`sms:+16232087493`; the call button uses `tel:+16232087493`. Both use his existing
+direct line. Email, Calendly, team contacts, market tools and his op-ed archive
+remain available.
+
+Validation: build passed and lint reported only the four existing hook warnings.
+All 12 ITM browser tests passed, including SMS/call destinations, button order,
+colors, keyboard focus, tap sizes and layout at 1280, 768, 390 and 320 pixels.
+Hero and contact screenshots were visually reviewed; no calls or texts were sent.
+
 ## Stan's op-ed archive — November 6, 2026
 
 The **Op-eds by Stan Roberts** section appears below his contact details at

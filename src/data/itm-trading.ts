@@ -18,6 +18,7 @@ export const itmTrading = {
   title: "Senior Analyst",
   phone: "623-208-7493",
   phoneHref: "tel:+16232087493",
+  smsHref: "sms:+16232087493",
   email: "stanr@itmtrading.com",
   emailHref: "mailto:stanr@itmtrading.com?subject=The%20County%20Post%20inquiry",
 };

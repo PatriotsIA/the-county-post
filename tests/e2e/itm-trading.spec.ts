@@ -55,7 +55,7 @@ test("editions and ITM tools share the same spot prices and browser cache", asyn
   await expect(page.locator('.itm-disclosure').first()).toContainText("ITM Trading is a sponsor of The County Post");
   await expect(page.locator('.itm-role')).toHaveText("Senior Analyst · ITM Trading");
   await expect(page.locator('.itm-contact-details')).toContainText("ITM office hours: Monday–Friday, 10am - 7pm EST (7am - 4pm PST).");
-  await expect(page.locator('#stan-roberts a[href="tel:+16232087493"]')).toHaveText("623-208-7493");
+  await expect(page.locator('#stan-roberts').getByRole("link", { name: "623-208-7493", exact: true })).toHaveAttribute("href", "tel:+16232087493");
   await expect(page.getByRole("link", { name: "stanr@itmtrading.com", exact: true })).toHaveAttribute("href", "mailto:stanr@itmtrading.com?subject=The%20County%20Post%20inquiry");
   for (const [name, email] of [["Fernando Grijalva", "fernando@itmtrading.com"], ["Keely Caul", "keelyc@itmtrading.com"], ["Nate Batiste", "nathanb@itmtrading.com"]]) {
     await expect(page.locator('.itm-team-grid li').filter({ hasText: name }).getByRole('link', { name: email, exact: true })).toHaveAttribute('href', `mailto:${email}?subject=The%20County%20Post%20inquiry`);
@@ -215,6 +215,37 @@ test("ITM videos are hidden for now: the landing page invites readers to contact
   }
 });
 
+
+test("Stan's contact areas put red text links before blue call links across screen sizes", async ({ page }) => {
+  for (const width of [1280, 768, 390, 320]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.goto("/itm-trading");
+    const groups = page.locator(".itm-contact-actions");
+    await expect(groups).toHaveCount(2);
+    for (const group of await groups.all()) {
+      const text = group.getByRole("link", { name: "Text Stan", exact: true });
+      const call = group.getByRole("link", { name: "Call Stan", exact: true });
+      await expect(group.locator("a").first()).toHaveAttribute("href", "sms:+16232087493");
+      await expect(text).toHaveAttribute("href", "sms:+16232087493");
+      await expect(call).toHaveAttribute("href", "tel:+16232087493");
+      await expect(text).toHaveCSS("background-color", "rgb(168, 25, 29)");
+      await expect(call).toHaveCSS("background-color", "rgb(18, 60, 115)");
+      await text.focus();
+      await expect(text).toBeFocused();
+      await expect(text).toHaveCSS("outline-style", "solid");
+      const bounds = await group.boundingBox();
+      for (const link of [text, call]) {
+        const box = await link.boundingBox();
+        expect(box!.height).toBeGreaterThanOrEqual(44);
+        expect(box!.x).toBeGreaterThanOrEqual(bounds!.x);
+        expect(box!.x + box!.width).toBeLessThanOrEqual(bounds!.x + bounds!.width + 1);
+      }
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.locator("#stan-roberts").screenshot({ path: `test-results/itm-color-contact-${width}.png` });
+    await page.locator("#itm-videos").screenshot({ path: `test-results/itm-color-education-${width}.png` });
+  }
+});
 
 test("Stan's op-ed section contains only his articles, newest first, on desktop and mobile", async ({ page }) => {
   const titles = [
