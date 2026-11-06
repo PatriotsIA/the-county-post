@@ -216,6 +216,35 @@ test("ITM videos are hidden for now: the landing page invites readers to contact
 });
 
 
+test("Stan's op-ed section contains only his articles, newest first, on desktop and mobile", async ({ page }) => {
+  const titles = [
+    "Biggest Single Day Wipeout in U.S. Stock Market History (Over $2 Trillion Lost in first hour of trading)",
+    "Is the Global AI Bubble Popping?",
+  ];
+  const paths = ["/op-eds/stock-market-wipeout-ai-debt", "/op-eds/is-the-global-ai-bubble-popping"];
+  for (const width of [1280, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/itm-trading");
+    await page.getByRole("navigation", { name: "ITM Trading page sections" }).getByRole("link", { name: "Stan’s Op-Eds", exact: true }).click();
+    await expect(page).toHaveURL(/#stan-op-eds$/);
+    const section = page.getByRole("region", { name: "Op-eds by Stan Roberts", exact: true });
+    await expect(section.getByRole("heading", { level: 2 })).toBeInViewport();
+    await expect(section.getByRole("listitem")).toHaveCount(2);
+    await expect(section.getByRole("heading", { level: 3 })).toHaveText(titles);
+    await expect(section.locator("time")).toHaveText(["November 5, 2026", "November 2, 2026"]);
+    for (let index = 0; index < paths.length; index++) {
+      await expect(section.getByRole("link").nth(index)).toHaveAttribute("href", paths[index]);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await section.screenshot({ path: `test-results/itm-stan-op-eds-${width}.png` });
+    const index = width === 1280 ? 0 : 1;
+    await section.getByRole("link").nth(index).click();
+    await expect(page).toHaveURL(new RegExp(`${paths[index]}$`));
+    await expect(page.getByRole("heading", { level: 1, name: titles[index], exact: true })).toBeVisible();
+    await expect(page.locator(".editorial-op-ed-byline")).toHaveText("By Stan Roberts, ITM Trading");
+  }
+});
+
 test("ITM resources keep readers with Stan while inquiry pages are deferred", async ({ page }) => {
   await page.goto("/itm-trading");
   for (const width of [1280, 320]) {

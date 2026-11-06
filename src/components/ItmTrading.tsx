@@ -1,10 +1,17 @@
+import { Link } from "react-router-dom";
 import itmLogo from "../../ad-assets/itm-trading-logo.jpg";
 import wealthShield from "../../ad-assets/itm-wealth-shield.png";
+import { countyPostOpEds } from "../data/county-post-op-eds";
 import { iraTopics, itmTrading, stanTeam, ITM_TRADING_DESCRIPTION, ITM_TRADING_PATH, ITM_TRADING_TITLE } from "../data/itm-trading";
 import { crumbTrail, jsonLdGraph, webPageLd } from "../lib/seo";
 import { MetalsTracker } from "./MetalsTracker";
 import { Seo } from "./Seo";
 import "./ItmTrading.css";
+
+const stanOpEds = countyPostOpEds
+  .filter(article => article.authorName === "Stan Roberts" && article.category === "Opinion")
+  .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
+const opEdDate = new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "America/Chicago" });
 
 export function ItmTrading() {
   return <div className="itm-page">
@@ -22,11 +29,26 @@ export function ItmTrading() {
       <div className="itm-hero-brand"><img src={itmLogo} alt="ITM Trading" width="250" height="156" /><a href={itmTrading.websiteUrl} target="_blank" rel="noreferrer sponsored">Visit ITM Trading <span aria-hidden="true">↗</span></a></div>
       <p className="itm-disclosure"><strong>ITM Trading is a sponsor of The County Post.</strong> This page introduces our sponsor and its services. Price data is provided separately by Gold-API.com.</p>
     </section>
-    <nav className="itm-page-nav" aria-label="ITM Trading page sections"><a href="#stan-roberts">Meet Stan Roberts</a><a href="#stan-team">Stan’s Team</a><a href="#metal-prices">Metal prices</a><a href="#about-itm">About ITM</a><a href="#itm-videos">Videos &amp; education</a></nav>
+    <nav className="itm-page-nav" aria-label="ITM Trading page sections"><a href="#stan-roberts">Meet Stan Roberts</a><a href="#stan-op-eds">Stan’s Op-Eds</a><a href="#stan-team">Stan’s Team</a><a href="#metal-prices">Metal prices</a><a href="#about-itm">About ITM</a><a href="#itm-videos">Videos &amp; education</a></nav>
 
     <section id="stan-roberts" className="card itm-contact" aria-labelledby="itm-stan-title">
       <div className="itm-profile"><p className="kicker">Your contact at ITM Trading</p><h2 id="itm-stan-title">Stan Roberts</h2><p className="itm-role">{itmTrading.title} · ITM Trading</p><p>Stan will walk through your savings and retirement picture with you, answer your questions and explain how physical gold and silver fit into a long-term wealth protection plan.</p><p>Call or email Stan directly, or choose a day and time for a 30-minute appointment. <strong>Mention The County Post when you connect.</strong></p></div>
       <div className="itm-contact-details"><p className="kicker">Call or Text Stan Directly</p><a className="itm-phone" href={itmTrading.phoneHref}>{itmTrading.phone}</a><a href={itmTrading.emailHref}>{itmTrading.email}</a><a className="itm-button" href={itmTrading.appointmentUrl} target="_blank" rel="noreferrer sponsored">Book 30 minutes with Stan <span aria-hidden="true">↗</span></a><p className="itm-small">Choose an appointment time online through Calendly.</p><p className="itm-small">ITM office hours: Monday–Friday, 10am - 7pm EST (7am - 4pm PST).<br />11201 N Tatum Blvd, Suite 250<br />Phoenix, AZ 85028 · By appointment.</p></div>
+    </section>
+
+    <section id="stan-op-eds" className="itm-op-eds" aria-labelledby="stan-op-eds-title">
+      <header className="itm-section-heading"><div><p className="kicker">The County Post · Opinion</p><h2 id="stan-op-eds-title">Op-eds by Stan Roberts</h2><p>Read Stan’s latest columns for The County Post.</p></div></header>
+      <ol className="itm-op-ed-list">
+        {stanOpEds.map(article => (
+          <li key={article.id}>
+            <article className="card itm-op-ed">
+              <p className="itm-small"><time dateTime={article.publishedAt}>{opEdDate.format(new Date(article.publishedAt))}</time></p>
+              <h3><Link to={article.path}>{article.title}</Link></h3>
+              <p>{article.deck}</p>
+            </article>
+          </li>
+        ))}
+      </ol>
     </section>
 
     <section id="stan-team" className="itm-team" aria-labelledby="itm-team-title">

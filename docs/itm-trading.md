@@ -10,6 +10,24 @@ The sponsor page uses the full County Post masthead, global primary navigation,
 and national desk navigation, including the shared mobile menu. Its sponsor
 content and spot-price tools remain below the global header.
 
+## Stan's op-ed archive — November 6, 2026
+
+The **Op-eds by Stan Roberts** section appears below his contact details at
+`/itm-trading#stan-op-eds`, with a **Stan’s Op-Eds** link in the page navigation.
+It shows publication dates, original headlines, existing summaries and links to
+the full articles, newest first. The cards use two columns on desktop and one
+on phones.
+
+The list comes from `countyPostOpEds`, filtered by the exact
+`authorName: "Stan Roberts"` and `category: "Opinion"`. Future op-eds with that
+author metadata appear automatically. Articles by other contributors, press
+releases and the shared opinion desk's pinned story are excluded.
+
+Validation: production build and all 11 ITM browser tests passed, including
+author-only coverage, newest-first order, section navigation, article links
+and 1280px/320px layouts. Desktop and mobile screenshots were reviewed. Lint
+reported only the four existing hook warnings.
+
 ## Stan's stock market op-ed — November 5, 2026
 
 Stan's national-desk submission, **Biggest Single Day Wipeout in U.S. Stock
