@@ -229,7 +229,7 @@ function App() {
   );
 
   useEffect(() => {
-    if (hash !== "#find-a-county" && !/^#desk-[a-z-]+$/.test(hash)) return;
+    if (hash !== "#find-a-county" && hash !== "#stan-op-eds" && !/^#desk-[a-z-]+$/.test(hash)) return;
     const frame = requestAnimationFrame(() => document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: "smooth", block: "start" }));
     return () => cancelAnimationFrame(frame);
   }, [hash, pathname]);

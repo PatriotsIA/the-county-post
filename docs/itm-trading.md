@@ -24,7 +24,7 @@ author metadata appear automatically. Articles by other contributors, press
 releases and the shared opinion desk's pinned story are excluded.
 
 Validation: production build and all 11 ITM browser tests passed, including
-author-only coverage, newest-first order, section navigation, article links
+author-only coverage, newest-first order, direct section URLs, navigation, article links
 and 1280px/320px layouts. Desktop and mobile screenshots were reviewed. Lint
 reported only the four existing hook warnings.
 

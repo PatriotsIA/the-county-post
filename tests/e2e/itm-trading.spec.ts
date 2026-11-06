@@ -224,10 +224,12 @@ test("Stan's op-ed section contains only his articles, newest first, on desktop 
   const paths = ["/op-eds/stock-market-wipeout-ai-debt", "/op-eds/is-the-global-ai-bubble-popping"];
   for (const width of [1280, 320]) {
     await page.setViewportSize({ width, height: 900 });
+    await page.goto("/itm-trading#stan-op-eds");
+    const section = page.getByRole("region", { name: "Op-eds by Stan Roberts", exact: true });
+    await expect(section.getByRole("heading", { level: 2 })).toBeInViewport();
     await page.goto("/itm-trading");
     await page.getByRole("navigation", { name: "ITM Trading page sections" }).getByRole("link", { name: "Stan’s Op-Eds", exact: true }).click();
     await expect(page).toHaveURL(/#stan-op-eds$/);
-    const section = page.getByRole("region", { name: "Op-eds by Stan Roberts", exact: true });
     await expect(section.getByRole("heading", { level: 2 })).toBeInViewport();
     await expect(section.getByRole("listitem")).toHaveCount(2);
     await expect(section.getByRole("heading", { level: 3 })).toHaveText(titles);
