@@ -21,7 +21,7 @@ import { advertiserContact } from "../data/advertiser-contact";
 import { getCountiesForState, searchCounties, type CountySite } from "../data/counties";
 import { searchStates, type StateSite } from "../data/states";
 import { artworkSizeLabel, artworkSpecs, readArtwork, type Artwork, type ArtworkKind } from "../lib/ad-artwork";
-import { fetchCountyPopulation, startAdvertiserCheckout, uploadAdCreative } from "../lib/checkout-api";
+import { fetchAdvertiserPaymentStatus, fetchCountyPopulation, startAdvertiserCheckout, uploadAdCreative } from "../lib/checkout-api";
 import { AdvertiserPlacementShowcase } from "./AdvertiserPlacementShowcase";
 import { sendStoryFormEmail } from "../lib/email";
 
@@ -78,6 +78,31 @@ export function PaymentsPage() {
   const needsFeeds = scope === "state" && statePlacement === "state-feed-sponsorship";
   const hasSelection = scope === "county" ? counties.length > 0 : selectedStates.length > 0 && (!needsFeeds || selectedFeeds.length > 0);
   const checkoutResult = searchParams.get("checkout");
+  const orderId = searchParams.get("order_id");
+  const [paymentConfirmation, setPaymentConfirmation] = useState("Checking your payment with Stripe…");
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
+  useEffect(() => {
+    if (checkoutResult !== "success") return;
+    let cancelled = false;
+    setPaymentConfirmed(false);
+    if (!orderId) {
+      setPaymentConfirmation("We could not confirm a payment from this link. Please check your Stripe receipt or contact our advertising team before paying again.");
+      return;
+    }
+    void fetchAdvertiserPaymentStatus(orderId).then((result) => {
+      if (cancelled) return;
+      setPaymentConfirmed(result.status === "paid");
+      setPaymentConfirmation(result.status === "paid"
+        ? "Payment received. Our advertising team will confirm inventory and creative before launch."
+        : result.status === "expired" ? "This checkout has expired without a confirmed payment."
+        : "Your payment has not been confirmed yet. Refresh this page shortly or contact our advertising team before paying again.");
+    }).catch(() => {
+      if (!cancelled) setPaymentConfirmation("We cannot confirm your payment right now. Please check your Stripe receipt or contact our advertising team before paying again.");
+    });
+    return () => { cancelled = true; };
+  }, [checkoutResult, orderId]);
+
+  const uploadedArtwork = useRef(new WeakMap<File, string>());
 
   const artworkRef = useRef(artwork);
   artworkRef.current = artwork;
@@ -150,7 +175,11 @@ export function PaymentsPage() {
       const assetKeys: Partial<Record<ArtworkKind, string>> = {};
       for (const kind of Object.keys(artworkSpecs) as ArtworkKind[]) {
         const file = artwork[kind]?.file;
-        if (file) assetKeys[kind] = await uploadAdCreative(file);
+        if (file) {
+          const key = uploadedArtwork.current.get(file) || await uploadAdCreative(file);
+          uploadedArtwork.current.set(file, key);
+          assetKeys[kind] = key;
+        }
       }
       const contact = {
         billing,
@@ -215,12 +244,12 @@ export function PaymentsPage() {
         </div>
 
         {checkoutResult === "success" ? (
-          <p className="checkout-result success" role="status">
-            Payment received. Our advertising team will confirm inventory and creative before launch.
+          <p className={`checkout-result${paymentConfirmed ? " success" : ""}`} role="status">
+            {paymentConfirmation}
           </p>
         ) : checkoutResult === "cancelled" ? (
           <p className="checkout-result" role="status">
-            Checkout was cancelled. Your County Post Marketing Campaign selections have not been charged.
+            You returned from checkout. Payment is only confirmed by Stripe; check your receipt before starting another order.
           </p>
         ) : null}
 
@@ -378,6 +407,7 @@ export function PaymentsPage() {
             {status === "loading" ? "Preparing checkout…" : "Continue to secure Stripe checkout"}
           </button>
           <p className="checkout-legal">
+            Your subscription renews automatically {billing === "annual" ? "each year" : "each month"} until cancelled. Contact our advertising team to manage or cancel it.{" "}
             Payment reserves the request; placement availability and creative are confirmed by our advertising team. See our{" "}
             <Link to="/terms">terms</Link> and <Link to="/privacy">privacy statement</Link>.
           </p>

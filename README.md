@@ -101,3 +101,17 @@ Legacy `sound-money`, `paper-elections`, and `bond-issues` links redirect to the
 - Leave `VITE_NEWS_API_URL` unset until the deployed County Post News API URL is available.
 - Configure EmailJS variables in the hosting provider if the submission form should work in production.
 - Keep `.env.example` committed as documentation; keep `.env` untracked.
+
+### County Post Stripe checkout
+
+The advertiser frontend uses the dedicated County Post account through the
+shared API's brand-specific routing. It retains an opaque checkout request ID
+for unchanged retries and waits for server verification before displaying
+“Payment received.” The URL alone never confirms payment. Subscriptions renew
+monthly or annually; inventory and creative still require advertising staff
+approval. Existing campaign and artwork email destinations are preserved.
+
+The November 9 payment release passed the advertiser browser suite and a real
+Stripe sandbox hosted checkout, signed webhook delivery, refund and subscription
+cancellation. The API deployment/runbook owns payment storage, account secrets,
+alerts and reconciliation. No API secret belongs in the Vite application.

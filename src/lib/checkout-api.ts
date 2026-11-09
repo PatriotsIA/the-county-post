@@ -70,10 +70,38 @@ export async function uploadAdCreative(file: File) {
   return upload.assetKey;
 }
 
+let currentAttempt: { hash: string; id: string } | undefined;
+
 export async function startAdvertiserCheckout(input: AdvertiserCheckoutInput) {
-  return request<CheckoutResponse>("v1/checkout/sessions", {
-    method: "POST",
-    body: JSON.stringify(input),
+  // Keep only an opaque attempt ID and a hash in storage, never contact details.
+  // An unchanged retry reuses the server's saved quote and Stripe session.
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(input)));
+  const hash = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  const storageKey = "county-post-advertising-attempt";
+  let attempt = currentAttempt;
+  try { attempt = JSON.parse(sessionStorage.getItem(storageKey) || "null") || currentAttempt; } catch { /* storage may be blocked */ }
+  if (attempt?.hash !== hash) attempt = { hash, id: crypto.randomUUID() };
+  try { sessionStorage.setItem(storageKey, JSON.stringify(attempt)); } catch { /* in-memory retries still use the fallback below */ }
+  currentAttempt = attempt;
+  const checkoutRequestId = attempt.id;
+  try {
+    return await request<CheckoutResponse>("v1/checkout/sessions", {
+      method: "POST", body: JSON.stringify({ ...input, checkoutRequestId }),
+    });
+  } catch (error) {
+    // Only a provider-confirmed expiry permits a fresh attempt. A timeout or
+    // ambiguous old attempt must keep the same reference for reconciliation.
+    if (error instanceof CheckoutRequestError && error.code === "checkout_expired") {
+      currentAttempt = undefined;
+      try { sessionStorage.removeItem(storageKey); } catch { /* blocked storage */ }
+    }
+    throw error;
+  }
+}
+
+export function fetchAdvertiserPaymentStatus(orderId: string) {
+  return request<{ status: "paid" | "pending" | "expired" }>("v1/checkout/status", {
+    method: "POST", body: JSON.stringify({ orderId }),
   });
 }
 
@@ -89,7 +117,11 @@ async function request<T>(path: string, init?: RequestInit) {
       ...init?.headers,
     },
   });
-  const body = (await response.json().catch(() => ({}))) as { error?: string };
-  if (!response.ok) throw new Error(body.error || "Unable to continue to secure checkout.");
+  const body = (await response.json().catch(() => ({}))) as { error?: string; code?: string };
+  if (!response.ok) throw new CheckoutRequestError(body.error || "Unable to continue to secure checkout.", body.code);
   return body as T;
+}
+
+class CheckoutRequestError extends Error {
+  constructor(message: string, readonly code?: string) { super(message); }
 }

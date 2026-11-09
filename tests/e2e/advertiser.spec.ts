@@ -2,6 +2,9 @@ import { crc32, deflateSync } from "node:zlib";
 import { expect, test } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
+  await page.route("http://localhost:8787/v1/checkout/status", route => route.fulfill({
+    status: 200, contentType: "application/json", body: JSON.stringify({ status: "paid" }),
+  }));
   await page.route("https://api.emailjs.com/**", async (route) => {
     await route.fulfill({ status: 200, contentType: "text/plain", body: "OK" });
   });
@@ -85,7 +88,7 @@ test("calculates state and per-feed pricing and submits state fulfillment detail
   });
   await page.route("http://localhost:8787/v1/checkout/sessions", async (route) => {
     checkoutPayload = route.request().postDataJSON() as Record<string, unknown>;
-    await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ url: "/?checkout=success" }) });
+    await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ url: "/?checkout=success&order_id=12345678-1234-4123-8123-123456789012" }) });
   });
   await page.goto("/");
 
@@ -128,7 +131,7 @@ test("calculates state and per-feed pricing and submits state fulfillment detail
 
 test("keeps the request available when the campaign notification fails", async ({ page }) => {
   await page.route("https://api.emailjs.com/**", route => route.fulfill({status: 503, body: "Mail temporarily unavailable"}));
-  await page.route("http://localhost:8787/v1/checkout/sessions", route => route.fulfill({status: 201, contentType:"application/json", body: JSON.stringify({url:"/?checkout=success"})}));
+  await page.route("http://localhost:8787/v1/checkout/sessions", route => route.fulfill({status: 201, contentType:"application/json", body: JSON.stringify({url:"/?checkout=success&order_id=12345678-1234-4123-8123-123456789012"})}));
   await page.goto("/");
   await page.getByLabel("Add a county").fill("Potter");
   await page.getByRole("button", { name: "Potter County, TX" }).click();
@@ -145,7 +148,7 @@ test("preserves county population-tier checkout", async ({ page }) => {
   let checkoutPayload: Record<string, unknown> | undefined;
   await page.route("http://localhost:8787/v1/checkout/sessions", async (route) => {
     checkoutPayload = route.request().postDataJSON() as Record<string, unknown>;
-    await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ url: "/?checkout=success" }) });
+    await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ url: "/?checkout=success&order_id=12345678-1234-4123-8123-123456789012" }) });
   });
   await page.goto("/");
 
@@ -208,7 +211,7 @@ test("validates, previews and uploads square and banner artwork before checkout"
   });
   await page.route("http://localhost:8787/v1/checkout/sessions", async (route) => {
     checkoutPayload = route.request().postDataJSON() as Record<string, unknown>;
-    await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ url: "/?checkout=success" }) });
+    await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ url: "/?checkout=success&order_id=12345678-1234-4123-8123-123456789012" }) });
   });
   await page.goto("/");
   await page.getByLabel("Business name").fill("Acme County Supply");
@@ -263,4 +266,36 @@ test("remains usable without horizontal overflow at mobile width", async ({ page
   await expect(page.getByRole("navigation", { name: "Advertiser navigation" })).toBeVisible();
   await expect(page.getByLabel("County Post Marketing Campaign reach")).toBeVisible();
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1)).toBe(true);
+});
+
+
+test("a success URL cannot claim payment without provider confirmation", async ({ page }) => {
+  await page.goto("/?checkout=success");
+  await expect(page.getByText("We could not confirm a payment from this link.", { exact: false })).toBeVisible();
+  await expect(page.getByText("Payment received.", { exact: false })).not.toBeVisible();
+  await page.route("http://localhost:8787/v1/checkout/status", route => route.fulfill({
+    status: 200, contentType: "application/json", body: JSON.stringify({ status: "pending" }),
+  }));
+  await page.goto("/?checkout=success&order_id=12345678-1234-4123-8123-123456789012");
+  await expect(page.getByText("Your payment has not been confirmed yet.", { exact: false })).toBeVisible();
+  await expect(page.getByText("Payment received.", { exact: false })).not.toBeVisible();
+});
+
+test("retrying unchanged checkout reuses its request reference", async ({ page }) => {
+  const payloads: Record<string, unknown>[] = [];
+  await page.route("http://localhost:8787/v1/checkout/sessions", async route => {
+    payloads.push(route.request().postDataJSON());
+    await route.fulfill({ status: 502, contentType: "application/json", body: JSON.stringify({ error: "Please retry securely." }) });
+  });
+  await page.goto("/");
+  await page.getByLabel("Add a county").fill("Potter");
+  await page.getByRole("button", { name: "Potter County, TX" }).click();
+  await page.getByLabel("Business name").fill("Retry Example");
+  await page.getByLabel("Contact email").fill("retry@example.com");
+  await page.getByRole("button", { name: "Continue to secure Stripe checkout" }).click();
+  await expect(page.getByText("Please retry securely.")).toBeVisible();
+  await page.getByRole("button", { name: "Continue to secure Stripe checkout" }).click();
+  await expect.poll(() => payloads.length).toBe(2);
+  expect(payloads[0].checkoutRequestId).toMatch(/^[0-9a-f-]{36}$/);
+  expect(payloads[1]).toEqual(payloads[0]);
 });
