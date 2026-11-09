@@ -1,10 +1,11 @@
-# Classifieds handoff (prepared, disabled for public launch)
+# Classifieds public handoff
 
-`VITE_CLASSIFIEDS_ORIGIN` enables county and state marketplace links at build time.
-It is unset by default: the live emailed-classified submission form stays in place.
+The November 9 authorized public launch defaults county and state links to
+https://classifieds.thecountypost.com. Set VITE_CLASSIFIEDS_ORIGIN to an empty
+string for an explicit rollback to the legacy emailed-submission form.
 For a private preview, use `https://staging-classifieds.thecountypost.com`.
-The only other accepted origin is `https://classifieds.thecountypost.com`; activating
-that origin requires the separately authorized public marketplace launch.
+The only other accepted origin is `https://classifieds.thecountypost.com`; the owner authorized
+that origin for the November 9 public marketplace launch.
 
 Links carry county/state FIPS identity instead of assuming the two applications
 have identical slugs. County posting preserves the selected market through account

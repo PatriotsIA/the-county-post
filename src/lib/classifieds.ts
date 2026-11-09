@@ -3,9 +3,9 @@ const supportedOrigins = new Set([
   "https://staging-classifieds.thecountypost.com",
 ]);
 
-// Unset until the owner authorizes the public handoff. Local preview can target staging.
+// Public launch authorized November 9. Local preview may explicitly target staging.
 export function classifiedsOrigin(): string | null {
-  const configured = import.meta.env.VITE_CLASSIFIEDS_ORIGIN?.trim();
+  const configured = import.meta.env.VITE_CLASSIFIEDS_ORIGIN?.trim() ?? "https://classifieds.thecountypost.com";
   if (!configured) return null;
   try {
     const url = new URL(configured);
