@@ -123,5 +123,9 @@ async function request<T>(path: string, init?: RequestInit) {
 }
 
 class CheckoutRequestError extends Error {
-  constructor(message: string, readonly code?: string) { super(message); }
+  readonly code?: string;
+  constructor(message: string, code?: string) {
+    super(message);
+    this.code = code;
+  }
 }
