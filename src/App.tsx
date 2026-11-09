@@ -79,7 +79,14 @@ function PrivacyPage() {
       <section className="hero-card">
         <p className="kicker">Privacy</p>
         <h1>Privacy Policy</h1>
-        <p className="lead">We use the County Post News API for news aggregation. No behavioral tracking or ad tech.</p>
+        <p className="lead">County Post, LLC uses your information to process and support your advertising campaign.</p>
+        <h2>Information we use</h2>
+        <p>We collect the business name, contact email, optional referral, selected locations and placements, and artwork you submit. We use these details to prepare your order, review inventory and creative, contact you about your campaign, and resolve billing or support requests.</p>
+        <h2>Payments and service providers</h2>
+        <p>Stripe hosts payment entry and processes your payments. We keep order references, amounts, billing cadence and payment status; our application does not receive your full card number or security code. Our hosting, email and payment providers process the information needed to deliver these services.</p>
+        <h2>Checkout storage</h2>
+        <p>Your browser stores a checkout reference for the current session to help you resume an unchanged order. We keep campaign and payment records for fulfillment, support, accounting and dispute handling. Service logs help us investigate failures and prevent abuse.</p>
+        <p>For privacy questions, access or deletion requests, contact <a href="mailto:socials@thecountypost.com">socials@thecountypost.com</a>. Some transaction records may need to be retained for accounting or legal obligations.</p>
       </section>
       <Link className="button-link" to="/">
         Return to advertiser information
@@ -95,9 +102,15 @@ function TermsPage() {
         <p className="kicker">Terms</p>
         <h1>Terms of Service</h1>
         <p className="lead">
-          Content is aggregated through the County Post News API. Links open to original publishers. Submissions are subject to
-          editorial review.
+          These terms cover advertising requests and payments to County Post, LLC through this site.
         </p>
+        <h2>Your campaign request</h2>
+        <p>Provide accurate contact and campaign information and only submit artwork you are authorized to use. Payment submits your request; our advertising team must confirm placement availability and approve creative before an ad goes live.</p>
+        <h2>Prices and recurring billing</h2>
+        <p>Review the selected placements, amount and billing interval before paying in Stripe. Monthly plans renew each month and annual plans renew each year until cancelled. The annual price is ten times the monthly rate, paid upfront for twelve months of service. The amount and interval shown at checkout apply to your subscription.</p>
+        <h2>Changes, cancellations and billing help</h2>
+        <p>Contact <a href="mailto:socials@thecountypost.com">socials@thecountypost.com</a> with your business name and order or Stripe receipt reference to request changes, cancel future renewals, or ask about a refund. Do not send card numbers or security codes by email. Our team will review your request and payment records with you.</p>
+        <p>A browser return page or campaign-request email alone does not establish payment. Payment confirmation comes from Stripe. These advertising subscriptions are separate from Classifieds listing fees and transactions between buyers and sellers.</p>
       </section>
       <Link className="button-link" to="/">
         Return to advertiser information

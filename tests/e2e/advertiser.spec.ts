@@ -252,11 +252,11 @@ test("keeps legal statements and redirects legacy advertiser routes", async ({ p
 
   await page.goto("/terms");
   await expect(page.getByRole("heading", { name: "Terms of Service" })).toBeVisible();
-  await expect(page.getByText("Content is aggregated through the County Post News API.")).toBeVisible();
+  await expect(page.getByText("Monthly plans renew each month and annual plans renew each year until cancelled.", { exact: false })).toBeVisible();
 
   await page.goto("/privacy");
   await expect(page.getByRole("heading", { name: "Privacy Policy" })).toBeVisible();
-  await expect(page.getByText("No behavioral tracking or ad tech.")).toBeVisible();
+  await expect(page.getByText("Stripe hosts payment entry and processes your payments.", { exact: false })).toBeVisible();
 });
 
 test("remains usable without horizontal overflow at mobile width", async ({ page }) => {
