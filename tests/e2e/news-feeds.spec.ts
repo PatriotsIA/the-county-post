@@ -214,11 +214,12 @@ function makeRouteItems({
       });
 }
 
-test("keeps /gop first and Stan's latest op-ed second on national, state, and county opinion desks", async ({ page }) => {
+test("keeps /gop first and the newest submission second on national, state, and county opinion desks", async ({ page }) => {
   const opinionDesks = [
     { path: "/", heading: "Opinion & op-eds" },
     { path: "/op-eds", heading: "National opinion" },
     { path: "/texas/potter", heading: "Opinion & op-eds" },
+    { path: "/arkansas", heading: "Opinion & op-eds" },
     { path: "/arkansas/op-eds", heading: "Arkansas State Op-Eds" },
     { path: "/arkansas/polk/op-eds", heading: "Local opinion" },
   ];
@@ -230,12 +231,16 @@ test("keeps /gop first and Stan's latest op-ed second on national, state, and co
     await expect(firstCard.locator(".feed-title")).toHaveText("Potter County GOP Asks Federal Court to Hand Count Paper Ballots in Statewide Race Before Certification");
     await expect(firstCard.locator(".feed-title")).toHaveAttribute("href", "/gop");
     const secondStory = section.locator(".feed-card:not(.feed-ad-card)").nth(1);
-    await expect(secondStory.locator(".feed-title")).toHaveAttribute("href", "/op-eds/stock-market-wipeout-ai-debt");
-    await expect(secondStory.locator(".feed-publisher")).toHaveText("The County Post · Original reporting");
+    await expect(secondStory.locator(".feed-title")).toHaveText("PIA Events");
+    await expect(secondStory.locator(".feed-title")).toHaveAttribute("href", "/op-eds/pia-events");
+    await expect(secondStory.locator(".feed-publisher")).toHaveText("Patriots In Action · PIA Events");
     const thirdStory = section.locator(".feed-card:not(.feed-ad-card)").nth(2);
-    await expect(thirdStory.locator(".feed-title")).toHaveText("We Held the Line. Now the Work Starts.");
-    await expect(thirdStory.locator(".feed-title")).toHaveAttribute("href", "/2026-midterms");
-    await expect(thirdStory.locator(".feed-publisher")).toHaveText("Potter County Republican Party · Press release");
+    await expect(thirdStory.locator(".feed-title")).toHaveAttribute("href", "/op-eds/stock-market-wipeout-ai-debt");
+    await expect(thirdStory.locator(".feed-publisher")).toHaveText("The County Post · Original reporting");
+    const fourthStory = section.locator(".feed-card:not(.feed-ad-card)").nth(3);
+    await expect(fourthStory.locator(".feed-title")).toHaveText("We Held the Line. Now the Work Starts.");
+    await expect(fourthStory.locator(".feed-title")).toHaveAttribute("href", "/2026-midterms");
+    await expect(fourthStory.locator(".feed-publisher")).toHaveText("Potter County Republican Party · Press release");
     await expect(section.locator(".feed-title", { hasText: "Is the Global AI Bubble Popping?" })).toHaveAttribute("href", "/op-eds/is-the-global-ai-bubble-popping");
     await expect(section.locator(".feed-title", { hasText: "Don't spray the kitchen" })).toHaveAttribute("href", "/op-eds/r");
     await expect(section.locator(".feed-title", { hasText: "Enough About The Other Guy" })).toHaveCount(1);

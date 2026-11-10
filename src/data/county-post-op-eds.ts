@@ -336,8 +336,29 @@ export const midtermsOpEd: CountyPostOpEd = {
   document: { href: midtermsPressRelease.documentPath, label: "Download the original press release (.docx)" },
 };
 
+// Submitted by BA Perryman to the national desk on November 10, 2026.
+export const piaEventsOpEd = {
+  id: "county-post-op-ed-pia-events",
+  slug: "pia-events",
+  path: "/op-eds/pia-events",
+  category: "Opinion",
+  title: "PIA Events",
+  deck: "Patriots In Action will be at the Silver Spurs Trade Shows at Midland Horseshoe Pavilion this weekend.",
+  byline: "By BA Perryman",
+  authorName: "BA Perryman",
+  source: "Patriots In Action · PIA Events",
+  publishedAt: "2026-11-10T16:31:57.679Z",
+  paragraphs: [
+    "Patriots In Action will be at the Silver Spurs Trade Shows at Midland Horseshoe Pavilion this weekend. Go to [PIAEVENTS.COM](https://piaevents.com/) for more info.",
+    "Patriotism starts at the local level. Discover how you can connect with neighbors and stay informed on local issues in your area. What local issue matters most to you right now?",
+    "Patriots In Action Trailer Store TT5 Patriots InAction",
+    "#LocalNews #CommunityFirst #GetInvolved #AmericanPatriots",
+  ],
+  authorBio: "",
+} as const;
+
 // /gop stays pinned first; the remaining articles are newest first on every opinion desk.
-export const countyPostOpEds: readonly CountyPostOpEd[] = [potterGopSuitOpEd, stockMarketWipeoutOpEd, midtermsOpEd, globalAiBubbleOpEd, paxtonRallyOpEd, enoughAboutTheOtherGuyOpEd, texasMailerOpEd, millennialVoiceOpEd, dataCentersOpEd];
+export const countyPostOpEds: readonly CountyPostOpEd[] = [potterGopSuitOpEd, piaEventsOpEd, stockMarketWipeoutOpEd, midtermsOpEd, globalAiBubbleOpEd, paxtonRallyOpEd, enoughAboutTheOtherGuyOpEd, texasMailerOpEd, millennialVoiceOpEd, dataCentersOpEd];
 
 export const featuredCountyPostOpEds: NewsFeedItem[] = countyPostOpEds.map((article) => ({
   id: article.id,

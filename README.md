@@ -77,6 +77,15 @@ The `SubmissionForm` component posts to EmailJS using the three `VITE_EMAILJS_*`
 - `to_email`, `county_name`, `county_slug`, `state_name`, `state_slug`
 - `message` (formatted details), `page_url`, `submitted_at`
 
+Published submissions live in `src/data/county-post-op-eds.ts`. The shared list
+provides the article routes, sitemap entries, and featured stories in every
+national, state, and county opinion section; `/gop` remains pinned first.
+
+The November 10, 2026 submission **PIA Events**, by BA Perryman, is published at
+`/op-eds/pia-events` across all editions. Its submitted wording is preserved with
+paragraph breaks and a clickable PIAEVENTS.COM link. The feed credits
+`Patriots In Action · PIA Events`; submission contact details remain private.
+
 ## Routes
 
 - `/` front page with county search, national feeds, and state directory
