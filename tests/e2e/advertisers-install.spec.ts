@@ -154,7 +154,7 @@ test("books, The Ballot Box and the Texas statewide ads run spread between exist
     const countyKeys = countyData.counties.map((county: { state: { slug: string }; slug: string }) => `${county.state.slug}/${county.slug}`);
     const editions = [undefined, "texas", "oklahoma", ...countyKeys];
     const isBook = (ad: Ad) => ad.id.startsWith("books-");
-    const texasPrefixes = ["patriots-for-paper-", "stop-sexualizing-texas-children-", "texas-sharia-watch-", "ken-paxton-", "greg-abbott-"];
+    const texasPrefixes = ["patriots-for-paper-", "stop-sexualizing-texas-children-", "texas-sharia-watch-", "greg-abbott-"];
     const count = (slot: string, key: string | undefined, test: (ad: Ad) => boolean) => adData.getAdsForSlot(slot, key).filter(test).length;
     const hrefs = (prefix: string) => [...new Set(adData.ads.filter((ad: Ad) => ad.id.startsWith(prefix)).map((ad: Ad) => ad.href))];
     const longestBookRun = (creatives: Ad[]) => creatives.reduce((run, ad) => ({ now: isBook(ad) ? run.now + 1 : 0, max: Math.max(run.max, isBook(ad) ? run.now + 1 : 0) }), { now: 0, max: 0 }).max;
@@ -184,7 +184,6 @@ test("books, The Ballot Box and the Texas statewide ads run spread between exist
       ["https://patriotsforpaper.com/"],
       ["https://recoveramerica.com/protectchildren"],
       ["https://www.facebook.com/profile.php?id=61593844757341"],
-      ["https://patriotsinaction.com/ken-paxton"],
       ["https://patriotsinaction.com/greg-abbott"],
     ],
     spread: [{ squares: 1, feed: 1, banners: 4, firstBanner: "lemc-banner" }, { squares: 1, feed: 1, banners: 2, firstBanner: "lemc-banner" }],
@@ -473,10 +472,12 @@ test("edition home pages show the banner below the lead feed and the square caro
   await expect(page.locator("main + .ad-slot-banner")).toHaveCount(1);
 });
 
-test("Texas desks display both campaign formats and banners remain selectable", async ({ page }) => {
+test("Texas desks retain Abbott campaign formats after Paxton ads are removed", async ({ page }) => {
   for (const path of ["/texas", "/texas/harris"]) {
     await page.goto(path);
-    for (const [id, name, publisher] of [["ken-paxton", "Ken Paxton", "GOP Connect LLC."], ["greg-abbott", "Greg Abbott", "Patriots Connect, LLC, d/b/a Patriots in Action. PatriotsInAction.com."]]) {
+    await expect(page.locator('.ad-slot img[src*="ken-paxton"], .feed-ad-image[src*="ken-paxton"]')).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Show Ken Paxton advertisement", exact: true })).toHaveCount(0);
+    for (const [id, name, publisher] of [["greg-abbott", "Greg Abbott", "Patriots Connect, LLC, d/b/a Patriots in Action. PatriotsInAction.com."]]) {
       const square = page.locator(`.ad-slot-inline img[src*="${id}-square"]`).first();
       expect(await square.getAttribute("alt")).toContain(`Published by ${publisher} Not authorized by any candidate or candidate’s committee.`);
       await square.evaluate((img: HTMLImageElement) => img.decode());
