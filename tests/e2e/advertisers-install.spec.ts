@@ -154,7 +154,7 @@ test("books, The Ballot Box and the Texas statewide ads run spread between exist
     const countyKeys = countyData.counties.map((county: { state: { slug: string }; slug: string }) => `${county.state.slug}/${county.slug}`);
     const editions = [undefined, "texas", "oklahoma", ...countyKeys];
     const isBook = (ad: Ad) => ad.id.startsWith("books-");
-    const texasPrefixes = ["patriots-for-paper-", "stop-sexualizing-texas-children-", "texas-sharia-watch-", "greg-abbott-"];
+    const texasPrefixes = ["patriots-for-paper-", "stop-sexualizing-texas-children-", "texas-sharia-watch-", "greg-abbott-", "double-b-ranch-"];
     const count = (slot: string, key: string | undefined, test: (ad: Ad) => boolean) => adData.getAdsForSlot(slot, key).filter(test).length;
     const hrefs = (prefix: string) => [...new Set(adData.ads.filter((ad: Ad) => ad.id.startsWith(prefix)).map((ad: Ad) => ad.href))];
     const longestBookRun = (creatives: Ad[]) => creatives.reduce((run, ad) => ({ now: isBook(ad) ? run.now + 1 : 0, max: Math.max(run.max, isBook(ad) ? run.now + 1 : 0) }), { now: 0, max: 0 }).max;
@@ -171,7 +171,7 @@ test("books, The Ballot Box and the Texas statewide ads run spread between exist
         count(slot, key, (ad) => ad.id.startsWith(prefix)) === (key?.split("/")[0] === "texas" ? 1 : 0)))),
       hrefs: [hrefs("books-"), hrefs("ballot-box-"), ...texasPrefixes.map(hrefs)],
       spread: [spreadIn(), spreadIn("texas/harris")],
-      partners: [partnerData.getSitewidePartners().filter((ad: { name: string }) => /^(Patriots in Action Books|The Ballot Box)$/.test(ad.name)).length, partnerData.getStatewidePartners("texas").filter((ad: { name: string }) => /^(Patriots for Paper|Stop Sexualizing Texas Children|Texas Sharia Watch)$/.test(ad.name)).length],
+      partners: [partnerData.getSitewidePartners().filter((ad: { name: string }) => /^(Patriots in Action Books|The Ballot Box)$/.test(ad.name)).length, partnerData.getStatewidePartners("texas").filter((ad: { name: string }) => /^(Patriots for Paper|Stop Sexualizing Texas Children|Texas Sharia Watch|Double B Ranch)$/.test(ad.name)).length],
     };
   });
   expect(placement).toEqual({
@@ -185,9 +185,10 @@ test("books, The Ballot Box and the Texas statewide ads run spread between exist
       ["https://recoveramerica.com/protectchildren"],
       ["https://www.facebook.com/profile.php?id=61593844757341"],
       ["https://patriotsinaction.com/greg-abbott"],
+      ["https://bbranchtexas.com/"],
     ],
     spread: [{ squares: 1, feed: 1, banners: 4, firstBanner: "lemc-banner" }, { squares: 1, feed: 1, banners: 2, firstBanner: "lemc-banner" }],
-    partners: [2, 3],
+    partners: [2, 4],
   });
 
   // County masthead sponsors are assigned by position in the ad list; new ads must not reshuffle them (PIA-014).
@@ -196,11 +197,22 @@ test("books, The Ballot Box and the Texas statewide ads run spread between exist
     await expect(page.locator(".county-sponsor img"), path).toHaveAttribute("alt", new RegExp(`^${sponsor}`));
   }
   await page.goto("/texas/harris");
-  for (const [selector, size] of [['.ad-slot-inline img[src*="books-all-square"]', [750, 750]], ['.ad-banner-slide img[src*="patriots-for-paper-banner"]', [1761, 600]]] as const) {
+  for (const [selector, size] of [['.ad-slot-inline img[src*="books-all-square"]', [750, 750]], ['.ad-banner-slide img[src*="patriots-for-paper-banner"]', [1761, 600]], ['.ad-slot-inline img[src*="double-b-ranch-square"]', [600, 600]], ['.ad-banner-slide img[src*="double-b-ranch-banner"]', [1960, 600]]] as const) {
     const image = page.locator(selector).first();
     await image.evaluate((element: HTMLImageElement) => element.decode());
     expect(await image.evaluate((element: HTMLImageElement) => [element.naturalWidth, element.naturalHeight])).toEqual(size);
   }
+  await expect(page.locator('a.ad-link:has(img[src*="double-b-ranch-square"])').first()).toHaveAttribute("href", "https://bbranchtexas.com/");
+
+  // Double B Ranch is a Texas statewide partner: every Texas county page and the directory list it, other states do not.
+  for (const path of ["/partners", "/texas/harris/partners", "/texas/loving/partners"]) {
+    await page.goto(path);
+    const card = page.locator(".partner-card", { has: page.getByRole("heading", { name: "Double B Ranch", exact: true }) });
+    await expect(card, path).toHaveCount(1);
+    await expect(card.getByRole("link", { name: "Visit partner" }), path).toHaveAttribute("href", "https://bbranchtexas.com/");
+  }
+  await page.goto("/arkansas/polk/partners");
+  await expect(page.getByRole("heading", { name: "Double B Ranch", exact: true })).toHaveCount(0);
 });
 
 test("the Recover America video accompanies the Stop Sexualizing Texas Children partner listing", async ({ page }) => {

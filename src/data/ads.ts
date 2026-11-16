@@ -48,6 +48,8 @@ import stopSexualizingBanner from "../../ad-assets/stop-sexualizing-texas-childr
 import texasShariaWatchSquare from "../../ad-assets/texas-sharia-watch-square.webp";
 import texasShariaWatchBanner from "../../ad-assets/texas-sharia-watch-banner.webp";
 import dignityMemorialWordmark from "../../ad-assets/dignity-memorial-wordmark.jpg";
+import doubleBRanchSquare from "../../ad-assets/double-b-ranch-square.webp";
+import doubleBRanchBanner from "../../ad-assets/double-b-ranch-banner.webp";
 import { panhandleLegendsAds } from "./panhandle-legends";
 import { abbottSquareAd, abbottBannerAd } from "./campaign-ads";
 
@@ -173,6 +175,9 @@ const RECOVER_AMERICA_VIDEO: PartnerVideo = {
   details: "Patriots in Action TV · 1 hr 6 min",
 };
 const TEXAS_SHARIA_WATCH_ALT = "Texas Sharia Watch — Sharia-Free Texas, legislative priority #2.";
+// The ranch's white deer skull logo, set on black so it stays visible (ad-assets/double-b-ranch.source.txt).
+const DOUBLE_B_RANCH_URL = "https://bbranchtexas.com/";
+const DOUBLE_B_RANCH_ALT = "Double B Ranch, est. 2020 — deer skull logo. www.bbranchtexas.com";
 
 // Patriots in Action books: a square and a banner for each of nine titles. Each
 // runs at weight 1, so together they take about three advertisers' in-feed share.
@@ -286,6 +291,16 @@ export const ads: AdCreative[] = [
     alt: "LEMC Realty",
     href: "https://www.331-rent.com/",
   },
+  {
+    id: "double-b-ranch-inline",
+    slot: "inline",
+    image: doubleBRanchSquare,
+    name: "Double B Ranch",
+    alt: DOUBLE_B_RANCH_ALT,
+    href: DOUBLE_B_RANCH_URL,
+    stateSlugs: ["texas"],
+    mastheadSponsor: false,
+  },
   bookAd("caesar-rodney", "inline"),
   {
     id: "ballot-box-inline",
@@ -382,6 +397,16 @@ export const ads: AdCreative[] = [
     href: "https://www.331-rent.com/",
   },
   bookAd("all", "banner"),
+  {
+    id: "double-b-ranch-banner",
+    slot: "banner",
+    image: doubleBRanchBanner,
+    name: "Double B Ranch",
+    alt: DOUBLE_B_RANCH_ALT,
+    href: DOUBLE_B_RANCH_URL,
+    stateSlugs: ["texas"],
+    mastheadSponsor: false,
+  },
   bookAd("caesar-rodney", "banner"),
   {
     id: "ballot-box-banner",
