@@ -1,4 +1,5 @@
 import { Seo } from "./Seo";
+import { ClassifiedsExplainer } from "./ClassifiedsExplainer";
 import { collectionPageLd, jsonLdGraph } from "../lib/seo";
 import { Link } from "react-router-dom";
 import type { AdCreative } from "../data/ads";
@@ -84,7 +85,6 @@ function PartnerList({ partners, showCountyCoverage = false }: { partners: AdCre
               title={video.title}
               loading="lazy"
               allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
-              allowFullScreen
               referrerPolicy="strict-origin-when-cross-origin"
             />
           </div>
@@ -123,6 +123,8 @@ export function GlobalPartnerDirectory() {
         <h1>Our Partners</h1>
         <p className="lead">Explore the businesses and organizations that support The County Post across every edition.</p>
       </section>
+
+      <ClassifiedsExplainer />
 
       <PartnerCallout />
 
@@ -191,6 +193,8 @@ export function CountyPartnerDirectory({ county }: { county: CountySite }) {
       </section>
 
       <PartnerCallout />
+
+      <ClassifiedsExplainer county={county} />
 
       {statewidePartners.length ? (
         <section className="card partner-section">

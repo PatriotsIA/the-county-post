@@ -10,7 +10,6 @@ import piaBanner from "../../ad-assets/PIA980.jpg";
 import piaMerchStore from "../../ad-assets/pia-merch-store-ad.jpg";
 import piaEvents from "../../ad-assets/pia-events-inline.jpg";
 import plainsBank from "../../ad-assets/PlainsBank250.jpg";
-import loriHorner from "../../ad-assets/lori-horner-ad.png";
 import freedomPavementBanner from "../../ad-assets/freedom-pavement-banner.png";
 import freedomPavementInline from "../../ad-assets/freedom-pavement-inline.png";
 import littleItalyBanner from "../../ad-assets/little-italy-banner.png";
@@ -50,14 +49,15 @@ import texasShariaWatchBanner from "../../ad-assets/texas-sharia-watch-banner.we
 import dignityMemorialWordmark from "../../ad-assets/dignity-memorial-wordmark.jpg";
 import doubleBRanchSquare from "../../ad-assets/double-b-ranch-square.webp";
 import doubleBRanchBanner from "../../ad-assets/double-b-ranch-banner.webp";
+import classifiedsSquare from "../../ad-assets/county-post-classifieds-square.webp";
+import classifiedsBanner from "../../ad-assets/county-post-classifieds-banner.webp";
+import classifiedsLogo from "../assets/county-post-classifieds-logo-small.webp";
 import { panhandleLegendsAds } from "./panhandle-legends";
 import { abbottSquareAd, abbottBannerAd } from "./campaign-ads";
 
 export type AdSlotId = "inline" | "banner";
 
 export const DIGNITY_MEMORIAL_AD_ID = "dignity-memorial-sponsor";
-export const LORI_HORNER_AD_ID = "lori-horner-inline";
-const loriHornerCountyKeys = ["texas/randall", "texas/potter"] as const;
 const parallelCountyKeys = ["texas/randall", "texas/potter"];
 const littleItalyCountyKeys = [
   "arkansas/polk",
@@ -81,25 +81,31 @@ export function isAdVisibleInCounty(ad: AdCreative, editionKey?: string) {
   return true;
 }
 
-export function getAdsForSlot(slot: AdSlotId, countyKey?: string) {
-  return ads.filter((ad) => ad.slot === slot && isAdVisibleInCounty(ad, countyKey));
+/** An advertiser's link is marked sponsored; the County Post's own keeps its referrer, which the marketplace reads. */
+export function adRel(ad: AdCreative) {
+  return ad.house ? "noopener" : "noreferrer sponsored";
 }
 
-export function getSportsFeedSponsorId(countyKey?: string) {
-  if (countyKey && loriHornerCountyKeys.includes(countyKey as (typeof loriHornerCountyKeys)[number])) {
-    return LORI_HORNER_AD_ID;
-  }
-  return undefined;
+export function getAdsForSlot(slot: AdSlotId, countyKey?: string) {
+  return [...ads, ...houseAds].filter((ad) => ad.slot === slot && isAdVisibleInCounty(ad, countyKey));
 }
+
+/**
+ * Counties whose masthead sponsor is set by hand. Elsewhere the masthead picks
+ * from the county's eligible sponsors by position, so adding or removing any
+ * advertiser a county shows can change it (PIA-014). These two kept their
+ * sponsors when Lori Horner Realty Group left on November 18, 2026.
+ */
+export const mastheadSponsorPins: Record<string, string> = {
+  "texas/potter": "parallel-builders-inline",
+  "texas/randall": "gopconnect-inline",
+};
 
 export const FEATURED_AD_ID = "merch-inline";
 export const CAROUSEL_ONLY_AD_IDS = new Set([FEATURED_AD_ID]);
 
-export function featuredAdRank(id: string, countyKey?: string) {
+export function featuredAdRank(id: string, _countyKey?: string) {
   if (id === FEATURED_AD_ID) return 0;
-  if (id === LORI_HORNER_AD_ID && countyKey && loriHornerCountyKeys.includes(countyKey as (typeof loriHornerCountyKeys)[number])) {
-    return 1;
-  }
   if (id === "guerrilla-gear-inline") return 2;
   return 3;
 }
@@ -114,15 +120,28 @@ export function canSponsorFeed(ad: AdCreative) {
 
 /** The first of the requested sponsors that appears in the edition presents the feed. */
 export function getFeedSponsor(ids: string[], editionKey?: string) {
-  const sponsors = [...ads, ...feedOnlySponsors].filter((ad) =>
+  const sponsors = [...ads, ...feedOnlySponsors, ...houseAds].filter((ad) =>
     ad.slot === "inline" && isAdVisibleInCounty(ad, editionKey) && canSponsorFeed(ad));
   return ids.map((id) => sponsors.find((ad) => ad.id === id)).find(Boolean);
 }
 
 const DEFAULT_IN_FEED_AD_WEIGHT = 3;
 
+/**
+ * Every fourth ad slot in an article feed carries the County Post Classifieds
+ * square, starting at a different slot in each feed. The paying advertisers
+ * keep the other slots and their order (see createFeedEntries).
+ */
+export const CLASSIFIEDS_FEED_AD_EVERY = 4;
+
+/** The Classifieds square for an edition's article feeds; every edition carries it. */
+export function getClassifiedsFeedAd(editionKey?: string) {
+  return houseAds.find((ad) => ad.house === "classifieds" && ad.slot === "inline" && isAdVisibleInCounty(ad, editionKey));
+}
+
+/** The paying advertisers' in-feed rotation. The Classifieds square has slots of its own. */
 export function getInFeedAdRotation(editionKey?: string) {
-  const inFeedAds = getAdsForSlot("inline", editionKey).filter((ad) => !isCarouselOnlyAd(ad.id));
+  const inFeedAds = getAdsForSlot("inline", editionKey).filter((ad) => !isCarouselOnlyAd(ad.id) && !ad.house);
   const videoAds = inFeedAds.filter((ad) => ad.video);
   const imageRotation = Array.from({ length: DEFAULT_IN_FEED_AD_WEIGHT }, (_, round) =>
     inFeedAds.filter((ad) => !ad.video && (ad.inFeedWeight ?? DEFAULT_IN_FEED_AD_WEIGHT) > round),
@@ -156,6 +175,11 @@ export type AdCreative = {
   video?: { embedUrl: string; title: string; watchUrl: string };
   /** Shown with the partner's directory listing only; it never enters the ad rotation. */
   partnerVideo?: PartnerVideo;
+  /**
+   * The County Post's own ads. Their link is built where they are shown, for
+   * that edition and page (see useAdHref), so `href` is only a fallback.
+   */
+  house?: "classifieds";
 };
 
 export type PartnerVideo = { embedUrl: string; title: string; watchUrl: string; label: string; details: string };
@@ -227,16 +251,6 @@ export const ads: AdCreative[] = [
     name: "PATRIOT Merch",
     alt: "PATRIOT Merch — custom patriotic designs at Shop.PatriotsInAction.com",
     href: "https://shop.patriotsinaction.com/",
-  },
-  {
-    id: LORI_HORNER_AD_ID,
-    slot: "inline",
-    image: loriHorner,
-    name: "Lori Horner Realty Group",
-    alt: "Lori Horner Realty Group",
-    href: "https://www.lorihorner.com/",
-    countyKeys: [...loriHornerCountyKeys],
-    inFeedWeight: 1,
   },
   {
     id: "parallel-roofing-inline",
@@ -542,6 +556,42 @@ export const ads: AdCreative[] = [
 
 // Sponsors that present a feed and are listed on the partner pages, but stay out
 // of the ad rotation and the county masthead sponsor.
+/**
+ * The County Post Classifieds, advertised in every edition: national, state
+ * and county. Kept out of `ads`, which the partner directory, the newsletter
+ * and the Classifieds site's own catalog read, since none of them should list
+ * the County Post as its own advertiser. Weight 1 leaves the paying
+ * advertisers their share, and they never take the county masthead spot.
+ */
+const CLASSIFIEDS_ALT = "The County Post Classifieds — buy, sell and find it local, in every county. Free personal listings. Browse listings.";
+export const CLASSIFIEDS_SQUARE_AD_ID = "county-post-classifieds-inline";
+
+export const houseAds: AdCreative[] = [
+  {
+    id: CLASSIFIEDS_SQUARE_AD_ID,
+    slot: "inline",
+    image: classifiedsSquare,
+    // Its "Presented by" mark on the Opinion & op-eds feeds.
+    sponsorImage: classifiedsLogo,
+    name: "The County Post Classifieds",
+    alt: CLASSIFIEDS_ALT,
+    href: "https://classifieds.thecountypost.com/",
+    house: "classifieds",
+    inFeedWeight: 1,
+    mastheadSponsor: false,
+  },
+  {
+    id: "county-post-classifieds-banner",
+    slot: "banner",
+    image: classifiedsBanner,
+    name: "The County Post Classifieds",
+    alt: CLASSIFIEDS_ALT,
+    href: "https://classifieds.thecountypost.com/",
+    house: "classifieds",
+    mastheadSponsor: false,
+  },
+];
+
 export const feedOnlySponsors: AdCreative[] = [
   {
     id: DIGNITY_MEMORIAL_AD_ID,

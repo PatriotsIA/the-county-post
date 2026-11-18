@@ -101,7 +101,7 @@ export function MorningPostStoryPage() {
         </header>
         <div className="editorial-op-ed-body">
           {story.imageUrl && imageAvailable ? (
-            <img className="morning-post-story-image" src={story.imageUrl} alt="" onError={() => setImageAvailable(false)} />
+            <img className="morning-post-story-image" src={story.imageUrl} alt="" referrerPolicy="no-referrer" onError={() => setImageAvailable(false)} />
           ) : null}
           {story.description ? <p>{story.description}</p> : null}
           <a className="button-link morning-post-story-read" href={story.link} target="_blank" rel="noreferrer">

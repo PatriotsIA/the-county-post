@@ -289,9 +289,10 @@ test("Texas advertiser targeting covers all 254 counties and excludes other edit
       everyTexasCounty: texas.every((county: { slug: string }) => hasGear(`texas/${county.slug}`) && partnerData.getPartnersForCounty(`texas/${county.slug}`).some((ad: { name: string }) => ad.name === "Guerrilla Gear")),
       noOtherCounty: otherCounties.every((county: { state: { slug: string }; slug: string }) => !hasGear(`${county.state.slug}/${county.slug}`)),
       national: hasGear(),
-      removed: adData.ads.filter((ad: { name: string }) => /Pasture Exchange|PestCon/.test(ad.name)).length,
+      // Removed advertisers: Pasture Exchange and PestCon, and Lori Horner Realty Group (November 18, 2026).
+      removed: adData.ads.filter((ad: { name: string }) => /Pasture Exchange|PestCon|Lori Horner/.test(ad.name)).length,
       texasPartnerPageCount: partnerData.getCountyPartnerPageKeys().filter((key: string) => key.startsWith("texas/")).length,
-      scopedRealty: [undefined, "texas", "texas/randall", "texas/potter", "texas/harris"].map((key) => adData.getAdsForSlot("inline", key).some((ad: { id: string }) => ad.id === "lori-horner-inline")),
+      noRealtyLeft: [undefined, "texas", "texas/randall", "texas/potter", "texas/harris"].every((key) => !adData.getAdsForSlot("inline", key).some((ad: { name: string }) => /Lori Horner/.test(ad.name)) && !adData.getInFeedAdRotation(key).some((ad: { name: string }) => /Lori Horner/.test(ad.name))),
       everyTexasCountyHasVideos: texas.every((county: { slug: string }) => videoCount(`texas/${county.slug}`) === expectedVideoIds.length),
       everyTexasEditionHasFullShowcase: ["texas", ...texas.map((county: { slug: string }) => `texas/${county.slug}`)].every((key) =>
         videoIds(adData.getAdsForSlot("inline", key)) === expectedVideoIds.join(",") &&
@@ -302,7 +303,7 @@ test("Texas advertiser targeting covers all 254 counties and excludes other edit
       everyTexasCountyHasPartner: texas.every((county: { slug: string }) => partnerData.getPartnersForCounty(`texas/${county.slug}`).some((ad: { name: string }) => ad.name === "Panhandle Legends")),
     };
   }, showcaseVideoIds);
-  expect(result).toEqual({ texasCount: 254, statewide: true, everyTexasCounty: true, noOtherCounty: true, national: false, removed: 0, texasPartnerPageCount: 254, scopedRealty: [false, false, true, true, false], everyTexasCountyHasVideos: true, everyTexasEditionHasFullShowcase: true, noVideosElsewhere: true, videosCannotSponsor: true, onePanhandlePartner: 1, everyTexasCountyHasPartner: true });
+  expect(result).toEqual({ texasCount: 254, statewide: true, everyTexasCounty: true, noOtherCounty: true, national: false, removed: 0, texasPartnerPageCount: 254, noRealtyLeft: true, everyTexasCountyHasVideos: true, everyTexasEditionHasFullShowcase: true, noVideosElsewhere: true, videosCannotSponsor: true, onePanhandlePartner: 1, everyTexasCountyHasPartner: true });
   await expect(page.getByRole("heading", { name: "Guerrilla Gear", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Panhandle Legends", exact: true })).toHaveCount(1);
   await page.goto("/texas/harris/partners");
@@ -393,9 +394,11 @@ test("bookmark reminder opens only on county homepages, shows instructions witho
   await page.goto("/texas/randall");
   const prompt = page.getByRole("complementary", { name: "Bookmark Randall County", exact: true });
   await expect(prompt).toBeVisible();
+  // In the corner, just above the jump button, which stays in reach.
   expect(await prompt.evaluate((element) => {
     const bounds = element.getBoundingClientRect();
-    return bounds.width <= 330 && innerWidth - bounds.right === 16 && innerHeight - bounds.bottom === 16;
+    const button = document.querySelector(".page-jump-toggle")!.getBoundingClientRect();
+    return bounds.width <= 330 && innerWidth - bounds.right === 16 && bounds.bottom <= button.top && button.top - bounds.bottom <= 16;
   })).toBe(true);
   await expect(prompt.getByText("Ctrl+D", { exact: true })).toBeVisible();
   await expect(prompt.getByRole("button")).toHaveCount(1);
@@ -507,4 +510,18 @@ test("Texas desks retain Abbott campaign formats after Paxton ads are removed", 
     await page.goto(path);
     await expect(page.locator('.ad-slot img[src*="ken-paxton"], .ad-slot img[src*="greg-abbott"]')).toHaveCount(0);
   }
+});
+
+test("Potter and Randall keep their masthead sponsors after Lori Horner Realty Group left, and LEMC presents their sports", async ({ page }) => {
+  for (const { path, sponsor } of [
+    { path: "/texas/potter", sponsor: /^Parallel Builders/ },
+    { path: "/texas/randall", sponsor: /^My Local GOP/ },
+  ]) {
+    await page.goto(path);
+    await expect(page.locator(".masthead .county-sponsor img"), path).toHaveAttribute("alt", sponsor);
+    await expect(page.locator('[data-page-jump="Local sports"] .feed-sponsor img'), path).toHaveAttribute("alt", "LEMC Realty");
+    await expect(page.getByAltText(/Lori Horner/), path).toHaveCount(0);
+  }
+  await page.goto("/texas/potter/partners");
+  await expect(page.getByText(/Lori Horner/)).toHaveCount(0);
 });

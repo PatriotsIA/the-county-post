@@ -84,76 +84,67 @@ function MetalSpotTicker({ active }: { active: boolean }) {
   </div>;
 }
 
+const TICKER_TAPE_URL = "https://widgets.tradingview-widget.com/w/en/tv-ticker-tape.js";
+const TICKER_MESSAGE = "county-post-market-ticker";
+
+/**
+ * TradingView's ticker runs in its own frame. Inside our page, its twenty mini
+ * charts and the observers they put on the body kept resizing each other, which
+ * the browser reports as "ResizeObserver loop completed with undelivered
+ * notifications" and which forced extra layout passes over the whole page. The
+ * frame keeps that work in its own document; each attempt also gets a fresh
+ * module map, so a failed load retries. The frame is not sandboxed: an opaque
+ * origin makes TradingView refuse its price connection.
+ */
+function tickerDocument(symbols: string) {
+  const script = `
+const report = (status) => parent.postMessage({ source: ${JSON.stringify(TICKER_MESSAGE)}, status }, "*");
+const timeout = setTimeout(() => report("error"), 15000);
+import(${JSON.stringify(TICKER_TAPE_URL)})
+  .then(() => customElements.whenDefined("tv-ticker-tape"))
+  .then(() => {
+    clearTimeout(timeout);
+    const ticker = document.createElement("tv-ticker-tape");
+    ticker.setAttribute("symbols", ${JSON.stringify(symbols)});
+    document.body.append(ticker);
+    report("loaded");
+  }, () => { clearTimeout(timeout); report("error"); });`;
+  return `<!doctype html><html><head><meta charset="utf-8"><base target="_blank">
+<style>html,body{margin:0;overflow:hidden;background:transparent}tv-ticker-tape{display:block}</style></head>
+<body><script type="module">${script.replace(/<\//g, "<\\/")}</script></body></html>`;
+}
+
 function TradingViewTicker({ active, symbols = stockTickerSymbols, label = "Market prices" }: { active: boolean; symbols?: string; label?: string }) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const frameRef = useRef<HTMLIFrameElement | null>(null);
   const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container || !active) return;
-    let mounted = true;
-    container.textContent = "";
+    if (!active) return;
     setStatus("loading");
-
-    void loadTickerTape().then(() => {
-      if (!mounted) return;
-      const ticker = document.createElement("tv-ticker-tape");
-      ticker.setAttribute("symbols", symbols);
-      container.append(ticker);
-      setStatus("loaded");
-    }).catch(() => {
-      if (mounted) setStatus("error");
-    });
-
-    return () => {
-      mounted = false;
-      container.textContent = "";
+    const onMessage = (event: MessageEvent) => {
+      if (event.source !== frameRef.current?.contentWindow || event.data?.source !== TICKER_MESSAGE) return;
+      setStatus(event.data.status === "loaded" ? "loaded" : "error");
     };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
   }, [active, symbols]);
 
   return (
     <div className="tradingview-widget-container market-ticker-widget">
       {status === "loading" ? <LoadingIndicator label={`Loading ${label.toLowerCase()}…`} size="inline" /> : null}
       {status === "error" ? <span className="muted" role="status">{label} unavailable.</span> : null}
-      <div className="market-ticker-widget-content" ref={containerRef} />
+      <div className="market-ticker-widget-content">
+        {active && status !== "error" ? (
+          <iframe
+            ref={frameRef}
+            className="market-ticker-frame"
+            title={`${label} ticker by TradingView`}
+            srcDoc={tickerDocument(symbols)}
+          />
+        ) : null}
+      </div>
     </div>
   );
-}
-
-let tickerTapePromise: Promise<void> | undefined;
-let tickerTapeAttempt = 0;
-
-function loadTickerTape() {
-  if (customElements.get("tv-ticker-tape")) return Promise.resolve();
-  if (tickerTapePromise) return tickerTapePromise;
-
-  tickerTapePromise = new Promise<void>((resolve, reject) => {
-    const script = document.createElement("script");
-    script.id = "tradingview-ticker-tape-script";
-    script.type = "module";
-    const url = "https://widgets.tradingview-widget.com/w/en/tv-ticker-tape.js";
-    const attempt = tickerTapeAttempt++;
-    // Browsers remember failed module loads. A fresh entry URL permits a retry.
-    script.src = attempt ? `${url}?retry=${attempt}` : url;
-    const fail = () => {
-      window.clearTimeout(timeout);
-      script.remove();
-      reject(new Error("TradingView ticker tape failed to load."));
-    };
-    const timeout = window.setTimeout(fail, 15_000);
-    script.addEventListener("load", () => {
-      customElements.whenDefined("tv-ticker-tape").then(() => {
-        window.clearTimeout(timeout);
-        resolve();
-      });
-    }, { once: true });
-    script.addEventListener("error", fail, { once: true });
-    document.head.append(script);
-  }).catch((error) => {
-    tickerTapePromise = undefined;
-    throw error;
-  });
-  return tickerTapePromise;
 }
 
 function CattleTicker() {

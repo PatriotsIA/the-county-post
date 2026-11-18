@@ -1,9 +1,10 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { Link, Navigate, NavLink, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
+import { Fragment, lazy, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Link, Navigate, NavLink, Route, Routes, useLocation, useParams } from "react-router-dom";
 import { SubmissionForm } from "./components/SubmissionForm";
 import { ClassifiedSubmissionForm } from "./components/ClassifiedSubmissionForm";
 import { ClassifiedsEntry } from "./components/ClassifiedsEntry";
-import { classifiedsOrigin, stateClassifiedsUrl } from "./lib/classifieds";
+import { classifiedsOrigin, editionClassifiedsUrl, withCountyPostUtm } from "./lib/classifieds";
+import { useClassifiedsLink } from "./lib/useClassifiedsLink";
 import { AdSlot } from "./components/AdSlot";
 import { BookmarkPrompt } from "./components/BookmarkPrompt";
 import { NewsFeedSection } from "./components/NewsFeedSection";
@@ -22,16 +23,20 @@ import { CountyPostOpEdPage } from "./components/CountyPostOpEd";
 import { MorningPostStoryPage } from "./components/MorningPostStory";
 import { countyPostOpEds } from "./data/county-post-op-eds";
 import { AtlasDomainNav } from "./components/AtlasDomainNav";
+import { CountySearch } from "./components/CountySearch";
+import { ClassifiedsExplainer } from "./components/ClassifiedsExplainer";
+import { WatchNewsButton } from "./components/WatchNewsButton";
 import { PageJumpMenu, type JumpLink, type JumpLinkGroup } from "./components/PageJumpMenu";
 import { atlasDomainLabels, atlasDomainLinks } from "./lib/atlas-domain-labels";
 import { EditionMap } from "./components/EditionMap";
 import { LoadingIndicator } from "./components/LoadingIndicator";
 import { TopTicker } from "./components/TopTicker";
+import { FeaturedVideoDesk, FeaturedVideoFeed } from "./components/FeaturedVideoDesk";
+import { MediaDock } from "./components/MediaDock";
 import { MorningPostPage, NewsletterPage, NewsletterSignup, NewsletterSponsorVisit } from "./components/Newsletter";
-import { canSponsorFeed, countyAdKey, getAdsForSlot, getSportsFeedSponsorId } from "./data/ads";
+import { canSponsorFeed, countyAdKey, getAdsForSlot, mastheadSponsorPins } from "./data/ads";
 import { getCounty, getCountiesForState } from "./data/counties";
 import { site } from "./data/site";
-import { getExactSearchState, searchCounties, searchStates } from "./data/place-search";
 import { Seo } from "./components/Seo";
 import {
   breadcrumbLd,
@@ -77,6 +82,7 @@ import { buildCountyFallbackFeedUrls, buildNationalFallbackFeedUrls, buildStateF
 import { countyAtlasDomains, type CountyAtlasDomain } from "./lib/county-atlas-api";
 import { fetchNewsApiPage, isNewsApiConfigured, scopeDatelinePlaces, scopePlaces, scopeCountyNameDistinctive, scopeTrustedHosts, type NewsFeedItem } from "./lib/news-api";
 import countyPostLogo from "./assets/county-post-logo.webp";
+import classifiedsLogo from "./assets/county-post-classifieds-logo-small.webp";
 import "./index.css";
 
 const LazyCountyDataAtlasHub = lazy(() =>
@@ -217,7 +223,6 @@ function App() {
   const activeCounty = useActiveCounty();
   const activeState = useActiveState(activeCounty);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [showScrollTop, setShowScrollTop] = useState(false);
   const { hash, pathname } = useLocation();
   const todayLabel = useMemo(
     () =>
@@ -249,13 +254,6 @@ function App() {
     };
   }, [mobileMenuOpen]);
 
-  useEffect(() => {
-    const updateScrollTopVisibility = () => setShowScrollTop(window.scrollY > 420);
-    updateScrollTopVisibility();
-    window.addEventListener("scroll", updateScrollTopVisibility, { passive: true });
-    return () => window.removeEventListener("scroll", updateScrollTopVisibility);
-  }, []);
-
   const normalizedPath = pathname.replace(/\/+$/, "");
   const isLegendsPage = normalizedPath === PANHANDLE_LEGENDS_PATH || normalizedPath === "/texas/texas-legends" || Boolean(activeCounty?.state.slug === "texas" && normalizedPath === `/texas/${activeCounty.slug}/texas-legends`);
   const isItmTradingPage = normalizedPath === ITM_TRADING_PATH;
@@ -271,13 +269,19 @@ function App() {
           <span>Today Is: {todayLabel}</span>
         </p>
         {showEditionChrome ? (
-          <div className="masthead-stage">
+          <div className={`masthead-stage${activeCounty ? "" : " masthead-stage-national"}`}>
             <MastheadWordmark />
             <MastheadHeroCopy pathname={pathname} county={activeCounty} state={activeState} />
-            <EditionMap county={activeCounty} state={activeState} />
+            <div className="masthead-map-column">
+              <EditionMap county={activeCounty} state={activeState} />
+              <WatchNewsButton />
+            </div>
           </div>
         ) : (
-          <MastheadWordmark />
+          <div className="masthead-brand">
+            <MastheadWordmark />
+            <WatchNewsButton />
+          </div>
         )}
         <button
           type="button"
@@ -289,9 +293,10 @@ function App() {
           <span aria-hidden="true">☰</span> Menu
         </button>
         <nav id="primary-navigation" className={`nav${mobileMenuOpen ? " nav-open" : ""}`} aria-label="Primary navigation">
-        {primaryLinks(activeCounty, activeState).map((link) =>
+        {primaryLinks(activeCounty, activeState, pathname).map((link) =>
           link.external ? (
             <a key={link.to} className={["nav-link", link.className].filter(Boolean).join(" ")} href={link.to} onClick={() => setMobileMenuOpen(false)}>
+              {link.icon ? <img className="nav-link-icon" src={link.icon} alt="" /> : null}
               {link.label}
             </a>
           ) : (
@@ -310,13 +315,17 @@ function App() {
       </header>
       {!isLegendsPage ? <ContextNav county={activeCounty} state={activeState} /> : null}
       {activeCounty && isCountyDataPath(pathname, activeCounty) ? <AtlasDomainNav county={activeCounty} /> : null}
+      {/* The Market desk starts collapsed on every page; Featured Videos below it starts open. */}
+      {!isLegendsPage ? <TopTicker county={activeCounty} /> : null}
+      {/* Featured Videos sits under the Market desk, above the front page's county search, on
+          every page, so Watch News Now in the masthead always has somewhere to go. */}
+      <FeaturedVideoDesk />
       {pathname === "/" ? (
         <div className="top-county-finder">
           <CountyDirectorySearch id="find-a-county" />
         </div>
       ) : null}
-      {!isLegendsPage ? <TopTicker county={activeCounty} defaultOpen={isItmTradingPage || isEditionHomePath(pathname, activeCounty, activeState)} /> : null}
-      <PageJumpMenu scrolled={showScrollTop} groups={jumpMenuGroups(pathname, isLegendsPage, activeCounty, activeState)} />
+      <PageJumpMenu groups={jumpMenuGroups(pathname, isLegendsPage, activeCounty, activeState)} />
 
       <Breadcrumbs county={activeCounty} state={activeState} />
 
@@ -383,6 +392,8 @@ function App() {
           <BookmarkPrompt county={activeCounty} autoShow={isCountyHomePath(pathname, activeCounty)} onEditionHome={pathname === "/" || isCountyHomePath(pathname, activeCounty)} />
         </div>
       </footer>
+      {/* Outside the routes, so a popped-out video keeps playing from page to page. */}
+      <MediaDock />
     </div>
   );
 }
@@ -486,7 +497,9 @@ function contextNavLabel(county?: NonNullable<ReturnType<typeof getCounty>>, sta
 }
 
 /** The masthead's site-wide links, shared with the phone jump menu. */
-function primaryLinks(county?: ReturnType<typeof getCounty>, state?: ReturnType<typeof getStateBySlug>): (JumpLink & { className?: string })[] {
+function primaryLinks(county: ReturnType<typeof getCounty> | undefined, state: ReturnType<typeof getStateBySlug> | undefined, pathname: string): (JumpLink & { className?: string })[] {
+  // The County Post Classifieds at this page's level, tagged with the page it was followed from.
+  const classifieds = editionClassifiedsUrl(county ? countyAdKey(county.state.slug, county.slug) : state?.slug);
   return [
     { to: "/", label: "Front Page", end: true },
     { to: "/states", label: "Find Your State & County News", className: "nav-link-directory" },
@@ -496,6 +509,7 @@ function primaryLinks(county?: ReturnType<typeof getCounty>, state?: ReturnType<
     { to: "/about", label: "About" },
     { to: "/morning-post", label: "Morning Post" },
     { to: submitStoryPath(county, state), label: "Submit A Story" },
+    ...(classifieds ? [{ to: withCountyPostUtm(classifieds, "nav", pathname), label: "Classifieds", external: true, icon: classifiedsLogo, className: "nav-link-classifieds" }] : []),
     { to: "https://www.advertise.thecountypost.com/", label: "Advertise", external: true, className: "nav-link-advertise" },
   ];
 }
@@ -510,7 +524,7 @@ function jumpMenuGroups(
   return [
     ...(county && isCountyDataPath(pathname, county) ? [{ label: `${county.displayName} data`, links: atlasDomainLinks(county) }] : []),
     ...(!isLegendsPage ? [{ label: contextNavLabel(county, state), links: contextLinks(county, state) }] : []),
-    { label: "The County Post", links: primaryLinks(county, state) },
+    { label: "The County Post", links: primaryLinks(county, state, pathname) },
   ];
 }
 
@@ -602,68 +616,19 @@ function submitStoryPath(county?: NonNullable<ReturnType<typeof getCounty>>, sta
 }
 
 function CountyDirectorySearch({ id }: { id?: string }) {
-  const [query, setQuery] = useState("");
-  const navigate = useNavigate();
-  const trimmedQuery = query.trim();
-  const hasQuery = trimmedQuery.length > 0;
-  const countyMatches = useMemo(() => (hasQuery ? searchCounties(query) : []), [hasQuery, query]);
-  const stateMatches = useMemo(() => (hasQuery ? searchStates(query) : []), [hasQuery, query]);
-  const bestCounty = countyMatches[0];
-  const bestState = getExactSearchState(query) || stateMatches[0];
-  const results = [
-    ...stateMatches.map((state) => ({ type: "state" as const, state })),
-    ...countyMatches.map((county) => ({ type: "county" as const, county })),
-  ];
-
   return (
-    <section id={id} className="card county-finder">
-      <header className="section-heading">
-        <div className="section-heading-rule" aria-hidden />
-        <div>
-          <h2>Find A County</h2>
-        </div>
-        <div className="section-heading-rule" aria-hidden />
-      </header>
-      <form
-        className="search-form"
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (bestState) {
-            navigate(stateHomePath(bestState));
-          } else if (bestCounty) {
-            navigate(`/${bestCounty.state.slug}/${bestCounty.slug}`);
-          }
-        }}
-      >
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search by county or state (e.g., Orange, TX)"
-          aria-label="Search for a county or state"
-        />
-        <button type="submit" disabled={!results.length}>
-          Search
-        </button>
-      </form>
-      {hasQuery ? (
-        <div key={query} className="results-list single county-search-results" role="region" aria-label="County and state search results" tabIndex={0}>
-          {results.map((item) =>
-            item.type === "state" ? (
-              <Link key={item.state.slug} to={stateHomePath(item.state)} className="result-link">
-                <span className="result-name">{item.state.name}</span>
-                <span className="result-meta">State • {item.state.abbr}</span>
-              </Link>
-            ) : (
-              <Link key={item.county.fips} to={`/${item.county.state.slug}/${item.county.slug}`} className="result-link">
-                <span className="result-name">{item.county.displayName}</span>
-                <span className="result-meta">County • {item.county.state.name}</span>
-              </Link>
-            ),
-          )}
-          {!results.length ? <p className="muted">No places match that search yet.</p> : null}
-        </div>
-      ) : null}
-    </section>
+    <CountySearch
+      id={id}
+      heading={
+        <header className="section-heading">
+          <div className="section-heading-rule" aria-hidden />
+          <div>
+            <h2>Find A County</h2>
+          </div>
+          <div className="section-heading-rule" aria-hidden />
+        </header>
+      }
+    />
   );
 }
 
@@ -692,16 +657,19 @@ function HomePage() {
       />
       <AdSlot slot="banner" />
       {topicSections.map((section, index) => (
-        <NewsFeedSection
-          key={section.kind}
-          title={section.title}
-          kicker={section.kicker}
-          apiPath={nationalApiPath(section.kind)}
-          fallbackFeedUrls={buildNationalFallbackFeedUrls(section.kind)}
-          kind={section.kind}
-          loadEnabled={nationalBackgroundLoader.isEnabled(index)}
-          onLoadSettled={() => nationalBackgroundLoader.markSettled(index)}
-        />
+        <Fragment key={section.kind}>
+          {section.kind === "economy" ? <FeaturedVideoFeed /> : null}
+          {section.kind === "opinion" ? <ClassifiedsExplainer /> : null}
+          <NewsFeedSection
+            title={section.title}
+            kicker={section.kicker}
+            apiPath={nationalApiPath(section.kind)}
+            fallbackFeedUrls={buildNationalFallbackFeedUrls(section.kind)}
+            kind={section.kind}
+            loadEnabled={nationalBackgroundLoader.isEnabled(index)}
+            onLoadSettled={() => nationalBackgroundLoader.markSettled(index)}
+          />
+        </Fragment>
       ))}
 
       <section className="card">
@@ -813,13 +781,13 @@ function StatePage() {
   const loadStateBackground = canLoadBackgroundPage(stateLeadPage);
   const stateBackgroundLoader = useSequentialFeedLoader(loadStateBackground, pageBackgroundSections.length + 1, state?.slug || "");
   const counties = useMemo(() => (state ? getCountiesForState(state.slug) : []), [state]);
+  const classifiedsUrl = useClassifiedsLink("link", { editionKey: state?.slug });
 
   if (!state) {
     return <NotFound />;
   }
 
   const seo = stateSeo(state, counties.length);
-  const classifiedsUrl = stateClassifiedsUrl(counties[0]?.fips.slice(0, 2) || "");
 
   return (
     <div className="layout-grid">
@@ -855,17 +823,20 @@ function StatePage() {
       />
       <AdSlot slot="banner" />
       {topicSections.map((section, index) => (
-        <NewsFeedSection
-          key={section.kind}
-          title={section.title}
-          kicker={section.kicker}
-          apiPath={stateApiPath(state.slug, section.kind)}
-          fallbackFeedUrls={buildStateFallbackFeedUrls(state, section.kind)}
-          kind={section.kind}
-          locality={{ stateName: state.name, stateAbbr: state.abbr, strict: true }}
-          loadEnabled={stateBackgroundLoader.isEnabled(index)}
-          onLoadSettled={() => stateBackgroundLoader.markSettled(index)}
-        />
+        <Fragment key={section.kind}>
+          {section.kind === "economy" ? <FeaturedVideoFeed /> : null}
+          {section.kind === "opinion" ? <ClassifiedsExplainer state={state} /> : null}
+          <NewsFeedSection
+            title={section.title}
+            kicker={section.kicker}
+            apiPath={stateApiPath(state.slug, section.kind)}
+            fallbackFeedUrls={buildStateFallbackFeedUrls(state, section.kind)}
+            kind={section.kind}
+            locality={{ stateName: state.name, stateAbbr: state.abbr, strict: true }}
+            loadEnabled={stateBackgroundLoader.isEnabled(index)}
+            onLoadSettled={() => stateBackgroundLoader.markSettled(index)}
+          />
+        </Fragment>
       ))}
       <NewsFeedSection
         title="National briefing"
@@ -1210,7 +1181,6 @@ function CountyPage() {
     strict: true,
   };
   const countyKey = countyAdKey(county.state.slug, county.slug);
-  const sportsSponsorId = getSportsFeedSponsorId(countyKey);
 
   const seo = countySeo(county);
 
@@ -1250,7 +1220,6 @@ function CountyPage() {
         fallbackFeedUrls={buildCountyFallbackFeedUrls(county, "sports")}
         pageSize={12}
         kind="sports"
-        sponsorId={sportsSponsorId}
         locality={locality}
         loadEnabled={countyBackgroundLoader.isEnabled(0)}
         onLoadSettled={() => countyBackgroundLoader.markSettled(0)}
@@ -1280,6 +1249,7 @@ function CountyPage() {
         loadEnabled={countyBackgroundLoader.isEnabled(2)}
         onLoadSettled={() => countyBackgroundLoader.markSettled(2)}
       />
+      <FeaturedVideoFeed />
       <NewsFeedSection
         title="Economy & business"
         kicker="Markets"
@@ -1304,6 +1274,7 @@ function CountyPage() {
         loadEnabled={countyBackgroundLoader.isEnabled(4)}
         onLoadSettled={() => countyBackgroundLoader.markSettled(4)}
       />
+      <ClassifiedsExplainer county={county} />
       <NewsFeedSection
         title="Opinion & op-eds"
         kicker="Local voices"
@@ -1356,7 +1327,10 @@ function MastheadWordmark() {
   return (
     <Link to="/" className="wordmark">
       <img className="wordmark-logo" src={countyPostLogo} alt={`${site.name} — Every county. Every community. One nation.`} />
-      <span className="wordmark-tagline">Every County - Every Community. One Nation</span>
+      <span className="wordmark-taglines">
+        <span className="wordmark-tagline">Every County - Every Community. One Nation</span>
+        <span className="wordmark-tagline wordmark-tagline-reach">Local - Regional - National</span>
+      </span>
     </Link>
   );
 }
@@ -1411,10 +1385,6 @@ function MastheadHeroCopy({
               <div>
                 <p className="meta-label">Local focus</p>
                 <p className="meta-value">County stories only</p>
-              </div>
-              <div>
-                <p className="meta-label">National lens</p>
-                <p className="meta-value">Every source. One place.</p>
               </div>
               <div>
                 <p className="meta-label">County Sponsored By:</p>
@@ -1731,11 +1701,12 @@ function MastheadHeroCopy({
 }
 
 function CountySponsor({ county }: { county: NonNullable<ReturnType<typeof getCounty>> }) {
-  const sponsorAds = getAdsForSlot("inline", countyAdKey(county.state.slug, county.slug))
+  const countyKey = countyAdKey(county.state.slug, county.slug);
+  const sponsorAds = getAdsForSlot("inline", countyKey)
     .filter((ad) => ad.id !== "guerrilla-gear-inline" && ad.mastheadSponsor !== false && canSponsorFeed(ad));
-  const seed = county.fips || `${county.state.slug}/${county.slug}`;
+  const seed = county.fips || countyKey;
   const hash = Array.from(seed).reduce((total, character) => total + character.charCodeAt(0), 0);
-  const sponsor = sponsorAds[hash % sponsorAds.length];
+  const sponsor = sponsorAds.find((ad) => ad.id === mastheadSponsorPins[countyKey]) ?? sponsorAds[hash % sponsorAds.length];
   if (!sponsor) return null;
 
   return (
@@ -2146,9 +2117,16 @@ function PrivacyPage() {
         <p>
           Some pages embed content served by other companies, which may set their own cookies and receive your IP
           address when that content loads. These are the market tickers supplied by TradingView and LiveCoinWatch,
-          video embedded from YouTube using its privacy-enhanced no-cookie domain, and, when our own news service is
+          video and video thumbnails from YouTube (embedded through its privacy-enhanced no-cookie domain) and Vimeo
+          (with its Do Not Track setting) — including the live stream the Featured Videos desk plays, muted, while it
+          is open, as it is by default — and, when our own news service is
           unavailable, a fallback article loader operated by rss2json. Headlines throughout the site link to the
           publishers who reported them; once you follow a link, that publisher&rsquo;s own privacy policy governs.
+        </p>
+        <p>
+          The Featured Videos desk, the pop-out player and the Watch list use YouTube API Services. YouTube&rsquo;s use
+          of your information is described in the{" "}
+          <a href="https://www.google.com/policies/privacy" target="_blank" rel="noreferrer">Google Privacy Policy</a>.
         </p>
 
         <h2>What we do not do</h2>
@@ -2180,6 +2158,15 @@ function TermsPage() {
         <p className="kicker">Terms</p>
         <h1>Terms of Service</h1>
         <p className="lead">Content is aggregated through the County Post News API. Links open to original publishers. Submissions are subject to editorial review.</p>
+      </section>
+      <section className="card legal-copy">
+        <h2>Video</h2>
+        <p>
+          Featured Videos, the pop-out player and the Watch list play videos and live streams through YouTube API
+          Services and Vimeo. Each video belongs to the channel credited beside it. By using these video features, you
+          agree to be bound by the{" "}
+          <a href="https://www.youtube.com/t/terms" target="_blank" rel="noreferrer">YouTube Terms of Service</a>.
+        </p>
       </section>
     </div>
   );

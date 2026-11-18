@@ -1,8 +1,9 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { DIGNITY_MEMORIAL_AD_ID, getFeedSponsor, getInFeedAdRotation, type AdCreative } from "../data/ads";
+import { adRel, CLASSIFIEDS_FEED_AD_EVERY, CLASSIFIEDS_SQUARE_AD_ID, DIGNITY_MEMORIAL_AD_ID, getClassifiedsFeedAd, getFeedSponsor, getInFeedAdRotation, type AdCreative } from "../data/ads";
+import { useAdHref } from "../lib/useClassifiedsLink";
 import { useAdEditionKey } from "../lib/useAdEditionKey";
-import { VideoAd } from "./VideoAd";
+import { SponsorVideo } from "./SponsorVideo";
 import { featuredCountyPostOpEds, prependFeaturedCountyPostOpEds } from "../data/county-post-op-eds";
 import { isTrustedCountyNativeNewsItem } from "../lib/local-news-sources";
 import { fetchNewsApiFeed, isNewsApiConfigured, type NewsFeedItem, type Topic } from "../lib/news-api";
@@ -59,6 +60,8 @@ type Props = {
 const MAX_REQUESTED_ITEMS = 600;
 type FeedSource = "api" | "fallback";
 
+const NO_SCOPE: string[] = [];
+
 export function NewsFeedSection({
   title,
   apiPath,
@@ -83,7 +86,9 @@ export function NewsFeedSection({
   onLoadSettled,
 }: Props) {
   const editionKey = useAdEditionKey();
+  const adHref = useAdHref("feed-ad", editionKey);
   const inFeedAdRotation = useMemo(() => getInFeedAdRotation(editionKey), [editionKey]);
+  const classifiedsFeedAd = useMemo(() => getClassifiedsFeedAd(editionKey), [editionKey]);
   const [items, setItems] = useState<NewsFeedItem[]>([]);
   const [status, setStatus] = useState<"idle" | "loading" | "loaded" | "error">("idle");
   const [error, setError] = useState<string>("");
@@ -99,9 +104,10 @@ export function NewsFeedSection({
   // page's prefetch resolves after that — so a section fed by the prefetch kept
   // the empty arrays it started with and filtered nearly everything out. The
   // props win whenever this component has not fetched its own scope yet.
-  const effectivePlaces = scopedPlaces.length ? scopedPlaces : (initialPlaces ?? []);
-  const effectiveDatelinePlaces = scopedDatelinePlaces.length ? scopedDatelinePlaces : (initialDatelinePlaces ?? []);
-  const effectiveTrustedHosts = scopedTrustedHosts.length ? scopedTrustedHosts : (initialTrustedHosts ?? []);
+  // NO_SCOPE is shared so an absent prop does not hand the filter memo a new array every render.
+  const effectivePlaces = scopedPlaces.length ? scopedPlaces : (initialPlaces ?? NO_SCOPE);
+  const effectiveDatelinePlaces = scopedDatelinePlaces.length ? scopedDatelinePlaces : (initialDatelinePlaces ?? NO_SCOPE);
+  const effectiveTrustedHosts = scopedTrustedHosts.length ? scopedTrustedHosts : (initialTrustedHosts ?? NO_SCOPE);
   const effectiveCountyDistinctive = countyNameDistinctive || Boolean(initialCountyNameDistinctive);
   // What the API says about whether more pages exist, which is more reliable
   // than inferring it from how many items survived the client-side filter.
@@ -132,8 +138,8 @@ export function NewsFeedSection({
     return dedupeTitles(kind === "opinion" ? prependFeaturedCountyPostOpEds(scopedItems) : scopedItems);
   }, [effectiveCountyDistinctive, effectiveDatelinePlaces, effectivePlaces, effectiveTrustedHosts, items, kind, locality, source]);
   const feedEntries = useMemo(
-    () => createFeedEntries(filteredItems, `${title}-${kind}-${editionKey || "national"}`, gridColumns, inFeedAdRotation),
-    [filteredItems, gridColumns, kind, editionKey, title, inFeedAdRotation],
+    () => createFeedEntries(filteredItems, `${title}-${kind}-${editionKey || "national"}`, gridColumns, inFeedAdRotation, classifiedsFeedAd),
+    [filteredItems, gridColumns, kind, editionKey, title, inFeedAdRotation, classifiedsFeedAd],
   );
   // The API reports whether more pages exist. Falling back to comparing what
   // survived the client filter against what was asked for meant a feed whose
@@ -298,9 +304,25 @@ export function NewsFeedSection({
     };
 
     updateColumnCount();
-    const observer = new ResizeObserver(updateColumnCount);
+    // Only a width change can change the column count, and the count is read in
+    // the next frame. Updating state inside the observer callback re-rendered the
+    // grid during the observer's own layout pass, and every height change from
+    // loading stories did so again: the browser reported each as a
+    // "ResizeObserver loop completed with undelivered notifications" error.
+    let frame = 0;
+    let observedWidth: number | undefined;
+    const observer = new ResizeObserver(([entry]) => {
+      const width = entry.contentRect.width;
+      if (width === observedWidth) return;
+      observedWidth = width;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(updateColumnCount);
+    });
     observer.observe(grid);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+    };
   }, []);
 
   useEffect(() => {
@@ -348,15 +370,15 @@ export function NewsFeedSection({
             {feedEntries.map((entry) =>
               entry.type === "ad" ? entry.ad.video ? (
                 <div key={`ad-${entry.ad.id}-${entry.position}`} className="feed-card feed-ad-card feed-video-card" aria-label={`Advertisement: ${entry.ad.name}`}>
-                  <VideoAd ad={entry.ad} />
+                  <SponsorVideo ad={entry.ad} />
                 </div>
               ) : (
                 <a
                   key={`ad-${entry.ad.id}-${entry.position}`}
                   className="feed-card feed-ad-card"
-                  href={entry.ad.href}
+                  href={adHref(entry.ad)}
                   target="_blank"
-                  rel="noreferrer sponsored"
+                  rel={adRel(entry.ad)}
                   aria-label={`Advertisement: ${entry.ad.name}`}
                 >
                   <img className="feed-ad-image" src={entry.ad.image} alt={entry.ad.alt} />
@@ -487,11 +509,13 @@ type FeedEntry = { type: "article"; item: NewsFeedItem } | { type: "ad"; ad: AdC
 // A one-column feed (phones) would otherwise put an ad after every story.
 const SINGLE_COLUMN_ARTICLES_PER_AD = 5;
 
-function createFeedEntries(items: NewsFeedItem[], feedIdentity: string, gridColumns: number, inFeedAdRotation: AdCreative[]): FeedEntry[] {
+function createFeedEntries(items: NewsFeedItem[], feedIdentity: string, gridColumns: number, inFeedAdRotation: AdCreative[], classifiedsAd?: AdCreative): FeedEntry[] {
   const entries: FeedEntry[] = [];
   const seed = hashFeedIdentity(feedIdentity);
   const singleColumn = gridColumns <= 1;
   const articlesPerAd = singleColumn ? SINGLE_COLUMN_ARTICLES_PER_AD : gridColumns * 2 - 1;
+  // Paying advertisers advance only on their own slots, so a Classifieds slot never skips one.
+  let paidPosition = 0;
 
   for (let start = 0, adPosition = 0; start < items.length; start += articlesPerAd, adPosition += 1) {
     const chunk = items.slice(start, start + articlesPerAd);
@@ -501,12 +525,11 @@ function createFeedEntries(items: NewsFeedItem[], feedIdentity: string, gridColu
     const adIndex = singleColumn ? articlesPerAd : gridColumns + ((seed + adPosition) % gridColumns);
     entries.push(...chunk.slice(0, adIndex).map((item) => ({ type: "article" as const, item })));
 
-    if (chunk.length && inFeedAdRotation.length) {
-      entries.push({
-        type: "ad",
-        ad: inFeedAdRotation[(seed + adPosition) % inFeedAdRotation.length],
-        position: adPosition,
-      });
+    const classifiedsSlot = Boolean(classifiedsAd) && (seed + adPosition) % CLASSIFIEDS_FEED_AD_EVERY === CLASSIFIEDS_FEED_AD_EVERY - 1;
+    const ad = classifiedsSlot ? classifiedsAd : inFeedAdRotation.length ? inFeedAdRotation[(seed + paidPosition) % inFeedAdRotation.length] : undefined;
+    if (chunk.length && ad) {
+      entries.push({ type: "ad", ad, position: adPosition });
+      if (!classifiedsSlot) paidPosition += 1;
     }
 
     entries.push(...chunk.slice(adIndex).map((item) => ({ type: "article" as const, item })));
@@ -528,17 +551,20 @@ const feedSponsorIds: Partial<Record<FeedKind, string[]>> = {
   "jobs-business": ["plains-bank-inline"],
   "budgets-levies": ["lawyers-title-inline"],
   "audits-recounts": ["amberwood-brush-inline"],
+  // The County Post Classifieds presents Opinion & op-eds in every edition.
+  opinion: [CLASSIFIEDS_SQUARE_AD_ID],
 };
 
 function FeedSponsor({ kind, sponsorId, editionKey }: { kind: FeedKind; sponsorId?: string; editionKey?: string }) {
   const sponsor = getFeedSponsor(sponsorId ? [sponsorId] : feedSponsorIds[kind] ?? [], editionKey);
+  const sponsorHref = useAdHref("feed-sponsor", editionKey);
   if (!sponsor) return null;
 
   return (
     <>
     <p className="feed-presented-by">Presented by</p>
-    <a className="feed-sponsor" href={sponsor.href} target="_blank" rel="noreferrer sponsored">
-      <img src={sponsor.sponsorImage ?? sponsor.image} alt={sponsor.alt} />
+    <a className="feed-sponsor" href={sponsorHref(sponsor)} target="_blank" rel={adRel(sponsor)}>
+      <img src={sponsor.sponsorImage ?? sponsor.image} alt={sponsor.house ? sponsor.name : sponsor.alt} />
     </a>
     </>
   );
@@ -572,6 +598,8 @@ function ArticleMedia({ item, locality }: { item: NewsFeedItem; locality?: Local
         src={item.imageUrl}
         alt=""
         loading="lazy"
+        // Publishers' hotlink rules refuse their photos to other sites' pages; sent without a referrer they load.
+        referrerPolicy="no-referrer"
         onError={() => setImageAvailable(false)}
       />
     </a>

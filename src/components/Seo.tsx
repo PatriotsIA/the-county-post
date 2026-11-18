@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { site } from "../data/site";
 import {
@@ -74,7 +74,10 @@ export function Seo({
   const metaDescription = clampDescription(description);
   const socialImage = absoluteUrl(image ?? site.ogImage);
 
-  useEffect(() => {
+  // A layout effect runs in the same commit that hoists this route's tags, so the
+  // page never shows the defaults beside them. As a passive effect it ran after
+  // paint, leaving a moment with two canonicals and two descriptions.
+  useLayoutEffect(() => {
     stripStaticDefaults();
   }, []);
 

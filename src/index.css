@@ -252,6 +252,58 @@ body::before {
   text-transform: uppercase;
 }
 
+/* The County Post Classifieds in the navigation, marked with the County Post logo. */
+.nav-link-icon {
+  width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  vertical-align: -4px;
+  object-fit: contain;
+}
+
+.wordmark-taglines {
+  display: block;
+}
+
+/*
+ * Under the national map, which is shorter than the logo, Watch News Now lines
+ * up with the tagline: the logo and the map share a first row, the tagline and
+ * the button a second. County maps run taller, so county headers keep the
+ * button straight under the map.
+ */
+@media (min-width: 721px) {
+  /* The second row takes any extra height from the copy in the middle, so the tagline stays under the logo. */
+  .masthead-stage-national {
+    grid-template-rows: auto 1fr;
+  }
+
+  .masthead-stage-national > * {
+    grid-row: 1 / span 2;
+  }
+
+  .masthead-stage-national > .wordmark,
+  .masthead-stage-national > .masthead-map-column {
+    display: grid;
+    grid-template-rows: subgrid;
+    align-items: start;
+    row-gap: 6px;
+  }
+
+  .masthead-stage-national > .wordmark {
+    justify-items: center;
+  }
+
+  .masthead-stage-national .wordmark-taglines > .wordmark-tagline:first-child {
+    margin-top: 0;
+  }
+}
+
+/* The second line under the tagline: the site's three reaches. */
+.wordmark-tagline-reach {
+  margin-top: 2px;
+  letter-spacing: 0.14em;
+}
+
 .masthead-has-hero .masthead-hero h1 {
   width: fit-content;
   max-width: 100%;
@@ -290,11 +342,19 @@ body::before {
   margin-bottom: 0.75em;
 }
 
+/* The buttons wrap onto another row rather than squeeze their labels, or run off the edge beside the logo. */
 .nav {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
   align-items: center;
+}
+
+@media (min-width: 721px) {
+  .nav-link {
+    white-space: nowrap;
+  }
 }
 
 .nav-link {
@@ -349,189 +409,6 @@ body::before {
 
 .menu-toggle:hover {
   background: var(--news-red);
-}
-
-.scroll-top {
-  position: fixed;
-  right: clamp(14px, 2.5vw, 32px);
-  bottom: clamp(14px, 2.5vw, 32px);
-  z-index: 20;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 52px;
-  min-height: 52px;
-  justify-content: center;
-  border: 2px solid var(--white);
-  border-radius: 50%;
-  padding: 8px 10px;
-  background: var(--ink);
-  color: var(--white);
-  font-family: "Roboto Mono", monospace;
-  font-size: 11px;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(12px);
-  transition: opacity 160ms ease, transform 160ms ease, background 160ms ease;
-}
-
-.scroll-top-visible {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0);
-}
-
-.scroll-top:hover {
-  background: var(--news-red);
-}
-
-.scroll-top span:first-child {
-  font-size: 18px;
-  line-height: 1;
-}
-
-/* Phones: the corner button opens the jump menu rather than only scrolling up. */
-.scroll-top.page-jump-toggle {
-  min-width: 0;
-  border-radius: 999px;
-  padding: 6px 14px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.page-jump-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 90;
-  border: 0;
-  padding: 0;
-  background: rgba(0, 0, 0, 0.45);
-  cursor: default;
-}
-
-.page-jump-menu {
-  position: fixed;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 91;
-  max-height: min(80dvh, 640px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  border-top: 5px solid var(--news-blue);
-  padding: 0 14px calc(16px + env(safe-area-inset-bottom));
-  background: var(--page);
-  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.35);
-}
-
-.page-jump-header {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: 0 -14px 12px;
-  padding: 8px 14px;
-  background: linear-gradient(90deg, var(--news-blue-dark), var(--news-blue));
-  color: var(--white);
-}
-
-.page-jump-header p {
-  margin: 0;
-  font-family: "Playfair Display", "Libre Baskerville", serif;
-  font-size: 19px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.page-jump-close {
-  min-width: 40px;
-  min-height: 40px;
-  border: 1px solid var(--white);
-  padding: 0;
-  background: transparent;
-  color: var(--white);
-  cursor: pointer;
-  font-size: 24px;
-  line-height: 1;
-}
-
-.page-jump-top {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  min-height: 44px;
-  border: 2px solid var(--ink);
-  background: var(--ink);
-  color: var(--white);
-  cursor: pointer;
-  font-family: "Roboto Mono", monospace;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.page-jump-group {
-  margin-top: 14px;
-}
-
-.page-jump-group h2 {
-  margin: 0 0 6px;
-  color: var(--muted);
-  font-family: "Roboto Mono", monospace;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  line-height: 1.3;
-  text-transform: uppercase;
-}
-
-.page-jump-group ul {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.page-jump-group li {
-  display: flex;
-  min-width: 0;
-}
-
-.page-jump-group a,
-.page-jump-group button {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  min-height: 40px;
-  border: 1px solid var(--border);
-  padding: 6px 8px;
-  background: linear-gradient(#f8f8f6, #e4e4e0);
-  color: var(--ink);
-  cursor: pointer;
-  font-family: "Roboto Mono", monospace;
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  line-height: 1.25;
-  text-align: left;
-  text-decoration: none;
-  text-transform: uppercase;
-}
-
-.page-jump-group a.active,
-.page-jump-group button[aria-current] {
-  background: #111;
-  color: #f4f4f1;
 }
 
 .context-nav {
@@ -873,10 +750,12 @@ body::before {
   height: var(--tradingview-ticker-height);
 }
 
-.market-ticker-widget tv-ticker-tape {
+.market-ticker-frame {
   display: block;
   width: 100%;
   height: var(--tradingview-ticker-height);
+  border: 0;
+  background: transparent;
 }
 
 .crypto-ticker-widget {
@@ -1699,14 +1578,27 @@ body::before {
 
 .hero-card,
 .card,
+/* Every desk opens under a blue bar with a red pinstripe, the masthead's colours. */
 .section {
   border: 1px solid var(--border);
+  border-top: 4px solid var(--news-blue);
   padding: 18px 18px 24px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(243, 243, 241, 0.92)),
     repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.018) 0, rgba(0, 0, 0, 0.018) 1px, transparent 1px, transparent 5px),
     var(--panel);
-  box-shadow: var(--soft-shadow);
+  box-shadow: inset 0 2px 0 var(--news-red), 0 16px 40px rgba(0, 0, 0, 0.14);
+}
+
+/* A desk's heading sits between paired blue and red rules, under a red label. */
+.section > .section-heading .section-heading-rule {
+  height: 5px;
+  border-top: 0;
+  background: linear-gradient(to bottom, var(--news-blue) 0 2px, transparent 2px 3px, var(--news-red) 3px 5px);
+}
+
+.section > .section-heading .kicker {
+  color: var(--news-red);
 }
 
 .hero-card {
@@ -1753,6 +1645,29 @@ body::before {
   gap: 8px;
   width: min(100%, 280px);
   margin-top: 4px;
+}
+
+/* The edition map, or the logo where a page has no map, with Watch News Now under it. */
+.masthead-map-column .edition-map-shell {
+  margin-bottom: 0;
+}
+
+/* No min-width: 0 here. The logo's width must hold this column open, or the nav spreads over it. */
+.masthead-brand {
+  display: grid;
+  justify-items: center;
+  justify-self: start;
+  align-content: start;
+  gap: 2px;
+}
+
+.masthead-map-column {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  align-self: start;
+  gap: 2px;
+  min-width: 0;
 }
 
 .edition-map {
@@ -2936,7 +2851,7 @@ main + .ad-slot-inline {
 .feed-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 12px;
+  gap: 14px;
   min-width: 0;
 }
 
@@ -2952,35 +2867,52 @@ main + .ad-slot-inline {
 
 
 
+/* Story cards: white for reading, with a blue top edge that turns red under the pointer. */
 .feed-card {
-  border: 1px solid var(--border);
+  border: 1px solid #b9b9b4;
+  border-top: 3px solid var(--news-blue);
   display: flex;
   flex-direction: column;
-  padding: 12px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(235, 235, 232, 0.9)),
-    var(--panel-soft);
+  padding: 14px;
+  background: var(--white);
   min-height: 160px;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.76) inset;
-  transition: background 140ms ease, transform 140ms ease, box-shadow 140ms ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: border-color 140ms ease, transform 140ms ease, box-shadow 140ms ease;
 }
 
-.feed-card:hover {
-  background: #f5f5f3;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.85) inset, 0 8px 20px rgba(0, 0, 0, 0.08);
-  transform: translateY(-1px);
+/* Pointer devices only: a tap on a phone would otherwise leave the card lifted. */
+@media (hover: hover) {
+  .feed-card:hover {
+    border-top-color: var(--news-red);
+    box-shadow: 0 10px 24px rgba(8, 38, 78, 0.12);
+    transform: translateY(-1px);
+  }
+
+  .feed-card:hover .feed-image {
+    filter: none;
+    transform: scale(1.025);
+  }
 }
 
+.feed-card:focus-within {
+  border-top-color: var(--news-red);
+}
+
+/* Advertisements keep a neutral edge, so they never pass for stories. */
 .feed-ad-card {
   position: relative;
   align-items: center;
   justify-content: center;
   min-height: 260px;
+  border-top-color: #d6d6d1;
   padding: 4px;
+  background: var(--panel-soft);
   overflow: hidden;
 }
 
-.feed-ad-card:hover {
+.feed-card.feed-ad-card:hover,
+.feed-card.feed-ad-card:focus-within {
+  border-top-color: #d6d6d1;
   background: #f5f5f3;
 }
 
@@ -3017,7 +2949,7 @@ main + .ad-slot-inline {
 }
 
 .feed-image-link {
-  border: 1px solid var(--border);
+  border: 0;
   background: #d9d9d6;
 }
 
@@ -3030,16 +2962,12 @@ main + .ad-slot-inline {
   transition: transform 180ms ease, filter 180ms ease;
 }
 
-.feed-card:hover .feed-image {
-  filter: grayscale(1) contrast(1.18);
-  transform: scale(1.025);
-}
-
 .feed-source-mark {
   min-height: 96px;
-  border: 1px solid var(--ink);
+  border: 0;
+  border-bottom: 3px solid var(--news-red);
   padding: 14px;
-  background: var(--ink);
+  background: linear-gradient(135deg, var(--news-blue-dark), var(--news-blue) 70%, #174f93);
   color: var(--white);
   font-family: "Libre Baskerville", Georgia, serif;
   font-size: clamp(14px, 1.6vw, 18px);
@@ -3070,21 +2998,35 @@ main + .ad-slot-inline {
 }
 
 .feed-title {
+  font-size: 18px;
   font-weight: 700;
+  line-height: 1.32;
   text-decoration: none;
   color: var(--ink);
 }
 
-.feed-title:hover {
+.feed-title:hover,
+.feed-title:focus-visible {
+  color: var(--news-blue);
   text-decoration: underline;
+  text-decoration-color: var(--news-red);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
 }
 
+/* The date and the link to the original sit together at the card's foot, so a row of cards lines up. */
 .feed-meta {
-  margin: 6px 0;
+  margin: auto 0 0;
+  border-top: 1px solid #e4e4e0;
+  padding-top: 10px;
   font-family: "Roboto Mono", monospace;
   font-size: 12px;
   letter-spacing: 0.06em;
   color: var(--muted);
+}
+
+.feed-card-body > .feed-title {
+  margin-bottom: 12px;
 }
 
 .feed-description {
@@ -3416,13 +3358,14 @@ main + .ad-slot-inline {
   cursor: pointer;
 }
 
+/* Above the corner jump button (see PageJumpMenu.css), which stays reachable. */
 .bookmark-toast {
   position: fixed;
   z-index: 80;
   right: 16px;
-  bottom: max(16px, env(safe-area-inset-bottom));
+  bottom: calc(clamp(14px, 2.5vw, 32px) + 58px + env(safe-area-inset-bottom));
   width: min(330px, calc(100vw - 32px));
-  max-height: min(560px, calc(100dvh - 40px));
+  max-height: min(560px, calc(100dvh - 120px));
   overflow-y: auto;
   overscroll-behavior: contain;
   border: 1px solid var(--border);
@@ -3547,10 +3490,11 @@ main + .ad-slot-inline {
     padding: 4px 2px 2px;
   }
 
-  .masthead-stage .edition-map-shell {
+  .masthead-stage .masthead-map-column {
     grid-area: map;
     justify-self: center;
     width: min(100%, 180px);
+    gap: 2px;
   }
 
   .masthead-hero > .muted {
@@ -3624,15 +3568,6 @@ main + .ad-slot-inline {
   }
 
   .masthead-kicker {
-    font-size: 9px;
-  }
-
-  .scroll-top {
-    right: 12px;
-    bottom: 12px;
-    min-width: 46px;
-    min-height: 46px;
-    padding: 6px;
     font-size: 9px;
   }
 
@@ -4959,7 +4894,13 @@ main,
   article.feed-card .feed-meta {
     grid-area: meta;
     margin: 4px 0 0;
+    border-top: 0;
+    padding-top: 0;
     font-size: 10px;
+  }
+
+  article.feed-card .feed-card-body > .feed-title {
+    margin-bottom: 0;
   }
 
   article.feed-card .feed-origin-link {
@@ -5211,13 +5152,22 @@ main,
    link names its destination, so an aggregated story can never be mistaken for
    County Post reporting. */
 .feed-publisher {
-  margin: 0 0 4px;
+  margin: 0 0 6px;
   font-family: "Roboto Mono", monospace;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--ink);
+  color: var(--news-blue);
+}
+
+.feed-publisher::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin: 0 7px 1px 0;
+  background: var(--news-red);
 }
 
 .feed-publisher-original {
@@ -5226,17 +5176,20 @@ main,
 
 .feed-origin-link {
   display: inline-block;
+  align-self: flex-start;
   margin-top: 6px;
   font-family: "Roboto Mono", monospace;
   font-size: 11px;
+  font-weight: 600;
   letter-spacing: 0.04em;
-  color: var(--ink);
+  color: var(--news-red-dark);
   text-decoration: none;
   border-bottom: 1px solid currentColor;
 }
 
-.feed-origin-link:hover {
-  opacity: 0.7;
+.feed-origin-link:hover,
+.feed-origin-link:focus-visible {
+  color: var(--news-blue);
 }
 
 /* Available to assistive technology and to crawlers, absent from the layout.
@@ -5257,7 +5210,8 @@ main,
 /* Placeholder thumbnails name the originating publisher; County Post originals
    are the only ones that carry this paper's own mark. */
 .feed-source-mark-original {
-  border: 1px solid var(--news-red, #9b1c1c);
+  border-bottom-color: var(--news-blue);
+  background: linear-gradient(135deg, var(--news-red-dark), var(--news-red) 70%, #c7292c);
 }
 
 /* Long-form legal pages: readable measure, clear section rhythm. */

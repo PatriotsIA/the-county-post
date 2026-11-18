@@ -1,0 +1,13 @@
+The County Post Classifieds house ads
+Made November 18, 2026 from the owner-supplied Classifieds logo ("Put it on the Post!", src/assets/county-post-classifieds-logo.webp)
+and the masthead's colours,
+by scripts/render-classifieds-ads.mjs (Chromium at 2× scale, then ImageMagick to WebP at quality 90).
+- county-post-classifieds-banner.webp: 1960 × 600 (980:300), the banner slot
+- county-post-classifieds-square.webp: 600 × 600, the inline and in-feed slots
+The copy is the same in every edition; each placement links to that edition's marketplace (national, state or county).
+Re-run the script after changing the copy or the logo.
+
+The Classifieds logo is the marketplace's own (county-classifieds repository, commit 5329b2f, November 9, 2026,
+"Use owner-supplied Classifieds logo throughout the marketplace"): brand/source/classifieds-logo-20261109.png at
+1254 × 1254, copied here as its 768 × 768 and 256 × 256 web versions. The owner asked on November 18 for it to be
+used for the Classifieds logos on The County Post.

@@ -1,0 +1,176 @@
+/* The County Post Classifieds explained: one slide at a time, in the masthead's colours. */
+.explainer-shell {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.explainer-track {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  list-style: none;
+}
+
+.explainer-track::-webkit-scrollbar {
+  display: none;
+}
+
+.explainer-slide {
+  display: grid;
+  flex: 0 0 100%;
+  grid-template-columns: 150px minmax(0, 1fr);
+  align-items: center;
+  gap: 24px;
+  min-height: 210px;
+  border: 3px solid var(--news-red);
+  padding: 20px 28px;
+  background: linear-gradient(120deg, var(--news-blue-dark), var(--news-blue) 60%, #174f93);
+  color: var(--white);
+  scroll-snap-align: start;
+}
+
+.explainer-logo {
+  width: 150px;
+  height: auto;
+}
+
+.explainer-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.explainer-copy p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.explainer-kicker {
+  color: rgba(255, 255, 255, 0.78);
+  font-family: "Roboto Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.explainer-copy h3 {
+  margin: 0;
+  color: var(--white);
+  font-family: "Playfair Display", "Libre Baskerville", serif;
+  font-size: clamp(22px, 2.6vw, 30px);
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+
+.explainer-action {
+  margin-top: 4px;
+}
+
+.explainer-action a,
+.explainer-action button {
+  display: inline-block;
+  border: 2px solid var(--white);
+  padding: 8px 14px;
+  background: var(--news-red);
+  box-shadow: none;
+  color: var(--white);
+  cursor: pointer;
+  font-family: "Roboto Mono", monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.explainer-action a:hover,
+.explainer-action button:hover {
+  background: var(--news-red-dark);
+  filter: none;
+  transform: none;
+}
+
+.explainer-action a:focus-visible,
+.explainer-action button:focus-visible {
+  outline: 3px solid var(--white);
+  outline-offset: 2px;
+}
+
+.explainer-arrow {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--border);
+  padding: 0;
+  background: linear-gradient(#f8f8f6, #e4e4e0);
+  box-shadow: none;
+  color: var(--ink);
+  font-size: 24px;
+  line-height: 1;
+}
+
+.explainer-arrow:hover {
+  border-color: var(--news-red);
+  filter: none;
+  transform: none;
+}
+
+.explainer-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.explainer-dots button {
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--news-blue);
+  border-radius: 50%;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.explainer-dots button[aria-current] {
+  background: var(--news-blue);
+}
+
+.explainer-dots button:hover {
+  filter: none;
+  transform: none;
+}
+
+@media (max-width: 720px) {
+  .explainer-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .explainer-arrow {
+    display: none;
+  }
+
+  .explainer-slide {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    gap: 12px;
+    padding: 18px 16px;
+    text-align: center;
+  }
+
+  .explainer-logo {
+    width: 96px;
+  }
+
+  .explainer-dots button {
+    width: 14px;
+    height: 14px;
+  }
+}

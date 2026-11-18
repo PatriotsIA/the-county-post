@@ -123,6 +123,7 @@ test("Market Desk shows the complete count and preview beneath alerts, retaining
     droughtCondition: { category: "D1", label: "Moderate Drought", areaPercent: 40, mapDate: "2026-09-08" },
   } }));
   await page.goto("/texas/harris", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: /Market desk/ }).click();
   const ticker = page.locator(".county-notice-ticker");
   await expect(ticker).toBeVisible();
   await expect(ticker).toContainText("240 public notices");
@@ -156,14 +157,17 @@ test("Market Desk count distinguishes empty, unavailable and unconnected county 
   const empty = response("harris", 0);
   await page.route("**/public-notices?*", route => route.fulfill({ json: empty }));
   await page.goto("/texas/harris", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: /Market desk/ }).click();
   await expect(page.locator(".county-notice-ticker")).toContainText("0 public notices");
   await expect(page.locator(".county-notice-ticker")).toContainText("No recent notices in connected sources");
   const unavailable = response("bell", 0); unavailable.meta.status = "unavailable";
   await page.route("**/public-notices?*", route => route.fulfill({ json: unavailable }));
   await page.goto("/texas/bell", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: /Market desk/ }).click();
   await expect(page.locator(".county-notice-ticker")).toContainText("Notices unavailable");
   await expect(page.locator(".county-notice-ticker")).not.toContainText("0 public notices");
   await page.goto("/florida/jefferson", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: /Market desk/ }).click();
   await expect(page.locator(".county-notice-ticker")).toContainText("County sources are not connected yet");
 });
 

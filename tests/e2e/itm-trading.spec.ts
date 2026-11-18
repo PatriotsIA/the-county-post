@@ -28,6 +28,8 @@ test("editions and ITM tools share the same spot prices and browser cache", asyn
   page.on("request", request => { if (request.url().includes("/markets/metals")) requests++; });
   for (const path of ["/", "/texas", "/texas/randall"]) {
     await page.goto(path);
+    // The Market desk starts collapsed on every page.
+    await page.getByRole('button', { name: /Market desk/ }).click();
     await expect(page.locator('.nav a[href="/itm-trading"]')).toHaveText("ITM Trading");
     await expect(page.locator('.metals-desk-link')).toHaveAttribute("href", "/itm-trading");
     await expect(page.getByRole('complementary', { name: 'Metal spot prices', exact: true })).toBeVisible();
@@ -35,7 +37,9 @@ test("editions and ITM tools share the same spot prices and browser cache", asyn
     await expect(page.locator('.metals-spot-quotes li')).toHaveCount(4);
     await expect(page.locator('.metals-spot-quotes a[href="/itm-trading"]')).toHaveCount(4);
     await expect(page.locator('.precious-metals-ticker tv-ticker-tape')).toHaveCount(0);
-    await expect(page.locator('#tradingview-ticker-tape-script')).toHaveCount(1);
+    // The ticker runs in its own frame, so TradingView's layout work stays out of the page.
+    await expect(page.locator('tv-ticker-tape')).toHaveCount(0);
+    await expect(page.frameLocator('.market-ticker-frame').locator('tv-ticker-tape')).toHaveCount(1);
   }
   expect(requests).toBe(3);
   await page.locator('.metals-spot-quotes a').first().click();
@@ -89,11 +93,11 @@ test("mobile defers both feeds and metals remain available during a TradingView 
   await toggle.click();
   await page.route(`${tickerScriptUrl}*`, route => route.fulfill({ contentType: 'application/javascript', body: tickerModule }));
   await toggle.click();
-  await expect(page.locator('tv-ticker-tape')).toHaveCount(1);
+  await expect(page.frameLocator('.market-ticker-frame').locator('tv-ticker-tape')).toHaveCount(1);
   expect(scriptRequests).toBe(2);
   expect(metalsRequests).toBe(1);
   await toggle.click();
-  await expect(page.locator('tv-ticker-tape')).toHaveCount(0);
+  await expect(page.locator('.market-ticker-frame')).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 

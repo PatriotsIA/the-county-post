@@ -1,0 +1,86 @@
+/* Watch News Now in the masthead, under the map or the logo. It always pulses; a red Live tag joins it while a featured channel is live. */
+.watch-news-button {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 8px;
+  width: min(100%, 280px);
+  min-height: 40px;
+  border: 2px solid var(--white);
+  padding: 6px 12px;
+  background: rgba(8, 38, 78, 0.55);
+  color: var(--white);
+  font-family: "Roboto Mono", monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  line-height: 1.25;
+  text-align: center;
+  text-decoration: none;
+  text-transform: uppercase;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.watch-news-button:hover {
+  background: var(--white);
+  color: var(--news-blue);
+}
+
+.watch-news-button:focus-visible {
+  outline: 3px solid var(--white);
+  outline-offset: 3px;
+}
+
+.watch-news-play {
+  font-size: 10px;
+}
+
+.watch-news-live-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 6px;
+  background: var(--news-red);
+  color: var(--white);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+
+.watch-news-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--white);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .watch-news-button {
+    animation: watch-news-pulse 1.8s ease-out infinite;
+  }
+
+  .watch-news-dot {
+    animation: watch-news-blink 1.6s ease-in-out infinite;
+  }
+}
+
+@keyframes watch-news-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); }
+  70% { box-shadow: 0 0 0 12px rgba(255, 255, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+}
+
+@keyframes watch-news-blink {
+  50% { opacity: 0.35; }
+}
+
+@media (max-width: 720px) {
+  .watch-news-button {
+    min-height: 34px;
+    padding: 4px 8px;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+  }
+}

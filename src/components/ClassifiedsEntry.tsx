@@ -1,9 +1,11 @@
 import type { CountySite } from "../data/counties";
-import { countyClassifiedsUrl } from "../lib/classifieds";
+import { countyAdKey } from "../data/ads";
+import { useClassifiedsLink } from "../lib/useClassifiedsLink";
 
 export function ClassifiedsEntry({ county }: { county: CountySite }) {
-  const browse = countyClassifiedsUrl(county.fips);
-  const post = countyClassifiedsUrl(county.fips, "post");
+  const editionKey = countyAdKey(county.state.slug, county.slug);
+  const browse = useClassifiedsLink("link", { editionKey });
+  const post = useClassifiedsLink("link", { editionKey, action: "post" });
   if (!browse || !post) return null;
   return (
     <section className="section" aria-labelledby="classifieds-market-title">

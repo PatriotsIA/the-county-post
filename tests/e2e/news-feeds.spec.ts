@@ -396,6 +396,7 @@ test("county feeds retain separately dated recurring local reports", async ({ pa
 
 test("county ticker links current conditions and only shows active alerts", async ({ page }) => {
   await page.goto("/arkansas/polk");
+  await page.getByRole("button", { name: /Market desk/i }).click();
 
   const weatherTicker = page.locator(".market-weather-weather-bar");
   const weatherLink = weatherTicker.getByRole("link", { name: /Mena.*72°F.*Clear.*Wind 8 mph/i });
@@ -410,12 +411,14 @@ test("county ticker links current conditions and only shows active alerts", asyn
   await expect(page.getByRole("alert").filter({ hasText: "Flood Watch" })).toBeVisible();
 
   await page.goto("/texas/briscoe");
+  await page.getByRole("button", { name: /Market desk/i }).click();
   await expect(page.locator(".market-weather-weather-bar")).toContainText("Silverton");
   await expect(page.locator(".county-weather-alert")).toHaveCount(0);
 });
 
 test("Potter County shows drought conditions without mislabeling them as an NWS alert", async ({ page }) => {
   await page.goto("/texas/potter");
+  await page.getByRole("button", { name: /Market desk/i }).click();
 
   await expect(page.locator(".county-weather-alert[role='alert']")).toHaveCount(0);
   const droughtNotice = page.locator(".county-drought-condition");
@@ -684,6 +687,9 @@ test("market navigation and county layouts remain usable at 320px and desktop wi
 
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.reload();
+  // Collapsed on every page, open on request.
+  await expect(page.getByRole("button", { name: /Market desk/i })).toHaveAttribute("aria-expanded", "false");
+  await page.getByRole("button", { name: /Market desk/i }).click();
   await expect(page.getByRole("button", { name: /Market desk/i })).toHaveAttribute("aria-expanded", "true");
   await expect(page.locator(".market-panel-content")).toBeVisible();
   await expect(page.locator(".county-edition-hero")).toBeVisible();
@@ -726,7 +732,8 @@ test("county feeds stay county-only, sort newest first, and keep batched section
 
   await expect(page.getByRole("heading", { level: 1, name: /Randall County/i })).toBeVisible();
   await expect(page.getByText("County stories only")).toBeVisible();
-  await expect(page.getByText("Every source. One place.")).toBeVisible();
+  // County headers leave out the national lens, to give the sponsor and the map more room.
+  await expect(page.locator(".county-edition-hero").getByText("Every source. One place.")).toHaveCount(0);
 
   const localSection = page.locator("section", { has: page.getByRole("heading", { name: "Local headlines" }) });
   const localCards = localSection.locator(".feed-card");
@@ -1306,7 +1313,38 @@ test("White House News follows Elections in the national and state navs", async 
   }
 });
 
-test("phones get compact feed cards and a jump menu for the page's feeds and menus", async ({ page }) => {
+test("article feeds give every fourth ad slot to the Classifieds square at every level, linked to that level and tagged with the page", async ({ page }) => {
+  const origin = process.env.VITE_CLASSIFIEDS_ORIGIN || "https://classifieds.thecountypost.com";
+  for (const { path, destination } of [
+    { path: "/", destination: `${origin}/` },
+    { path: "/texas", destination: `${origin}/from-county-post/state/48/` },
+    { path: "/texas/randall", destination: `${origin}/from-county-post/county/48381/` },
+  ]) {
+    await page.goto(path);
+    const classifieds = page.locator('a.feed-ad-card[href*="utm_campaign=classifieds"]');
+    await expect(classifieds.first(), path).toBeAttached();
+    const target = new URL(destination);
+    Object.entries({ utm_source: "thecountypost", utm_medium: "feed-ad", utm_campaign: "classifieds", utm_content: path }).forEach(([key, value]) => target.searchParams.set(key, value));
+    await expect(classifieds.first(), path).toHaveAttribute("href", target.toString());
+    await expect(classifieds.first().locator("img"), path).toHaveAttribute("alt", /The County Post Classifieds/);
+
+    // In each feed the Classifieds square holds one slot in four, the same slot of every four.
+    const feeds = await page.locator("section[data-page-jump]").evaluateAll((sections) => sections.map((section) => ({
+      feed: section.getAttribute("data-page-jump"),
+      slots: [...section.querySelectorAll(".feed-ad-card")].map((card) => (card.getAttribute("href")?.includes("utm_campaign=classifieds") ? "C" : "P")).join(""),
+    })));
+    const checked = feeds.filter(({ slots }) => slots.length >= 4);
+    expect(checked.length, path).toBeGreaterThan(0);
+    for (const { feed, slots } of checked) {
+      const first = slots.indexOf("C");
+      expect(first, `${path} ${feed}: ${slots}`).toBeGreaterThanOrEqual(0);
+      expect(first, `${path} ${feed}: ${slots}`).toBeLessThan(4);
+      expect(slots, `${path} ${feed}`).toBe(Array.from(slots, (_, index) => (index % 4 === first % 4 ? "C" : "P")).join(""));
+    }
+  }
+});
+
+test("phones get compact feed cards and a jump menu for the page's feeds and menus, and desktops a corner panel", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/texas/randall");
   await page.getByRole("button", { name: "Dismiss bookmark reminder" }).click();
@@ -1335,7 +1373,63 @@ test("phones get compact feed cards and a jump menu for the page's feeds and men
   await menu.getByRole("button", { name: "Back to top" }).click();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeLessThan(10);
 
+  // Desktops keep the same button, opening a panel over the corner instead of a sheet.
   await page.setViewportSize({ width: 1280, height: 900 });
-  await expect(page.getByRole("button", { name: "Jump to" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Scroll to the top of the page" })).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Scroll to the top of the page" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Jump to" }).click();
+  const panel = (await menu.boundingBox())!;
+  expect(panel.width).toBeLessThan(1000);
+  expect(panel.x + panel.width).toBeGreaterThan(1280 - 40);
+  await expect(menu.locator(".page-jump-group").first().getByRole("button")).toHaveCount(9);
+  await menu.getByRole("button", { name: "Obituaries" }).click();
+  await expect(page.locator('[data-page-jump="Obituaries"] h2')).toBeInViewport();
+  await page.getByRole("button", { name: "Jump to" }).click();
+  await menu.getByRole("button", { name: "Back to top" }).click();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeLessThan(10);
+});
+
+test("the desktop corner panel finds a county like the front page's red search; phones keep their sheet as it was", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/texas/randall");
+  await page.getByRole("button", { name: "Dismiss bookmark reminder" }).click();
+  const toggle = page.getByRole("button", { name: "Jump to" });
+  const menu = page.getByRole("dialog", { name: "Jump to" });
+
+  await toggle.click();
+  const finder = menu.locator(".page-jump-county-finder");
+  await expect(finder.getByRole("heading", { name: "Find your county" })).toBeVisible();
+  expect(await finder.evaluate((element) => getComputedStyle(element).borderTopColor)).toBe("rgb(168, 25, 29)");
+  const feedsHeading = menu.getByRole("heading", { name: "News feeds on this page" });
+  expect((await finder.boundingBox())!.y + (await finder.boundingBox())!.height).toBeLessThan((await feedsHeading.boundingBox())!.y);
+
+  const search = finder.getByRole("textbox", { name: "Search for a county or state" });
+  await search.fill("Potter");
+  await expect(finder.locator(".result-link")).toContainText(["Potter CountyCounty • Pennsylvania", "Potter CountyCounty • South Dakota", "Potter CountyCounty • Texas"]);
+  await finder.locator(".result-link", { hasText: "Texas" }).click();
+  await expect(page).toHaveURL(/\/texas\/potter$/);
+  await expect(menu).toHaveCount(0);
+
+  // Reopened while the chosen page is still rendering, the menu stays open once it has arrived.
+  await page.goto("/texas/randall");
+  await toggle.click();
+  await finder.getByRole("textbox", { name: "Search for a county or state" }).fill("Potter");
+  await finder.locator(".result-link", { hasText: "Texas" }).evaluate(async (link: HTMLElement) => {
+    link.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    document.querySelector<HTMLElement>(".page-jump-toggle")!.click();
+  });
+  await expect(page).toHaveURL(/\/texas\/potter$/);
+  await expect(page).toHaveTitle(/Potter County/);
+  await expect(menu).toBeVisible();
+
+  // Search goes to the best match, an exact state name first.
+  await finder.getByRole("textbox", { name: "Search for a county or state" }).fill("Texas");
+  await finder.getByRole("textbox", { name: "Search for a county or state" }).press("Enter");
+  await expect(page).toHaveURL(/\/texas$/);
+  await expect(menu).toHaveCount(0);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await toggle.click();
+  await expect(menu).toBeVisible();
+  await expect(menu.locator(".page-jump-county-finder")).toHaveCount(0);
 });

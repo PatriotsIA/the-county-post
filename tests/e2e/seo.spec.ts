@@ -30,6 +30,8 @@ test("every route carries exactly one title, description, and canonical", async 
 
   for (const route of routes) {
     await page.goto(route);
+    // index.html's defaults stay until the route's Seo mounts; judge the route's own tags.
+    await expect(page.locator("[data-seo-default]"), `${route} static defaults removed`).toHaveCount(0);
     const meta = await readHead(page);
 
     expect(meta.titleCount, `${route} title count`).toBe(1);

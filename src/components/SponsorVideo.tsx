@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { AdCreative } from "../data/ads";
 
 /** Load a player only after the reader presses play; stop it when it leaves view. */
-export function VideoAd({ ad, className = "", onPlaybackChange }: {
+export function SponsorVideo({ ad, className = "", onPlaybackChange }: {
   ad: AdCreative;
   className?: string;
   onPlaybackChange?: (playing: boolean) => void;
@@ -36,7 +36,6 @@ export function VideoAd({ ad, className = "", onPlaybackChange }: {
             src={ad.video.embedUrl}
             title={`${ad.name}: ${ad.video.title}`}
             allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-            allowFullScreen
             referrerPolicy="strict-origin-when-cross-origin"
           />
         ) : (

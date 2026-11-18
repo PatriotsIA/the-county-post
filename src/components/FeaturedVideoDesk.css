@@ -1,0 +1,392 @@
+/* Featured Videos desk: sits under the Market desk and shares its toggle bar. */
+.video-desk {
+  margin: -4px 0 10px;
+}
+
+.video-desk-toggle > span:first-child {
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+
+.video-desk-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 1px 7px;
+  background: var(--news-red);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  color: var(--white);
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.video-desk-live-badge > span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--white);
+  animation: video-desk-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes video-desk-pulse {
+  50% { opacity: 0.25; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .video-desk-live-badge > span { animation: none; }
+}
+
+.video-desk-content {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-top: 0;
+  padding: 12px;
+  background: var(--panel);
+}
+
+.video-desk-content[hidden] {
+  display: none;
+}
+
+.video-desk-player {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr);
+  gap: 14px;
+  align-items: start;
+  margin: 0;
+}
+
+/* YouTube's smallest allowed player is 200 × 200; narrower than 16:9 allows, the picture letterboxes. */
+.video-desk-frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  min-height: 200px;
+  background: #101010;
+}
+
+.video-desk-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.video-desk-player figcaption {
+  display: grid;
+  gap: 8px;
+  line-height: 1.4;
+}
+
+.video-desk-player figcaption strong {
+  font-size: 17px;
+}
+
+.video-desk-player-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-family: "Roboto Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.video-desk-live-tag {
+  padding: 1px 6px;
+  background: var(--news-red);
+  color: var(--white);
+  font-weight: 700;
+}
+
+.video-desk-player-actions,
+.video-desk-channels {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin: 0;
+  font-family: "Roboto Mono", monospace;
+  font-size: 11px;
+}
+
+.video-desk-player-actions a,
+.video-desk-channels a {
+  color: var(--news-blue);
+  text-decoration: underline;
+}
+
+.video-desk-player-actions button {
+  min-height: 32px;
+  border: 1px solid var(--ink);
+  padding: 4px 10px;
+  background: var(--white);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.video-desk-player-actions button:hover,
+.video-desk-player-actions button[aria-pressed="true"] {
+  background: var(--news-blue);
+  color: var(--white);
+}
+
+.video-desk-carousel {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.video-desk-carousel .ad-carousel-arrow:disabled {
+  border-color: var(--rule);
+  background: var(--panel-soft);
+  color: var(--muted);
+  cursor: default;
+  opacity: 0.55;
+}
+
+.video-desk-carousel .ad-carousel-arrow[hidden] {
+  display: none;
+}
+
+.video-desk-carousel-fits {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.video-desk-track {
+  display: flex;
+  gap: 12px;
+  margin: 0;
+  padding: 2px;
+  overflow-x: auto;
+  list-style: none;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+}
+
+.video-desk-track > li {
+  flex: 0 0 240px;
+  scroll-snap-align: start;
+}
+
+.video-desk-card {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  letter-spacing: normal;
+  text-align: left;
+  text-transform: none;
+  cursor: pointer;
+}
+
+.video-desk-card:focus-visible {
+  outline: 3px solid var(--news-red);
+  outline-offset: 3px;
+}
+
+.video-desk-thumb {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #101010;
+}
+
+.video-desk-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 160ms ease;
+}
+
+.video-desk-card:hover .video-desk-thumb img {
+  transform: scale(1.03);
+}
+
+.video-desk-thumb .video-ad-play-icon {
+  width: 38px;
+  height: 38px;
+  font-size: 15px;
+}
+
+.video-desk-card[aria-pressed="true"] .video-desk-thumb {
+  outline: 3px solid var(--news-red);
+  outline-offset: -3px;
+}
+
+.video-desk-thumb-live {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  font-family: "Roboto Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.video-desk-card-live .video-desk-thumb {
+  outline: 2px solid var(--news-red);
+  outline-offset: -2px;
+}
+
+/* The same desk among the news feeds, under a feed-style heading. */
+.video-feed-content {
+  display: grid;
+  gap: 12px;
+}
+
+.video-feed-content[hidden] {
+  display: none;
+}
+
+.video-feed-live {
+  margin: 4px 0 0;
+}
+
+.video-desk-duration {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  padding: 0 5px;
+  background: rgba(0, 0, 0, 0.82);
+  color: var(--white);
+  font-family: "Roboto Mono", monospace;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.video-desk-card-meta {
+  color: var(--muted);
+  font-family: "Roboto Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.video-desk-card-title {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+@media (max-width: 720px) {
+  .video-desk-content {
+    padding: 10px;
+  }
+
+  .video-desk-player {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .video-desk-carousel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .video-desk-carousel .ad-carousel-arrow {
+    display: none;
+  }
+
+  .video-desk-track > li {
+    flex-basis: 72%;
+  }
+}
+
+/* Pop-out: a button on every card, a tag on the card that is playing there,
+   and a placeholder where a page player stepped aside for it. */
+.video-desk-track > li {
+  position: relative;
+}
+
+.video-desk-card-popout {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  padding: 0;
+  background: rgba(8, 38, 78, 0.86);
+  box-shadow: none;
+  color: var(--white);
+  cursor: pointer;
+}
+
+.video-desk-card-popout:hover {
+  filter: none;
+  transform: none;
+}
+
+.video-desk-card-popout:hover,
+.video-desk-card-popout:focus-visible {
+  background: var(--news-red);
+}
+
+.video-desk-card-popout:focus-visible {
+  outline: 3px solid var(--news-red);
+  outline-offset: 2px;
+}
+
+.video-desk-docked-tag {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  padding: 1px 6px;
+  background: var(--news-blue);
+  color: var(--white);
+  font-family: "Roboto Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.video-desk-frame-docked {
+  display: grid;
+  place-items: center;
+}
+
+.video-desk-docked-note {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin: 0;
+  color: var(--white);
+  font-family: "Roboto Mono", monospace;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.video-desk-docked-note button {
+  min-height: 32px;
+  border: 1px solid var(--white);
+  padding: 4px 12px;
+  background: transparent;
+  color: var(--white);
+  font: inherit;
+  cursor: pointer;
+}
+
+.video-desk-docked-note button:hover {
+  background: var(--news-red);
+}

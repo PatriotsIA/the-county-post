@@ -1,0 +1,484 @@
+/* Pop-out player: floats over the page; above the bookmark prompt, below the jump menu sheet. */
+.media-dock {
+  position: fixed;
+  z-index: 85;
+  display: grid;
+  /* Pinned columns: a long unwrapped title must not widen the window past its frame. */
+  grid-template-columns: minmax(0, 1fr);
+  box-sizing: border-box;
+  max-width: calc(100vw - 16px);
+  border: 2px solid var(--ink);
+  background: var(--panel);
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.82), 0 18px 48px rgba(0, 0, 0, 0.28);
+  color: var(--ink);
+  font-family: "Roboto Mono", monospace;
+  line-height: 1.35;
+}
+
+.media-dock-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 4px 0 2px;
+  background: linear-gradient(90deg, var(--news-blue-dark), var(--news-blue));
+  color: var(--white);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.media-dock-dragging .media-dock-bar {
+  cursor: grabbing;
+}
+
+/* The frame would swallow the pointer mid-drag. */
+.media-dock-dragging iframe {
+  pointer-events: none;
+}
+
+.media-dock-grip {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 32px;
+  color: rgba(255, 255, 255, 0.75);
+  cursor: grab;
+}
+
+.media-dock-grip:focus-visible,
+.media-dock-resize:focus-visible,
+.media-dock-button:focus-visible,
+.media-dock-queue button:focus-visible,
+.media-dock-foot a:focus-visible {
+  outline: 3px solid var(--news-red);
+  outline-offset: 1px;
+}
+
+.media-dock-heading {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.media-dock-channel {
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.media-dock-position {
+  flex: 0 0 auto;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.media-dock-live {
+  display: inline-block;
+  padding: 1px 6px;
+  background: var(--news-red);
+  color: var(--white);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.media-dock-window {
+  display: flex;
+  flex: 0 0 auto;
+}
+
+.media-dock-bar .media-dock-button {
+  color: var(--white);
+}
+
+.media-dock-bar .media-dock-button:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.media-dock-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+
+/* YouTube's smallest allowed player is 200 × 200; below 356 px wide the picture letterboxes. */
+.media-dock-frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  min-height: 200px;
+  background: #101010;
+}
+
+.media-dock-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.media-dock-body {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 8px 10px 6px;
+}
+
+.media-dock-title {
+  overflow: hidden;
+  margin: 0;
+  font-family: "Libre Baskerville", Georgia, serif;
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.media-dock-timeline {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 11px;
+}
+
+.media-dock-timeline-live {
+  display: flex;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.media-dock-time {
+  font-variant-numeric: tabular-nums;
+}
+
+.media-dock-scrubber {
+  width: 100%;
+  height: 18px;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  box-shadow: none;
+  background: transparent;
+  cursor: pointer;
+  appearance: none;
+}
+
+.media-dock-scrubber:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.media-dock-scrubber::-webkit-slider-runnable-track {
+  height: 4px;
+  background: linear-gradient(90deg, var(--news-red) var(--progress, 0%), var(--rule) var(--progress, 0%));
+}
+
+.media-dock-scrubber::-moz-range-track {
+  height: 4px;
+  background: var(--rule);
+}
+
+.media-dock-scrubber::-moz-range-progress {
+  height: 4px;
+  background: var(--news-red);
+}
+
+.media-dock-scrubber::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border: 2px solid var(--white);
+  border-radius: 50%;
+  background: var(--news-red);
+  appearance: none;
+}
+
+.media-dock-scrubber::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--white);
+  border-radius: 50%;
+  background: var(--news-red);
+}
+
+.media-dock-scrubber:focus {
+  outline: 0;
+  background: transparent;
+}
+
+.media-dock-scrubber:focus-visible {
+  outline: 3px solid var(--news-red);
+  outline-offset: 2px;
+}
+
+.media-dock-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.media-dock-button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink);
+  letter-spacing: normal;
+  text-transform: none;
+  cursor: pointer;
+}
+
+/* The site's buttons lift on hover; the player's controls stay put. */
+.media-dock button:hover {
+  filter: none;
+  transform: none;
+}
+
+.media-dock-button:hover:not(:disabled) {
+  background: var(--panel-soft);
+}
+
+.media-dock-button:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.media-dock-button[aria-pressed="true"] {
+  background: var(--news-blue);
+  color: var(--white);
+}
+
+.media-dock-button-primary {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--news-red);
+  color: var(--white);
+}
+
+.media-dock-button-primary:hover:not(:disabled) {
+  background: var(--news-red-dark);
+}
+
+.media-dock-queue {
+  max-height: min(280px, 40vh);
+  overflow-y: auto;
+  border-top: 1px solid var(--border);
+  background: var(--white);
+}
+
+.media-dock-queue-head {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--panel-soft);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.media-dock-queue-head label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  letter-spacing: normal;
+  text-transform: none;
+  cursor: pointer;
+}
+
+.media-dock-queue-head input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  padding: 0;
+  box-shadow: none;
+  accent-color: var(--news-red);
+}
+
+.media-dock-queue ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.media-dock-queue button {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  border: 0;
+  border-left: 4px solid transparent;
+  padding: 6px 10px 6px 6px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink);
+  font: inherit;
+  letter-spacing: normal;
+  text-align: left;
+  text-transform: none;
+  cursor: pointer;
+}
+
+.media-dock-queue button:hover {
+  background: var(--panel-soft);
+}
+
+/* The playing row, as in the studio's chapter list. */
+.media-dock-queue button[aria-current="true"] {
+  border-left-color: var(--news-red);
+  background: color-mix(in srgb, var(--news-red) 8%, var(--white));
+}
+
+.media-dock-queue-thumb {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #101010;
+}
+
+.media-dock-queue-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.media-dock-queue-thumb .media-dock-live {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+}
+
+.media-dock-queue-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.media-dock-queue-title {
+  display: -webkit-box;
+  overflow: hidden;
+  font-family: "Libre Baskerville", Georgia, serif;
+  font-size: 12px;
+  font-weight: 700;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.media-dock-queue-meta {
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.media-dock-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 28px;
+  border-top: 1px solid var(--border);
+  padding: 0 0 0 10px;
+  font-size: 10px;
+}
+
+.media-dock-foot a {
+  flex: 0 0 auto;
+  color: var(--news-blue);
+}
+
+.media-dock-upnext {
+  overflow: hidden;
+  min-width: 0;
+  flex: 1;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.media-dock-resize {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-left: auto;
+  color: var(--muted);
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+/*
+ * Minimised: the picture keeps YouTube's smallest allowed player, 200 × 200,
+ * beside the controls, still playing. It is never hidden while it plays: the
+ * video and its sound stay together.
+ */
+.media-dock-minimized {
+  width: min(380px, calc(100vw - 16px));
+}
+
+.media-dock-minimized .media-dock-stage {
+  grid-template-columns: 200px minmax(0, 1fr);
+}
+
+.media-dock-minimized .media-dock-frame {
+  aspect-ratio: auto;
+  height: 200px;
+}
+
+.media-dock-minimized .media-dock-body {
+  gap: 2px;
+  padding: 4px 6px;
+}
+
+.media-dock-minimized .media-dock-timeline,
+.media-dock-minimized .media-dock-button-extra {
+  display: none;
+}
+
+.media-dock-minimized .media-dock-controls {
+  justify-content: flex-start;
+}
+
+.media-dock-minimized .media-dock-button {
+  width: 32px;
+  height: 32px;
+}
+
+.media-dock-minimized .media-dock-button-primary {
+  width: 34px;
+  height: 34px;
+}
+
+
+
+@media (prefers-reduced-motion: no-preference) {
+  .media-dock {
+    animation: media-dock-in 160ms ease-out;
+  }
+}
+
+@keyframes media-dock-in {
+  from { opacity: 0; transform: translateY(12px); }
+}

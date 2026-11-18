@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { getAdsForSlot, featuredAdRank, type AdSlotId } from "../data/ads";
+import { adRel, getAdsForSlot, featuredAdRank, type AdSlotId } from "../data/ads";
 import { useAdEditionKey } from "../lib/useAdEditionKey";
-import { VideoAd } from "./VideoAd";
+import { useAdHref } from "../lib/useClassifiedsLink";
+import { SponsorVideo } from "./SponsorVideo";
 
 type Props = {
   slot: AdSlotId;
@@ -22,6 +23,7 @@ export function RotatingAdSpot({
   countyKey?: string;
 }) {
   const editionKey = useAdEditionKey(countyKey);
+  const adHref = useAdHref("inline-ad", editionKey);
   const creatives = getAdsForSlot("inline", editionKey).sort((a, b) => featuredAdRank(a.id, editionKey) - featuredAdRank(b.id, editionKey));
   const [playing, setPlaying] = useState(false);
   const [activeIndex, setActiveIndex] = useState(() => (creatives.length ? seed % creatives.length : 0));
@@ -40,7 +42,7 @@ export function RotatingAdSpot({
   return (
     <aside className="show-up-ad-spot" aria-label={label}>
       <p className="ad-slot-label">{label}</p>
-      {ad.video ? <VideoAd key={ad.id} ad={ad} onPlaybackChange={setPlaying} /> : <a className="ad-link" href={ad.href} target="_blank" rel="noreferrer sponsored">
+      {ad.video ? <SponsorVideo key={ad.id} ad={ad} onPlaybackChange={setPlaying} /> : <a className="ad-link" href={adHref(ad)} target="_blank" rel={adRel(ad)}>
         <img src={ad.image} alt={ad.alt} />
       </a>}
     </aside>
@@ -54,13 +56,14 @@ export function AdSlot({ slot, limit, className, countyKey }: Props) {
     .slice(0, limit);
   if (!creatives.length) return null;
 
-  if (slot === "banner") return <BannerAdCarousel creatives={creatives} />;
+  if (slot === "banner") return <BannerAdCarousel creatives={creatives} editionKey={editionKey} />;
 
-  return <SquareAdCarousel creatives={creatives} className={className} />;
+  return <SquareAdCarousel creatives={creatives} className={className} editionKey={editionKey} />;
 }
 
-function SquareAdCarousel({ creatives, className }: { creatives: ReturnType<typeof getAdsForSlot>; className?: string }) {
+function SquareAdCarousel({ creatives, className, editionKey }: { creatives: ReturnType<typeof getAdsForSlot>; className?: string; editionKey?: string }) {
   const trackRef = useRef<HTMLDivElement | null>(null);
+  const adHref = useAdHref("inline-ad", editionKey);
 
   const move = (direction: -1 | 1) => {
     const track = trackRef.current;
@@ -97,7 +100,7 @@ function SquareAdCarousel({ creatives, className }: { creatives: ReturnType<type
         </button>
         <div className="ad-slot-items" ref={trackRef}>
           {creatives.map((ad) => (
-            ad.video ? <VideoAd key={ad.id} ad={ad} className="ad-link" /> : <a key={ad.id} className="ad-link" href={ad.href} target="_blank" rel="noreferrer sponsored">
+            ad.video ? <SponsorVideo key={ad.id} ad={ad} className="ad-link" /> : <a key={ad.id} className="ad-link" href={adHref(ad)} target="_blank" rel={adRel(ad)}>
               <img src={ad.image} alt={ad.alt} />
             </a>
           ))}
@@ -110,8 +113,9 @@ function SquareAdCarousel({ creatives, className }: { creatives: ReturnType<type
   );
 }
 
-function BannerAdCarousel({ creatives }: { creatives: ReturnType<typeof getAdsForSlot> }) {
+function BannerAdCarousel({ creatives, editionKey }: { creatives: ReturnType<typeof getAdsForSlot>; editionKey?: string }) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const adHref = useAdHref("banner-ad", editionKey);
   const swipeStartX = useRef<number | null>(null);
 
   const moveBanner = (direction: -1 | 1) => {
@@ -120,7 +124,7 @@ function BannerAdCarousel({ creatives }: { creatives: ReturnType<typeof getAdsFo
 
   useEffect(() => {
     if (creatives.length < 2) return;
-    const interval = window.setInterval(() => moveBanner(1), 20_000);
+    const interval = window.setInterval(() => setActiveIndex((index) => (index + 1) % creatives.length), 20_000);
     return () => window.clearInterval(interval);
   }, [creatives.length]);
 
@@ -146,9 +150,9 @@ function BannerAdCarousel({ creatives }: { creatives: ReturnType<typeof getAdsFo
           <a
             key={ad.id}
             className={`ad-banner-slide${index === activeIndex ? " active" : ""}`}
-            href={ad.href}
+            href={adHref(ad)}
             target="_blank"
-            rel="noreferrer sponsored"
+            rel={adRel(ad)}
             aria-hidden={index !== activeIndex}
             tabIndex={index === activeIndex ? 0 : -1}
           >
