@@ -242,6 +242,9 @@ test("YouTube players stay at least 200 × 200, start on their own only once hal
   await expect(desk.locator("iframe")).toHaveAttribute("src", playerSrc(liveStream.embedUrl));
   const deskBox = (await frame.boundingBox())!;
   expect(Math.min(deskBox.width, deskBox.height)).toBeGreaterThanOrEqual(200);
+  // And it stays in its column: 200px tall at 16:9 would otherwise widen it to 356px.
+  const column = (await desk.locator(".video-desk-player").boundingBox())!;
+  expect(deskBox.x + deskBox.width).toBeLessThanOrEqual(column.x + column.width + 0.5);
 
   // Popped out, at its narrowest and minimised, the player keeps 200 × 200.
   await desk.locator(".video-desk-player").getByRole("button", { name: /Pop out/ }).click();

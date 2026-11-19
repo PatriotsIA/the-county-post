@@ -61,9 +61,14 @@
   margin: 0;
 }
 
-/* YouTube's smallest allowed player is 200 × 200; narrower than 16:9 allows, the picture letterboxes. */
+/*
+ * YouTube's smallest allowed player is 200 × 200; narrower than 16:9 allows, the picture letterboxes.
+ * The full width matters: a grid item with an aspect ratio and a minimum height is not stretched,
+ * so without it the frame grows to 356px (200 × 16/9) and overflows a phone's column.
+ */
 .video-desk-frame {
   position: relative;
+  width: 100%;
   aspect-ratio: 16 / 9;
   min-height: 200px;
   background: #101010;

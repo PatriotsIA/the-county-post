@@ -43,17 +43,28 @@ function clampPosition(layout: Layout, size: Size): Layout {
   }, size);
 }
 
+/** Buttons stacked in the lower-right corner: Jump to, and the Fetch guide above it where the guide runs. */
+const CORNER_BUTTONS = ".page-jump-toggle, .fetch-launcher";
+
 /**
- * The corner menu button is how readers reach the site and these controls from
- * anywhere, so the window never settles over it: one that would sits just above.
- * (On a screen too short for that, the button stays on top of the window.)
+ * The corner buttons are how readers reach the site and these controls from
+ * anywhere, so the window never settles over them: one that would sits just above.
+ * (On a screen too short for that, the buttons stay on top of the window.)
  */
 function clearCornerButton(layout: Layout, size: Size): Layout {
-  const button = document.querySelector<HTMLElement>(".page-jump-toggle")?.getBoundingClientRect();
-  if (!button?.width) return layout;
-  const covers = layout.x < button.right + EDGE && layout.x + size.width > button.left - EDGE
-    && layout.y < button.bottom + EDGE && layout.y + size.height > button.top - EDGE;
-  const above = button.top - EDGE - size.height;
+  const buttons = [...document.querySelectorAll<HTMLElement>(CORNER_BUTTONS)]
+    .map((button) => button.getBoundingClientRect())
+    .filter((rect) => rect.width);
+  if (!buttons.length) return layout;
+  const corner = {
+    left: Math.min(...buttons.map((rect) => rect.left)),
+    right: Math.max(...buttons.map((rect) => rect.right)),
+    top: Math.min(...buttons.map((rect) => rect.top)),
+    bottom: Math.max(...buttons.map((rect) => rect.bottom)),
+  };
+  const covers = layout.x < corner.right + EDGE && layout.x + size.width > corner.left - EDGE
+    && layout.y < corner.bottom + EDGE && layout.y + size.height > corner.top - EDGE;
+  const above = corner.top - EDGE - size.height;
   return covers && above >= EDGE ? { ...layout, y: above } : layout;
 }
 
