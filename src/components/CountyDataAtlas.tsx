@@ -4,8 +4,6 @@ import type { CountySite } from "../data/counties";
 import { atlasDomainLabels } from "../lib/atlas-domain-labels";
 import { CountyShowUpMeter } from "./CountyShowUpMeter";
 import {
-  fetchCountyAtlasDomain,
-  fetchCountyAtlasOverview,
   type CountyAtlasDomain,
   type CountyAtlasDomainDocument,
   type CountyAtlasMetric,
@@ -19,6 +17,7 @@ import {
   formatAtlasMetricValue,
   formatAtlasTimestamp,
 } from "../lib/county-atlas-format";
+import { fetchGuideAtlasDomain, fetchGuideAtlasOverview } from "../lib/fetch-atlas";
 import { LoadingIndicator } from "./LoadingIndicator";
 
 const LazyAtlasMetricChart = lazy(() =>
@@ -90,7 +89,7 @@ export function CountyDataAtlasHub({ county }: { county: CountySite }) {
                   {entry.warnings.length ? (
                     <AtlasInlineWarnings warnings={entry.warnings} />
                   ) : null}
-                  {entry.available ? (
+                  {entry.available || entry.domain.slug === "public-safety" ? (
                     <Link className="atlas-domain-link" to={`/${county.state.slug}/${county.slug}/data/${entry.domain.slug}`}>
                       Open {entry.domain.shortLabel} data
                     </Link>
@@ -102,6 +101,7 @@ export function CountyDataAtlasHub({ county }: { county: CountySite }) {
           <AtlasSourceCatalog sources={data.meta.sources} />
         </>
       ) : null}
+      {state.status === "error" && <Link className="button-link" to={`/${county.state.slug}/${county.slug}/data/public-safety`}>Open saved county crime data</Link>}
       <CountyShowUpMeter county={county} />
     </div>
   );
@@ -219,7 +219,7 @@ function AtlasMetricDetail({ metric }: { metric: CountyAtlasMetric }) {
     ((metric.chart === "distribution" || metric.chart === "composition") && Boolean(metric.distribution?.length));
 
   return (
-    <article className={`atlas-metric-card${metric.suppressed || !hasMetricValue ? " atlas-metric-missing" : ""}`}>
+    <article id={`atlas-${metric.key}`} className={`atlas-metric-card${metric.suppressed || !hasMetricValue ? " atlas-metric-missing" : ""}`}>
       <header className="atlas-metric-heading">
         <div>
           <p className="kicker">{metric.source.name}</p>
@@ -242,6 +242,7 @@ function AtlasMetricDetail({ metric }: { metric: CountyAtlasMetric }) {
         </Suspense>
       ) : null}
       <dl className="atlas-provenance">
+        {metric.unit && <div><dt>Unit</dt><dd>{metric.unit}</dd></div>}
         <div>
           <dt>Vintage</dt>
           <dd>{atlasMetricVintage(metric)}</dd>
@@ -462,7 +463,7 @@ function useAtlasOverview(county: CountySite): LoadState<CountyAtlasOverview> {
   useEffect(() => {
     const controller = new AbortController();
     setState({ status: "loading" });
-    fetchCountyAtlasOverview(county.state.slug, county.slug, controller.signal)
+    fetchGuideAtlasOverview(county, controller.signal)
       .then((data) => setState({ status: "loaded", data }))
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
@@ -472,7 +473,7 @@ function useAtlasOverview(county: CountySite): LoadState<CountyAtlasOverview> {
         });
       });
     return () => controller.abort();
-  }, [county.slug, county.state.slug]);
+  }, [county]);
 
   return state;
 }
@@ -486,7 +487,7 @@ function useAtlasDomain(
   useEffect(() => {
     const controller = new AbortController();
     setState({ status: "loading" });
-    fetchCountyAtlasDomain(county.state.slug, county.slug, domain, controller.signal)
+    fetchGuideAtlasDomain(county, domain, controller.signal)
       .then((data) => setState({ status: "loaded", data }))
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
@@ -496,7 +497,7 @@ function useAtlasDomain(
         });
       });
     return () => controller.abort();
-  }, [county.slug, county.state.slug, domain]);
+  }, [county, domain]);
 
   return state;
 }

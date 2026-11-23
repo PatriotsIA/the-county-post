@@ -37,6 +37,8 @@ export type FeedResponse = {
   meta?: {
     count: number;
     hasMore?: boolean;
+    stale?: boolean;
+    retrieval?: { attempted: number; failed: number };
     sourcesUsed?: string[];
     fetchedAt: string;
     cacheTtlSeconds: number;
@@ -46,6 +48,7 @@ export type FeedResponse = {
 export type PageResponse = {
   scope?: Record<string, string>;
   sections?: Record<string, FeedResponse>;
+  clientStale?: boolean;
   meta?: {
     count: number;
     fetchedAt: string;
@@ -117,12 +120,12 @@ function stringList(scope: unknown, key: string): string[] {
   return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === "string") : [];
 }
 
-export async function fetchNewsApiPage(path: string, sections: string[], limit: number) {
+export async function fetchNewsApiPage(path: string, sections: string[], limit: number, refresh = false) {
   const url = newsApiUrl(path);
   url.searchParams.set("sections", sections.join(","));
   url.searchParams.set("limit", String(limit));
 
-  return fetchNewsApiJson<PageResponse>(url);
+  return fetchNewsApiJson<PageResponse>(url, refresh, (page) => ({ ...page, clientStale: true }));
 }
 
 export type ReviewedCountySource = {
@@ -140,12 +143,12 @@ export type ReviewedCountySource = {
  * registry — the copy drifted once and showed "no sources" on counties the
  * API already trusted outlets for.
  */
-export async function fetchCountySources(stateSlug: string, countySlug: string) {
+export async function fetchCountySources(stateSlug: string, countySlug: string, signal?:AbortSignal) {
   // Deliberately not routed through fetchNewsApiJson: a failure here (say, a
   // frontend deployed ahead of the API) must not trip the global API backoff
   // and take the news feeds down with it.
   const url = newsApiUrl(`v1/sources/counties/${stateSlug}/${countySlug}`);
-  const response = await fetch(url);
+  const response = await fetch(url, {signal});
   if (!response.ok) throw new Error(`County sources request failed ${response.status}`);
   const body = (await response.json()) as { sources: ReviewedCountySource[] };
   return body.sources;
@@ -157,15 +160,16 @@ function newsApiUrl(path: string) {
   return new URL(path.replace(/^\/+/, ""), ensureTrailingSlash(baseUrl));
 }
 
-async function fetchNewsApiJson<T>(url: URL): Promise<T> {
+async function fetchNewsApiJson<T>(url: URL, refresh = false, markStale?: (value: T) => T): Promise<T> {
   const key = url.toString();
   const cached = responseCache.get(key);
-  if (cached && Date.now() - cached.storedAt < CLIENT_CACHE_MS) return cached.data as T;
+  if (!refresh && cached && Date.now() - cached.storedAt < CLIENT_CACHE_MS) return cached.data as T;
   const pending = inFlight.get(key);
   if (pending) return pending as Promise<T>;
   const stale = () => cached && Date.now() - cached.storedAt < CLIENT_STALE_MS;
-  if (Date.now() < (retryAfter.get(key) || 0)) {
-    if (stale()) return cached!.data as T;
+  const staleValue = () => markStale ? markStale(cached!.data as T) : cached!.data as T;
+  if (!refresh && Date.now() < (retryAfter.get(key) || 0)) {
+    if (stale()) return staleValue();
     throw new Error("This feed is temporarily unavailable; using fallback RSS.");
   }
 
@@ -194,7 +198,7 @@ async function fetchNewsApiJson<T>(url: URL): Promise<T> {
     } catch (error) {
       retryAfter.set(key, Date.now() + API_FAILURE_BACKOFF_MS);
       while (retryAfter.size > 100) retryAfter.delete(retryAfter.keys().next().value!);
-      if (stale()) return cached!.data as T;
+      if (stale()) return staleValue();
       throw error;
     } finally {
       inFlight.delete(key);

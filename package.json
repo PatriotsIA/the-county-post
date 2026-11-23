@@ -8,8 +8,11 @@
     "build": "tsc -b && node scripts/build-newsletter-assets.mjs && vite build && npm run seo:sitemap && node scripts/export-classifieds-ads.mjs",
     "lint": "oxlint",
     "preview": "vite preview",
+    "test:fetch-geography": "FETCH_GEOGRAPHY_TEST=true playwright test",
+    "test:fetch-release": "FETCH_RELEASE_TEST=true playwright test",
     "test:e2e": "playwright test",
-    "seo:sitemap": "vite build --ssr scripts/seo/generate-sitemaps.ts --outDir .seo-build --emptyOutDir --logLevel warn && node .seo-build/generate-sitemaps.js"
+    "seo:sitemap": "vite build --ssr scripts/seo/generate-sitemaps.ts --outDir .seo-build --emptyOutDir --logLevel warn && node .seo-build/generate-sitemaps.js",
+    "audit:fetch-measures": "node scripts/dev/audit-fetch-measures.mjs"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",

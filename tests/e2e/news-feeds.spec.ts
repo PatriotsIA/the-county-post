@@ -610,7 +610,7 @@ test("atlas renders sparse county and partial coverage states without invented z
   await page.goto("/texas/briscoe/data");
 
   await expect(page.getByRole("heading", { name: "Partial county atlas" })).toBeVisible();
-  await expect(page.getByText("1 of 12 domains available")).toBeVisible();
+  await expect(page.getByText("2 of 12 domains available")).toBeVisible();
   await expect(page.getByText("No county measures are available in this domain yet.").first()).toBeVisible();
   await expect(page.getByText("$0")).toHaveCount(0);
 

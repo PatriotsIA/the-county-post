@@ -324,13 +324,9 @@ test("on phones the jump menu's Watch row plays in the pop-out, which keeps clea
   expect(placed.y + placed.height).toBeLessThanOrEqual(button.y);
 
   // Where the Fetch guide runs, its button stacks above Jump to, and the player keeps clear of both.
-  await page.evaluate(() => {
-    const launcher = Object.assign(document.createElement("button"), { className: "fetch-launcher", textContent: "Ask Fetch" });
-    Object.assign(launcher.style, { position: "fixed", right: "12px", bottom: "62px", width: "120px", height: "48px", zIndex: "86" });
-    document.body.append(launcher);
-    window.dispatchEvent(new Event("resize"));
-  });
-  const launcher = (await page.locator(".fetch-launcher").boundingBox())!;
+  const fetchButton = page.getByRole("button", { name: "Ask Fetch" });
+  await expect(fetchButton).toBeVisible();
+  const launcher = (await fetchButton.boundingBox())!;
   await expect.poll(async () => { const box = (await dock.boundingBox())!; return box.y + box.height; }).toBeLessThanOrEqual(launcher.y);
 
   // A live stream has no clock to seek; the menu says so with the Live tag.

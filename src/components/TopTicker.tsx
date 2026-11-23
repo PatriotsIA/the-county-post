@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { type CountySite } from "../data/counties";
 import { ITM_TRADING_PATH } from "../data/itm-trading";
 import {
@@ -12,8 +12,10 @@ import { LoadingIndicator } from "./LoadingIndicator";
 import { CountyNoticeTicker } from "./CountyNoticeTicker";
 import { useMetalsPrices } from "../lib/useMetalsPrices";
 
-const stockTickerSymbols =
-  "FOREXCOM:SPXUSD,FOREXCOM:NSXUSD,FOREXCOM:DJI,FX:EURUSD,BITSTAMP:BTCUSD,BITSTAMP:ETHUSD,NASDAQ:NVDA,EASYMARKETS:OILUSD,NASDAQ:AAPL,NASDAQ:AMZN,NASDAQ:MSFT,NASDAQ:META,NASDAQ:AMD,NASDAQ:PLTR,NASDAQ:GOOGL,NASDAQ:NFLX,NYSE:DELL,NYSE:XOM,NYSE:JPM,NYSE:BAC";
+import { marketInstruments, marketQuoteId, cattleQuoteId } from "../data/market-instruments";
+import { TradingViewTicker } from "./TradingViewTicker";
+
+const stockTickerSymbols = marketInstruments.map(m => m.symbol).join(",");
 export function TopTicker({
   county,
   defaultOpen = false,
@@ -22,11 +24,17 @@ export function TopTicker({
   defaultOpen?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(() => defaultOpen && (typeof window === "undefined" || window.innerWidth > 720));
+  const { hash, key } = useLocation();
+  const instrument = marketInstruments.find(m => hash === "#" + marketQuoteId(m.ticker));
   const panelId = "market-data-panel";
 
   useEffect(() => {
     setIsOpen(defaultOpen && window.innerWidth > 720);
   }, [defaultOpen]);
+
+  useEffect(() => {
+    if (hash.startsWith("#market-")) setIsOpen(true);
+  }, [hash, key]);
 
   return (
     <section className="market-panel" aria-label="Market data and local weather">
@@ -45,8 +53,11 @@ export function TopTicker({
       </button>
       <div id={panelId} className="market-panel-content" hidden={!isOpen}>
         <div className="market-weather-stack">
-          <div className="market-weather-bar">
-            <TradingViewTicker active={isOpen} />
+          <div className="market-weather-bar" id="market-stocks">
+            <TradingViewTicker active={isOpen} symbols={stockTickerSymbols} />
+            {instrument && <div id={marketQuoteId(instrument.ticker)}>
+              <TradingViewTicker key={instrument.symbol} active={isOpen} single symbols={instrument.symbol} label={instrument.name} />
+            </div>}
           </div>
           <aside className="precious-metals-ticker" aria-label="Metal spot prices">
             <div className="metals-ticker-heading">
@@ -58,7 +69,7 @@ export function TopTicker({
             </div>
             <MetalSpotTicker active={isOpen} />
           </aside>
-          <CattleTicker />
+          <CattleTicker active={isOpen} />
           {county ? <CountyWeather county={county} /> : null}
           {county ? <CountyNoticeTicker key={county.fips} county={county} active={isOpen} /> : null}
         </div>
@@ -84,74 +95,13 @@ function MetalSpotTicker({ active }: { active: boolean }) {
   </div>;
 }
 
-const TICKER_TAPE_URL = "https://widgets.tradingview-widget.com/w/en/tv-ticker-tape.js";
-const TICKER_MESSAGE = "county-post-market-ticker";
-
-/**
- * TradingView's ticker runs in its own frame. Inside our page, its twenty mini
- * charts and the observers they put on the body kept resizing each other, which
- * the browser reports as "ResizeObserver loop completed with undelivered
- * notifications" and which forced extra layout passes over the whole page. The
- * frame keeps that work in its own document; each attempt also gets a fresh
- * module map, so a failed load retries. The frame is not sandboxed: an opaque
- * origin makes TradingView refuse its price connection.
- */
-function tickerDocument(symbols: string) {
-  const script = `
-const report = (status) => parent.postMessage({ source: ${JSON.stringify(TICKER_MESSAGE)}, status }, "*");
-const timeout = setTimeout(() => report("error"), 15000);
-import(${JSON.stringify(TICKER_TAPE_URL)})
-  .then(() => customElements.whenDefined("tv-ticker-tape"))
-  .then(() => {
-    clearTimeout(timeout);
-    const ticker = document.createElement("tv-ticker-tape");
-    ticker.setAttribute("symbols", ${JSON.stringify(symbols)});
-    document.body.append(ticker);
-    report("loaded");
-  }, () => { clearTimeout(timeout); report("error"); });`;
-  return `<!doctype html><html><head><meta charset="utf-8"><base target="_blank">
-<style>html,body{margin:0;overflow:hidden;background:transparent}tv-ticker-tape{display:block}</style></head>
-<body><script type="module">${script.replace(/<\//g, "<\\/")}</script></body></html>`;
-}
-
-function TradingViewTicker({ active, symbols = stockTickerSymbols, label = "Market prices" }: { active: boolean; symbols?: string; label?: string }) {
-  const frameRef = useRef<HTMLIFrameElement | null>(null);
+function CattleTicker({ active }: { active: boolean }) {
+  const [ticker, setTicker] = useState<Awaited<ReturnType<typeof fetchCattleTicker>>>();
   const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
 
   useEffect(() => {
     if (!active) return;
     setStatus("loading");
-    const onMessage = (event: MessageEvent) => {
-      if (event.source !== frameRef.current?.contentWindow || event.data?.source !== TICKER_MESSAGE) return;
-      setStatus(event.data.status === "loaded" ? "loaded" : "error");
-    };
-    window.addEventListener("message", onMessage);
-    return () => window.removeEventListener("message", onMessage);
-  }, [active, symbols]);
-
-  return (
-    <div className="tradingview-widget-container market-ticker-widget">
-      {status === "loading" ? <LoadingIndicator label={`Loading ${label.toLowerCase()}…`} size="inline" /> : null}
-      {status === "error" ? <span className="muted" role="status">{label} unavailable.</span> : null}
-      <div className="market-ticker-widget-content">
-        {active && status !== "error" ? (
-          <iframe
-            ref={frameRef}
-            className="market-ticker-frame"
-            title={`${label} ticker by TradingView`}
-            srcDoc={tickerDocument(symbols)}
-          />
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-function CattleTicker() {
-  const [ticker, setTicker] = useState<Awaited<ReturnType<typeof fetchCattleTicker>>>();
-  const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
-
-  useEffect(() => {
     const controller = new AbortController();
     fetchCattleTicker(controller.signal)
       .then((data) => {
@@ -162,7 +112,7 @@ function CattleTicker() {
         if (!controller.signal.aborted) setStatus("error");
       });
     return () => controller.abort();
-  }, []);
+  }, [active]);
 
   const cattle = ticker?.items || [
     { key: "feeder-cattle", label: "Feeder cattle" },
@@ -171,7 +121,7 @@ function CattleTicker() {
   const feederBreakdown = ticker?.items.find((item) => item.key === "feeder-cattle")?.breakdown;
 
   return (
-    <aside className="cattle-ticker" aria-label="Cattle and agriculture prices">
+    <aside id="market-cattle" className="cattle-ticker" aria-label="Cattle and agriculture prices">
       {status === "loading" ? (
         <LoadingIndicator label="Loading cattle and agriculture prices…" size="inline" />
       ) : (
@@ -179,7 +129,7 @@ function CattleTicker() {
           <span className="cattle-ticker-label">Cattle &amp; agriculture</span>
           <div className="cattle-ticker-items">
             {cattle.map((quote) => (
-              <span key={quote.key}>
+              <span key={quote.key} id={cattleQuoteId(quote.key)}>
                 {quote.label}: {"price" in quote ? formatCattlePrice(quote.price, quote.unit) : "Unavailable"}
               </span>
             ))}
@@ -191,7 +141,7 @@ function CattleTicker() {
         <div className="cattle-ticker-breakdown">
           <span className="cattle-ticker-breakdown-title">Feeder cattle</span>
           {feederBreakdown.map((quote) => (
-              <span key={quote.label}>
+              <span key={quote.label} id={cattleQuoteId(quote.label)}>
                 {quote.label} <strong>{formatCattlePrice(quote.price, quote.unit)}</strong>
               </span>
             ))}

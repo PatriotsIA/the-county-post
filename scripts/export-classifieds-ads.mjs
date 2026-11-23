@@ -9,7 +9,15 @@ const root = process.cwd();
 const assetRoot = realpathSync(resolve(root, 'ad-assets'));
 const destination = resolve(root, 'dist/shared-ads');
 mkdirSync(destination, { recursive: true });
-const server = await createServer({ root, server: { middlewareMode: true }, appType: 'custom' });
+// The exporter loads data modules through SSR and has no browser client.
+const server = await createServer({
+  root,
+  configFile: false,
+  cacheDir: 'node_modules/.vite-classifieds-export',
+  optimizeDeps: { noDiscovery: true },
+  server: { middlewareMode: true, hmr: false, watch: null },
+  appType: 'custom',
+});
 try {
   const { ads, feedOnlySponsors } = await server.ssrLoadModule('/src/data/ads.ts');
   const { getPartnerCreatives } = await server.ssrLoadModule('/src/data/partners.ts');

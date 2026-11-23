@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { type CountySite } from "../data/counties";
 import { buildCountyFallbackFeedUrls } from "../lib/fallback-feed-urls";
 import {
+  weatherPeriodId,
   weatherSeverityClass,
   type CountyDroughtCondition,
   type CountyRainfallHistory,
@@ -194,7 +195,7 @@ function WeatherReport({ weather, atlasPath }: { weather: CountyWeatherResponse;
               </thead>
               <tbody>
                 {weather.hourly.map((period) => (
-                  <tr key={`${period.number}-${period.startTime}`}>
+                  <tr id={weatherPeriodId(period, true)} key={`${period.number}-${period.startTime}`}>
                     <th scope="row">{formatHourlyTime(period.startTime)}</th>
                     <td>{period.shortForecast || "Forecast unavailable"}</td>
                     <td>{formatTemperature(period.temperature)}</td>
@@ -381,7 +382,7 @@ function WeatherAlertCard({ alert, forecastPageUrl }: { alert: WeatherAlert; for
 
 function ForecastCard({ period }: { period: WeatherForecastPeriod }) {
   return (
-    <article className={`weather-forecast-card${period.isDaytime ? " daytime" : " nighttime"}`}>
+    <article id={weatherPeriodId(period)} className={`weather-forecast-card${period.isDaytime ? " daytime" : " nighttime"}`}>
       <div className="weather-forecast-card-heading">
         <div>
           <h3>{period.name}</h3>
@@ -428,7 +429,7 @@ function formatWind(speed?: WeatherMeasurement, gust?: WeatherMeasurement) {
 }
 
 function formatPeriodWind(period: WeatherForecastPeriod) {
-  if (typeof period.windSpeed.value !== "number") return "Unavailable";
+  if (typeof period.windSpeed?.value !== "number") return "Unavailable";
   return `${period.windDirection ? `${period.windDirection} ` : ""}${Math.round(period.windSpeed.value)} mph`;
 }
 

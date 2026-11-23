@@ -1,3 +1,5 @@
+import { getCounty } from "../data/counties";
+
 export const countyAtlasDomains = [
   "demographics",
   "economy",
@@ -158,25 +160,40 @@ const inFlightRequests = new Map<string, PendingRequest>();
 const DEFAULT_CACHE_TTL_SECONDS = 300;
 const MAX_CACHE_TTL_SECONDS = 24 * 60 * 60;
 
-export function fetchCountyAtlasOverview(stateSlug: string, countySlug: string, signal?: AbortSignal) {
-  return requestAtlas<CountyAtlasOverview>(
+export async function fetchCountyAtlasOverview(stateSlug: string, countySlug: string, signal?: AbortSignal) {
+  const doc = await requestAtlas<CountyAtlasOverview>(
     `v1/counties/${encodeURIComponent(stateSlug)}/${encodeURIComponent(countySlug)}/atlas`,
     isCountyAtlasOverview,
     signal,
   );
+  const county = getCounty(stateSlug, countySlug);
+  if (!county || doc.county.fips !== county.fips) throw new CountyAtlasApiError("County atlas identity mismatch.", "invalid-response");
+  return (await import("./county-crime")).withCrimeOverview(county, doc);
 }
 
-export function fetchCountyAtlasDomain(
+export async function fetchCountyAtlasDomain(
   stateSlug: string,
   countySlug: string,
   domain: CountyAtlasDomain,
   signal?: AbortSignal,
 ) {
-  return requestAtlas<CountyAtlasDomainDocument>(
+  const request = requestAtlas<CountyAtlasDomainDocument>(
     `v1/counties/${encodeURIComponent(stateSlug)}/${encodeURIComponent(countySlug)}/atlas/${encodeURIComponent(domain)}`,
     isCountyAtlasDomainDocument,
     signal,
   );
+  if (domain !== "public-safety") return request;
+  const county = getCounty(stateSlug, countySlug);
+  if (!county) return request;
+  let doc: CountyAtlasDomainDocument | undefined;
+  try {
+    doc = await request;
+  } catch (error) {
+    if (signal?.aborted || !(error instanceof CountyAtlasApiError) || error.kind === "invalid-response") throw error;
+  }
+  if (doc && (doc.county.fips !== county.fips || doc.domain.slug !== domain))
+    throw new CountyAtlasApiError("County public safety identity mismatch.", "invalid-response");
+  return (await import("./county-crime")).withCountyCrime(county, doc);
 }
 
 async function requestAtlas<T extends AtlasResponse>(
@@ -184,7 +201,9 @@ async function requestAtlas<T extends AtlasResponse>(
   validate: (value: unknown) => value is T,
   signal?: AbortSignal,
 ): Promise<T> {
-  const baseUrl = import.meta.env.VITE_NEWS_API_URL?.trim();
+  const baseUrl = import.meta.env.DEV && import.meta.env.VITE_LOCAL_PUBLISHED_ATLAS === "true"
+    ? new URL("/__published-atlas/", window.location.origin).href
+    : import.meta.env.VITE_NEWS_API_URL?.trim();
   if (!baseUrl) {
     throw new CountyAtlasApiError(
       "County data is not configured. Set VITE_NEWS_API_URL.",

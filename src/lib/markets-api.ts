@@ -21,6 +21,8 @@ export type MetalsTickerResponse = {
 };
 
 type CattleTickerResponse = {
+  stale?: boolean;
+  partial?: boolean;
   updatedAt?: string;
   items: Array<{
     key: "feeder-cattle" | "slaughter-cattle";
@@ -81,10 +83,30 @@ function validMarketDate(value: unknown) {
   return typeof value === "string" && Number.isFinite(Date.parse(value)) ? value : undefined;
 }
 
+let latestCattle: { data: CattleTickerResponse; checked: number } | undefined;
+
 export async function fetchCattleTicker(signal?: AbortSignal) {
-  const response = await fetch(marketApiUrl("cattle"), { signal });
+  signal?.throwIfAborted();
+  if (latestCattle && Date.now() - latestCattle.checked < 30_000) return latestCattle.data;
+  const timeout = AbortSignal.timeout(15_000);
+  const response = await fetch(marketApiUrl("cattle"), { signal: signal ? AbortSignal.any([signal, timeout]) : timeout });
   if (!response.ok) throw new Error("Cattle prices are unavailable.");
-  return (await response.json()) as CattleTickerResponse;
+  const data: CattleTickerResponse = await response.json();
+  if (!Array.isArray(data?.items)) throw new Error("Cattle prices could not be verified.");
+  const valid = (row: { label: string; price: number; unit: string }) =>
+    typeof row?.label === "string" && row.label.length > 0 && typeof row.unit === "string" &&
+    row.unit.length > 0 && Number.isFinite(row.price) && row.price > 0;
+  const items = data.items.filter(valid).map(item => {
+    if (item.breakdown === undefined) return item;
+    const breakdown = Array.isArray(item.breakdown) ? item.breakdown.filter(valid) : [];
+    if (!Array.isArray(item.breakdown) || breakdown.length !== item.breakdown.length) data.partial = true;
+    return { ...item, breakdown };
+  });
+  if (data.items.length && !items.length) throw new Error("Cattle prices could not be verified.");
+  if (items.length !== data.items.length) data.partial = true;
+  data.items = items;
+  if (data.items.length && !data.partial) latestCattle = { data, checked: Date.now() };
+  return data;
 }
 
 function marketApiUrl(market: "metals" | "cattle") {
