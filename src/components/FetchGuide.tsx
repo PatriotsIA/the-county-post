@@ -36,7 +36,7 @@ import { recordFetchOutcome } from "../lib/fetch-pilot";
 import { siteCatalog, storiesFor, type ContentResult, type ContentLink, type FetchOutcome } from "../lib/fetch-content";
 import { cityCrimeAnswer, crimeStatistic } from "../lib/fetch-city-crime";
 import { FetchAnswer, ResultLinks, type AnswerRequest } from "./FetchAnswer";
-import { fetchLessons as steps } from "../data/fetch-lessons";
+import { tourLessons, tourTitles, type TourGuide } from "../data/fetch-lessons";
 import { atlasTopic, publishedMeasureQuestion } from "../lib/fetch-atlas-topics";
 import { comparisonQuestion, explicitStateList, type Comparison } from "../lib/fetch-state-comparison";
 import { addCountiesToStateComparison, countyComparisonQuestion, type CountyComparison } from "../lib/fetch-county-comparison";
@@ -71,6 +71,7 @@ type DeskResult =
   | { mode: "message"; text: string };
 
 type StoryEntry = { lookup: AnswerRequest; story: ContentLink; siblings: ContentLink[] };
+type TourView = { mode: "tour"; guide: TourGuide; step: number };
 export type FetchView =
   | { mode: "welcome" | "message"; text?: string }
   | { mode: "story"; lookup: AnswerRequest; stories: ContentLink[]; action: StoryAction; story?: ContentLink; choices?: ContentLink[] }
@@ -90,7 +91,7 @@ export type FetchView =
   | { mode: "browse" }
   | { mode: "compare"; query: Comparison }
   | { mode: "compareCounties"; query: CountyComparison }
-  | { mode: "tour"; step: number }
+  | TourView
   | { mode: "answer"; lookup: AnswerRequest }
   | {
       mode: "place";
@@ -168,7 +169,7 @@ export default function FetchGuide({
     recordFetchOutcome(outcome, route, started);
   }, []);
   const [view, updateView] = useState<View>({ mode: "welcome" });
-  const [returnLesson, setReturnLesson] = useState<number>();
+  const [returnLesson, setReturnLesson] = useState<TourView>();
   const [pickerState, setPickerState] = useState("");
   useEffect(() => {
     if (!open) return;
@@ -439,18 +440,25 @@ export default function FetchGuide({
   useEffect(()=>{
     if(open && updatedFrom && !historyPage) panel.current?.querySelector<HTMLElement>(".fetch-update-heading")?.focus();
   },[open,updatedFrom,historyPage]);
+  const steps = tourLessons[view.mode === "tour" ? view.guide : "site"];
   const tutorial = view.mode === "tour" ? steps[view.step] : undefined;
 
+  const needsCounty = tutorial?.countyOnly && !county;
+  const lessonDestination = tutorial?.nav
+    ? linksFor(county, state).find(link => link.label === (needsCounty ? "Find Your State & County News" : tutorial.nav))
+    : undefined;
+
   useEffect(() => {
-    if (!open) return;
+    if (open && tutorial && !historyPage)
+      panel.current?.querySelector<HTMLElement>(".fetch-lesson-heading")?.focus({ preventScroll: true });
+  }, [open, tutorial, historyPage]);
+
+  useEffect(() => {
+    if (!open || historyPage) return;
     let target: HTMLElement | undefined;
     if (tutorial?.selector) {
-      const element = document.querySelector<HTMLElement>(tutorial.selector);
-      target = element?.getClientRects().length
-        ? element
-        : tutorial.mobile
-          ? document.querySelector<HTMLElement>(tutorial.mobile) || undefined
-          : undefined;
+      target = Array.from(document.querySelectorAll<HTMLElement>(tutorial.selector)).find(el => el.getClientRects().length);
+      if (!target && tutorial.mobile) target = document.querySelector<HTMLElement>(tutorial.mobile) || undefined;
     } else if (view.mode === "desk") {
       target = Array.from(document.querySelectorAll<HTMLAnchorElement>(".context-nav a, .nav a")).find(
         (a) => a.getAttribute("href") === view.link.to && a.getClientRects().length > 0,
@@ -460,7 +468,7 @@ export default function FetchGuide({
     target.classList.add("fetch-highlight");
     target.scrollIntoView({ block: "center", behavior: "instant" });
     return () => target.classList.remove("fetch-highlight");
-  }, [open, view, tutorial]);
+  }, [open, view, tutorial, historyPage]);
 
   function beginTurn() {
     expected.current = undefined;
@@ -808,6 +816,12 @@ export default function FetchGuide({
     setThinking(false);
     beginTurn();
     setLastQuestion(original);
+    const namedTour = question.match(/^(?:please )?(?:learn how to use|how (?:do I|can I|to) use|help me use) (Fetch|(?:the )?County Post)[?!. ]*$/i);
+    if (namedTour) {
+      setQuery("");
+      startTour(namedTour[1].toLowerCase() === "fetch" ? "fetch" : "site");
+      return;
+    }
     if (publishedMeasureQuestion(original)) {
       setQuery("");
       selectDesk("data", county || (view.mode === "answer" ? view.lookup.county : undefined), false, original);
@@ -1112,7 +1126,7 @@ export default function FetchGuide({
       localIntent(countyReference?.subject ?? city?.subject ?? question) ||
       (city && /\bwho (?:writes|reports|covers)\b/i.test(question) ? "sources" : undefined);
     if (intent === "tour") {
-      setView({ mode: "tour", step: 0 });
+      startTour("site");
       return;
     }
     if (view.mode === "place" && !intent && city) {
@@ -1305,6 +1319,19 @@ export default function FetchGuide({
           view.question,
         )
       : undefined;
+  function startTour(guide: TourGuide) {
+    setReturnLesson(undefined);
+    setView({ mode: "tour", guide, step: 0 });
+  }
+  const tourButtons = (
+    <div className="fetch-actions fetch-tutorial-options">
+      {(["site", "fetch"] as const).map(guide => (
+        <button key={guide} onClick={() => shortcut(tourTitles[guide], () => startTour(guide))}>
+          {tourTitles[guide]}
+        </button>
+      ))}
+    </div>
+  );
   const quickLinks = (
     <>
       <button onClick={() => ask("Catch me up")}>
@@ -1319,9 +1346,6 @@ export default function FetchGuide({
       <button onClick={() => ask("Browse the site")}>Browse the site</button>
       <button onClick={() => ask("Compare counties")}>Compare counties</button>
       <button onClick={() => ask("Compare states")}>Compare states</button>
-      <button onClick={() => shortcut("Take a tour", () => setView({ mode: "tour", step: 0 }))}>
-        Take a tour
-      </button>
       <button onClick={() => shortcut("Find my county", () => selectDesk("edition", undefined, false))}>
         Find my county
       </button>
@@ -1344,7 +1368,7 @@ export default function FetchGuide({
     <>
       <dialog
         id="fetch-guide"
-        className={`fetch-panel${view.mode === "tour" && view.step === 2 ? " fetch-tour-top" : ""}`}
+        className={`fetch-panel${tutorial?.selector === ".page-jump-toggle" && !historyPage ? " fetch-tour-top" : ""}`}
         ref={panel}
         aria-labelledby="fetch-title"
         onClickCapture={event => {
@@ -1411,7 +1435,7 @@ export default function FetchGuide({
             aria-live={view.mode === "area" ? "off" : "polite"}
             aria-atomic="false"
           >
-            {lastQuestion && <p className="fetch-question">{lastQuestion}</p>}
+            {lastQuestion && view.mode !== "tour" && <p className="fetch-question">{lastQuestion}</p>}
 
             {view.mode === "cities" && (
               <section>
@@ -1711,6 +1735,7 @@ export default function FetchGuide({
             {view.mode === "welcome" && (
               <>
                 <h3>What can I find for you?</h3>
+                {tourButtons}
                 {!privateChat && chats[0] && <div className="fetch-actions"><button onClick={()=>void openSaved(chats[0].id)}>Continue last chat</button></div>}
                 <p>
                   {county
@@ -1764,20 +1789,21 @@ export default function FetchGuide({
             {view.mode === "message" && (
               <>
                 <p>{view.text}</p>
+                {tourButtons}
                 <div className="fetch-actions">{quickLinks}</div>
               </>
             )}
             {view.mode === "tour" && tutorial && (
               <>
                 <small>
-                  Edition tour · {view.step + 1} of {steps.length}
+                  {tourTitles[view.guide]} · {view.step + 1} of {steps.length}
                 </small>
-                <h3>{tutorial.title}</h3>
+                <h3 className="fetch-lesson-heading" tabIndex={-1}>{tutorial.title}</h3>
                 <label className="fetch-lesson-picker" aria-live="off">
                   Jump to a lesson
                   <select
                     value={view.step}
-                    onChange={(e) => setView({ mode: "tour", step: Number(e.target.value) })}
+                    onChange={(e) => setView({ ...view, step: Number(e.target.value) })}
                   >
                     {steps.map((step, i) => (
                       <option key={step.title} value={i}>
@@ -1786,12 +1812,14 @@ export default function FetchGuide({
                     ))}
                   </select>
                 </label>
-                <p>{tutorial.text}</p>
+                <ol className="fetch-lesson-instructions">
+                  {tutorial.instructions.map(line => <li key={line}>{line}</li>)}
+                </ol>
                 {tutorial.example && (
                   <div className="fetch-actions">
                     <button
                       onClick={() => {
-                        setReturnLesson(view.step);
+                        setReturnLesson(view);
                         void ask(tutorial.example!);
                       }}
                     >
@@ -1800,16 +1828,18 @@ export default function FetchGuide({
                   </div>
                 )}
                 <div className="fetch-actions">
-                  {view.step === 0 && (
-                    <button onClick={() => go({ label: "State and county directory", to: "/states" })}>
-                      Open directory
+                  {lessonDestination && (lessonDestination.external ? (
+                    <a href={lessonDestination.to} target="_blank" rel="noreferrer">{lessonDestination.label} (opens in a new tab)</a>
+                  ) : (
+                    <button onClick={() => go(lessonDestination)}>
+                      {needsCounty ? "Choose a county for " + tutorial.nav : lessonDestination.to === "/states" ? "Open directory" : "Open " + lessonDestination.label}
                     </button>
-                  )}
+                  ))}
                   {view.step > 0 && (
-                    <button onClick={() => setView({ mode: "tour", step: view.step - 1 })}>Previous</button>
+                    <button onClick={() => setView({ ...view, step: view.step - 1 })}>Previous</button>
                   )}
                   {view.step < steps.length - 1 && (
-                    <button onClick={() => setView({ mode: "tour", step: view.step + 1 })}>Next step</button>
+                    <button onClick={() => setView({ ...view, step: view.step + 1 })}>Next step</button>
                   )}
                   <button
                     onClick={() => {
@@ -1908,7 +1938,7 @@ export default function FetchGuide({
                     setThinking(false);
                     setLastQuestion("");
                     setQuery("");
-                    setView({ mode: "tour", step: returnLesson });
+                    setView(returnLesson);
                     setReturnLesson(undefined);
                   }}
                 >

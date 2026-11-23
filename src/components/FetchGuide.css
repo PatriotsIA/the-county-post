@@ -30,6 +30,10 @@
 .fetch-actions button, .fetch-form button { min-height: 36px; padding: 6px 10px; font: 600 13px/1.4 system-ui, sans-serif; border: 1px solid var(--news-blue); background: white; color: var(--news-blue); }
 .fetch-panel button:hover { transform: none; }
 .fetch-actions button:hover { background: var(--news-blue); color: white; }
+.fetch-tutorial-options { display: grid; margin-block: 10px 14px; }
+.fetch-tutorial-options button { text-align: left; }
+.fetch-lesson-instructions { padding-inline-start: 1.5em; margin-block: 12px; }
+.fetch-lesson-instructions li + li { margin-top: 6px; }
 .fetch-place-list { max-height: 135px; overflow: auto; }
 .fetch-form { display: flex; gap: 7px; padding: 12px 14px 4px; border-top: 1px solid var(--rule); }
 .fetch-form input { flex: 1; min-width: 0; padding: 8px; border: 1px solid var(--rule); font: 16px/1.4 system-ui, sans-serif; }

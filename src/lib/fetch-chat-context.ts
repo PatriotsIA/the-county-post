@@ -4,7 +4,7 @@ import type { FetchView } from "../components/FetchGuide";
 import { counties } from "../data/counties";
 import { states } from "../data/states";
 import { fetchDesks } from "../data/fetch-guide";
-import { fetchLessons } from "../data/fetch-lessons";
+import { tourLessons } from "../data/fetch-lessons";
 import { countyAtlasDomains } from "./county-atlas-api";
 import { answerLabels, type ContentLink } from "./fetch-content";
 import { countyMeasures } from "./fetch-county-comparison";
@@ -150,7 +150,9 @@ function viewFrom(v: unknown): FetchView {
       return row(r);
     case "tour": {
       const step = integer(r.step);
-      return fetchLessons[step] ? { mode: r.mode, step } : invalid();
+      // Chats saved before the two introductions used the site tour's step numbers.
+      const guide = r.guide === undefined ? "site" : oneOf(["site", "fetch"] as const)(r.guide);
+      return tourLessons[guide][step] ? { mode: r.mode, guide, step } : invalid();
     }
     case "compare":
       return {
