@@ -88,7 +88,7 @@ test("an indirect request to sell a used item keeps the current county", async (
 test("mobile tour highlights the real controls and Escape returns focus", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 700 });
   const dialog = await openFetch(page);
-  await dialog.getByRole("button", { name: "Take a tour" }).click();
+  await dialog.getByRole("button", { name: "Learn How To Use The County Post" }).click();
   await expect(dialog.getByRole("heading", { name: "Find your edition" })).toBeVisible();
   await expect(page.locator(".menu-toggle.fetch-highlight")).toBeVisible();
   await dialog.getByRole("button", { name: "Next step" }).click();
@@ -567,7 +567,7 @@ test("provider failures in a successful HTTP response are distinguished from an 
 test("a reader can compare two states, change the measure and return to a tour lesson", async ({ page }) => {
   await page.goto("/");
   const dialog = await openFetch(page);
-  await dialog.getByRole("button", { name: "Take a tour" }).click();
+  await dialog.getByRole("button", { name: "Learn How To Use The County Post" }).click();
   await dialog.getByLabel("Jump to a lesson").selectOption({ label: "6. Compare places" });
   await dialog.getByRole("button", { name: /Try .*Compare rent/ }).click();
   await expect(dialog.getByRole("heading", { name: "Median monthly gross rent" })).toBeVisible();
