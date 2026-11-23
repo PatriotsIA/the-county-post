@@ -86,6 +86,12 @@ The November 10, 2026 submission **PIA Events**, by BA Perryman, is published at
 paragraph breaks and a clickable PIAEVENTS.COM link. The feed credits
 `Patriots In Action · PIA Events`; submission contact details remain private.
 
+The November 20, 2026 submission **We All Lost Something When Fiona the Hippo
+Died**, by Kristin Griswold, is published at
+`/op-eds/we-all-lost-something-when-fiona-the-hippo-died` across all editions.
+The pasted body's repeated headline and "Opinion" label, and a stray citation
+label, are left out; the wording is otherwise as submitted.
+
 ## Routes
 
 - `/` front page with county search, national feeds, and state directory

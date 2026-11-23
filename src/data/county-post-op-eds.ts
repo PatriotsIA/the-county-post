@@ -356,8 +356,39 @@ export const piaEventsOpEd = {
   authorBio: "",
 } as const;
 
+// Submitted by Kristin Griswold to the national desk on November 20, 2026, the day after the Cincinnati Zoo
+// announced Fiona's death. The pasted body's repeated headline and "Opinion" label, and a stray citation
+// label ("Cincinnati Zoo & Botanical Garden+1"), are left out; the wording is otherwise as submitted.
+export const fionaOpEd = {
+  id: "county-post-op-ed-fiona-the-hippo",
+  slug: "we-all-lost-something-when-fiona-the-hippo-died",
+  path: "/op-eds/we-all-lost-something-when-fiona-the-hippo-died",
+  category: "Opinion",
+  title: "We All Lost Something When Fiona the Hippo Died",
+  deck: "In a time when nearly everything seems to divide us, Fiona managed to unite people who otherwise might have very little in common.",
+  byline: "By Kristin Griswold, The County Post",
+  publishedAt: "2026-11-20T17:08:30.689Z",
+  paragraphs: [
+    "Somehow, the death of a hippo can make a whole lot of people feel like they have lost a friend. And this week, millions of people discovered just how true that can be when Fiona, the beloved Cincinnati Zoo hippopotamus, died at nearly 10 years old.",
+    "Fiona's story was never supposed to be as extraordinary as it became. Born prematurely in January 2017, weighing just 29 pounds, she faced an uphill battle from the very beginning. The odds were against her, but a dedicated team of caretakers worked around the clock to keep her alive. The world watched, cheered and eventually fell in love with a hippo who had no idea she had become one of the most recognizable animals in America.",
+    "And now, that story has come to a heartbreaking end.",
+    "Fiona died after accidentally ingesting a knit hat that entered her habitat. The Cincinnati Zoo's veterinary and animal care teams tried desperately to help her, but ultimately, they were unable to save her.",
+    "It is easy to dismiss the sadness surrounding the death of an animal as sentimentalism. After all, she was a hippo. She lived in a zoo. Most of us never stood beside her habitat, much less touched her or fed her. Yet Fiona somehow became something more than an animal people viewed on a screen.",
+    "She became a shared experience.",
+    "In a time when nearly everything seems to divide us, Fiona managed to unite people who otherwise might have very little in common. People followed her milestones, laughed at her antics, watched her grow and celebrated her victories. Her story didn't ask us to pick a side, defend an ideology or argue about the latest controversy. It simply gave us something to smile about.",
+    "Maybe that's why her loss feels so personal.",
+    "Fiona's life was a lesson in perseverance. She began life fragile and uncertain, and through extraordinary care and determination, she survived and thrived. Her story reminded us that sometimes the smallest, most vulnerable among us can become the biggest source of inspiration.",
+    "But her death also serves as a reminder of our responsibility toward the animals with whom we share this world. A hat may seem like an insignificant object to a visitor, but what we casually toss, drop or leave behind can have devastating consequences. Fiona's death is a painful reminder that carelessness can carry a cost far greater than we ever imagine.",
+    "There will be no more Fiona videos to brighten an ordinary day. No more watching her splash, play or lumber around her habitat. But the joy she brought doesn't disappear simply because she is gone.",
+    "Perhaps that is the real legacy of Fiona the Hippo. She reminded us that joy can come from the most unexpected places, that perseverance is worth celebrating, that compassion matters and that sometimes an animal can touch the hearts of millions without ever knowing why.",
+    "Fiona was, in her own way, a little piece of happiness in a complicated world.",
+    "And that is worth mourning.",
+  ],
+  authorBio: "Kristin Griswold is a contributor to The County Post. The views expressed in this column are those of the author.",
+} as const;
+
 // /gop stays pinned first; the remaining articles are newest first on every opinion desk.
-export const countyPostOpEds: readonly CountyPostOpEd[] = [potterGopSuitOpEd, piaEventsOpEd, stockMarketWipeoutOpEd, midtermsOpEd, globalAiBubbleOpEd, paxtonRallyOpEd, enoughAboutTheOtherGuyOpEd, texasMailerOpEd, millennialVoiceOpEd, dataCentersOpEd];
+export const countyPostOpEds: readonly CountyPostOpEd[] = [potterGopSuitOpEd, fionaOpEd, piaEventsOpEd,stockMarketWipeoutOpEd, midtermsOpEd, globalAiBubbleOpEd, paxtonRallyOpEd, enoughAboutTheOtherGuyOpEd, texasMailerOpEd, millennialVoiceOpEd, dataCentersOpEd];
 
 export const featuredCountyPostOpEds: NewsFeedItem[] = countyPostOpEds.map((article) => ({
   id: article.id,

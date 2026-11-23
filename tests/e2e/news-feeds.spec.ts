@@ -231,23 +231,27 @@ test("keeps /gop first and the newest submission second on national, state, and 
     await expect(firstCard.locator(".feed-title")).toHaveText("Potter County GOP Asks Federal Court to Hand Count Paper Ballots in Statewide Race Before Certification");
     await expect(firstCard.locator(".feed-title")).toHaveAttribute("href", "/gop");
     const secondStory = section.locator(".feed-card:not(.feed-ad-card)").nth(1);
-    await expect(secondStory.locator(".feed-title")).toHaveText("PIA Events");
-    await expect(secondStory.locator(".feed-title")).toHaveAttribute("href", "/op-eds/pia-events");
-    await expect(secondStory.locator(".feed-publisher")).toHaveText("Patriots In Action · PIA Events");
+    await expect(secondStory.locator(".feed-title")).toHaveText("We All Lost Something When Fiona the Hippo Died");
+    await expect(secondStory.locator(".feed-title")).toHaveAttribute("href", "/op-eds/we-all-lost-something-when-fiona-the-hippo-died");
+    await expect(secondStory.locator(".feed-publisher")).toHaveText("The County Post · Original reporting");
     const thirdStory = section.locator(".feed-card:not(.feed-ad-card)").nth(2);
-    await expect(thirdStory.locator(".feed-title")).toHaveAttribute("href", "/op-eds/stock-market-wipeout-ai-debt");
-    await expect(thirdStory.locator(".feed-publisher")).toHaveText("The County Post · Original reporting");
+    await expect(thirdStory.locator(".feed-title")).toHaveText("PIA Events");
+    await expect(thirdStory.locator(".feed-title")).toHaveAttribute("href", "/op-eds/pia-events");
+    await expect(thirdStory.locator(".feed-publisher")).toHaveText("Patriots In Action · PIA Events");
     const fourthStory = section.locator(".feed-card:not(.feed-ad-card)").nth(3);
-    await expect(fourthStory.locator(".feed-title")).toHaveText("We Held the Line. Now the Work Starts.");
-    await expect(fourthStory.locator(".feed-title")).toHaveAttribute("href", "/2026-midterms");
-    await expect(fourthStory.locator(".feed-publisher")).toHaveText("Potter County Republican Party · Press release");
+    await expect(fourthStory.locator(".feed-title")).toHaveAttribute("href", "/op-eds/stock-market-wipeout-ai-debt");
+    await expect(fourthStory.locator(".feed-publisher")).toHaveText("The County Post · Original reporting");
+    const fifthStory = section.locator(".feed-card:not(.feed-ad-card)").nth(4);
+    await expect(fifthStory.locator(".feed-title")).toHaveText("We Held the Line. Now the Work Starts.");
+    await expect(fifthStory.locator(".feed-title")).toHaveAttribute("href", "/2026-midterms");
+    await expect(fifthStory.locator(".feed-publisher")).toHaveText("Potter County Republican Party · Press release");
     await expect(section.locator(".feed-title", { hasText: "Is the Global AI Bubble Popping?" })).toHaveAttribute("href", "/op-eds/is-the-global-ai-bubble-popping");
     await expect(section.locator(".feed-title", { hasText: "Don't spray the kitchen" })).toHaveAttribute("href", "/op-eds/r");
     await expect(section.locator(".feed-title", { hasText: "Enough About The Other Guy" })).toHaveCount(1);
     await expect(section.locator(".feed-title", { hasText: "The Millennial Generation Has a Voice. Are We Using It?" })).toHaveCount(1);
     await expect(section.locator(".feed-title", { hasText: "The Data Centers and the Rest of Us" })).toHaveCount(1);
     await expect(firstCard.locator(".feed-publisher")).toContainText("The County Post · Original reporting");
-    await expect(section.locator(".feed-publisher", { hasText: "The County Post" })).toHaveCount(8);
+    await expect(section.locator(".feed-publisher", { hasText: "The County Post" })).toHaveCount(9);
   }
 
   await page.goto("/op-eds/the-data-centers-and-the-rest-of-us");

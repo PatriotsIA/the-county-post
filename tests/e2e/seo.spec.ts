@@ -260,6 +260,29 @@ test("millennial op-ed preserves the full contribution and confirmed author meta
   await expect(page.locator(".editorial-op-ed-body a[href^='mailto:']")).toHaveCount(0);
 });
 
+test("Fiona op-ed publishes the submitted column without the pasted headline or citation label", async ({ page }) => {
+  const path = "/op-eds/we-all-lost-something-when-fiona-the-hippo-died";
+  const title = "We All Lost Something When Fiona the Hippo Died";
+  await page.goto(path);
+  await expect(page.getByRole("heading", { level: 1, name: title, exact: true })).toBeVisible();
+  await expect(page.locator(".editorial-op-ed-byline")).toHaveText("By Kristin Griswold, The County Post");
+  await expect(page.locator(".editorial-op-ed-author")).toHaveText("Kristin Griswold is a contributor to The County Post. The views expressed in this column are those of the author.");
+  const paragraphs = page.locator(".editorial-op-ed-body > p:not(.editorial-op-ed-author)");
+  await expect(paragraphs).toHaveCount(14);
+  await expect(paragraphs.first()).toContainText("Somehow, the death of a hippo can make a whole lot of people feel like they have lost a friend.");
+  await expect(paragraphs.last()).toHaveText("And that is worth mourning.");
+  await expect(page.locator(".editorial-op-ed-body")).not.toContainText("+1");
+  await expect(page.locator(".editorial-op-ed-body")).not.toContainText(title);
+  const head = await readHead(page);
+  expect(head.canonical).toBe(`https://thecountypost.com${path}`);
+  expect(head.title).toBe(`${title} | The County Post`);
+  expect(head.robots).not.toContain("noindex");
+  const article = await page.locator('script[type="application/ld+json"]').evaluateAll(nodes => nodes.flatMap(node => JSON.parse(node.textContent || "{}")["@graph"] || []).find(entry => entry["@type"] === "NewsArticle"));
+  expect(article.author.name).toBe("Kristin Griswold");
+  expect(article.articleBody).toBe((await paragraphs.allTextContents()).join("\n\n"));
+  await expect(page.locator(".editorial-op-ed-body a[href^='mailto:']")).toHaveCount(0);
+});
+
 for (const submission of [
   { slug: "is-the-global-ai-bubble-popping", title: "Is the Global AI Bubble Popping?", opening: "China may be the FIRST country to burst the AI bubble.", source: "https://www.reuters.com/world/china/china-ai-bubble-has-already-burst-2026-10-26/" },
   { slug: "stock-market-wipeout-ai-debt", title: "Biggest Single Day Wipeout in U.S. Stock Market History (Over $2 Trillion Lost in first hour of trading)", opening: "Biggest Single Day Wipeout in U.S. Stock Market History: $2.8 Trillion.", source: "https://x.com/macropaperr/status/2118440694738198547?s=19" },
