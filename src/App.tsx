@@ -88,6 +88,7 @@ import "./index.css";
 const LazyCountyDataAtlasHub = lazy(() =>
   import("./components/CountyDataAtlas").then((module) => ({ default: module.CountyDataAtlasHub })),
 );
+const LocalFetchGuide = (import.meta.env.DEV || import.meta.env.VITE_FETCH_PREVIEW === "true") ? lazy(() => import("./components/FetchLauncher")) : null;
 const LazyCountyAtlasDomainPage = lazy(() =>
   import("./components/CountyDataAtlas").then((module) => ({ default: module.CountyAtlasDomainPage })),
 );
@@ -138,31 +139,33 @@ function countyPageApiPath(stateSlug: string, countySlug: string) {
 
 function useNewsPage(apiPath: string | undefined, sections: readonly string[], limit = PAGE_PREFETCH_LIMIT): NewsPageState {
   const sectionsKey = sections.join(",");
-  const [state, setState] = useState<NewsPageState>({ status: apiPath ? "loading" : "idle", error: "", sections: {}, places: [], datelinePlaces: [], trustedHosts: [], countyNameDistinctive: false });
+  const initial = useMemo<NewsPageState>(() => ({ status: apiPath ? "loading" : "idle", error: "", sections: {}, places: [], datelinePlaces: [], trustedHosts: [], countyNameDistinctive: false }), [apiPath]);
+  const [state, setState] = useState<NewsPageState & { apiPath?: string }>({ ...initial, apiPath });
 
   useEffect(() => {
     let cancelled = false;
     if (!apiPath) {
-      setState({ status: "idle", error: "", sections: {}, places: [], datelinePlaces: [], trustedHosts: [], countyNameDistinctive: false });
+      setState({ apiPath, status: "idle", error: "", sections: {}, places: [], datelinePlaces: [], trustedHosts: [], countyNameDistinctive: false });
       return;
     }
     if (!isNewsApiConfigured()) {
-      setState({ status: "error", error: "News API is not configured. Set VITE_NEWS_API_URL.", sections: {}, places: [], datelinePlaces: [], trustedHosts: [], countyNameDistinctive: false });
+      setState({ apiPath, status: "error", error: "News API is not configured. Set VITE_NEWS_API_URL.", sections: {}, places: [], datelinePlaces: [], trustedHosts: [], countyNameDistinctive: false });
       return;
     }
 
-    setState({ status: "loading", error: "", sections: {}, places: [], datelinePlaces: [], trustedHosts: [], countyNameDistinctive: false });
+    setState({ apiPath, status: "loading", error: "", sections: {}, places: [], datelinePlaces: [], trustedHosts: [], countyNameDistinctive: false });
     fetchNewsApiPage(apiPath, sectionsKey.split(",").filter(Boolean), limit)
       .then((page) => {
         if (cancelled) return;
         const nextSections = Object.fromEntries(
           Object.entries(page.sections || {}).map(([key, section]) => [key, section.items || []]),
         );
-        setState({ status: "loaded", error: "", sections: nextSections, sectionHasMore: Object.fromEntries(Object.entries(page.sections || {}).map(([key, feed]) => [key, feed.meta?.hasMore])), places: scopePlaces(page.scope), datelinePlaces: scopeDatelinePlaces(page.scope), trustedHosts: scopeTrustedHosts(page.scope), countyNameDistinctive: scopeCountyNameDistinctive(page.scope) });
+        setState({ apiPath, status: "loaded", error: "", sections: nextSections, sectionHasMore: Object.fromEntries(Object.entries(page.sections || {}).map(([key, feed]) => [key, feed.meta?.hasMore])), places: scopePlaces(page.scope), datelinePlaces: scopeDatelinePlaces(page.scope), trustedHosts: scopeTrustedHosts(page.scope), countyNameDistinctive: scopeCountyNameDistinctive(page.scope) });
       })
       .catch((error) => {
         if (cancelled) return;
         setState({
+          apiPath,
           status: "error",
           error: error instanceof Error ? error.message : "Unable to load news from the API.",
           sections: {},
@@ -178,7 +181,7 @@ function useNewsPage(apiPath: string | undefined, sections: readonly string[], l
     };
   }, [apiPath, limit, sectionsKey]);
 
-  return state;
+  return state.apiPath === apiPath ? state : initial;
 }
 
 function pageSectionProps(page: NewsPageState, section: string) {
@@ -326,6 +329,12 @@ function App() {
         </div>
       ) : null}
       <PageJumpMenu groups={jumpMenuGroups(pathname, isLegendsPage, activeCounty, activeState)} />
+      {LocalFetchGuide && (import.meta.env.VITE_FETCH_PREVIEW === "true" || ["127.0.0.1", "localhost", "[::1]"].includes(window.location.hostname)) && (
+        <Suspense fallback={null}>
+          <LocalFetchGuide county={activeCounty} state={activeState}
+            linksFor={(county, region = activeState) => [...contextLinks(county, county?.state || region), ...primaryLinks(county, county?.state || region, pathname)]} />
+        </Suspense>
+      )}
 
       <Breadcrumbs county={activeCounty} state={activeState} />
 

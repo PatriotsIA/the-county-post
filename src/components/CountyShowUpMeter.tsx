@@ -12,7 +12,7 @@ export function CountyShowUpMeter({ county }: { county: CountySite }) {
   const priorElections = turnout.data.slice(1, 4);
 
   return (
-    <section className="county-show-up-section" aria-label={`${county.displayName} show up meter`}>
+    <section id="county-turnout" className="county-show-up-section" aria-label={`${county.displayName} show up meter`}>
       <div className="show-up-meter" aria-live="polite">
         <p className="kicker">Operation Show Up</p>
         <h2>{county.displayName} Show Up Meter</h2>

@@ -393,10 +393,11 @@ test("bookmark reminder opens only on county homepages, shows instructions witho
   await page.goto("/texas/randall");
   const prompt = page.getByRole("complementary", { name: "Bookmark Randall County", exact: true });
   await expect(prompt).toBeVisible();
-  // In the corner, just above the jump button, which stays in reach.
+  // The reminder sits above the top corner control in both preview and production.
   expect(await prompt.evaluate((element) => {
     const bounds = element.getBoundingClientRect();
-    const button = document.querySelector(".page-jump-toggle")!.getBoundingClientRect();
+    const control = document.querySelector(".fetch-launcher") || document.querySelector(".page-jump-toggle")!;
+    const button = control.getBoundingClientRect();
     return bounds.width <= 330 && innerWidth - bounds.right === 16 && bounds.bottom <= button.top && button.top - bounds.bottom <= 16;
   })).toBe(true);
   await expect(prompt.getByText("Ctrl+D", { exact: true })).toBeVisible();

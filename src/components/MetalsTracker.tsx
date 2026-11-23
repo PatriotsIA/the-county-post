@@ -54,7 +54,7 @@ export function MetalsTracker() {
           const change = item?.previousPrice ? item.price - item.previousPrice : undefined;
           const percent = change !== undefined && item?.previousPrice ? change / item.previousPrice * 100 : undefined;
           const oldQuote = item?.quotedAt && now - Date.parse(item.quotedAt) > 15 * 60 * 1000;
-          return <article className="card itm-quote" key={metal.key} aria-label={`${metal.name} spot price`}>
+          return <article id={"itm-price-" + metal.key} className="card itm-quote" key={metal.key} aria-label={`${metal.name} spot price`}>
             <div className="itm-quote-heading"><h3>{metal.name}</h3><span className="itm-element" aria-hidden="true">{metal.symbol}</span></div>
             <p className="itm-price">{item ? money(item.price * factor) : "Unavailable"}</p><p className="itm-unit">USD / {units[unit].short}</p>
             <p className={`itm-change ${change === undefined || change === 0 ? "" : change < 0 ? "itm-down" : "itm-up"}`}>

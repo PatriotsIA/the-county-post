@@ -1,0 +1,48 @@
+name: Fetch published measure parity
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'scripts/dev/audit-fetch-measures.mjs'
+      - '.github/workflows/fetch-measure-audit.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'scripts/dev/audit-fetch-measures.mjs'
+      - '.github/workflows/fetch-measure-audit.yml'
+  schedule:
+    - cron: '37 6 * * *'
+  workflow_dispatch:
+    inputs:
+      shard:
+        description: 'Optional nationwide shard, e.g. 1/64'
+        type: string
+permissions:
+  contents: read
+jobs:
+  typed-measures:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Compare the published cards and typed answers
+        env:
+          SHARD: ${{ inputs.shard }}
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == schedule ]]; then
+            SHARD="$(( $(date -u +%s) / 86400 % 64 + 1 ))/64"
+          fi
+          if [[ -n "$SHARD" ]]; then
+            npm run audit:fetch-measures -- "--shard=$SHARD"
+          else
+            npm run audit:fetch-measures
+          fi

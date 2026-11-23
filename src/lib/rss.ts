@@ -351,7 +351,7 @@ function tokenSimilarity(left: string, right: string) {
   return shared / (leftTokens.size + rightTokens.size - shared);
 }
 
-function sharesEventContext(left: string, right: string) {
+export function sharesEventContext(left: string, right: string) {
   const leftTokens = new Set(left.split(" ").map(stemToken).filter((token) => token.length > 2));
   const rightTokens = new Set(right.split(" ").map(stemToken).filter((token) => token.length > 2));
   const shared = [...leftTokens].filter((token) => rightTokens.has(token));
@@ -454,6 +454,10 @@ function timestamp(value?: string) {
   if (!value) return undefined;
   const parsed = new Date(value).getTime();
   return Number.isNaN(parsed) ? undefined : parsed;
+}
+
+export function plainFeedText(value: string) {
+  return stripHtml(decodeEntities(value));
 }
 
 function stripHtml(value: string) {

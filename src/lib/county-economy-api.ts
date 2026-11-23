@@ -62,3 +62,23 @@ export async function fetchCountyEconomicData(stateSlug: string, countySlug: str
   if (!response.ok) throw new Error(body.error || "County economic data is unavailable.");
   return body;
 }
+
+export function economicObservation(metric: CountyEconomicMetric, year?: string) {
+  const point = !year || metric.latest?.date.startsWith(year)
+    ? metric.latest
+    : metric.observations?.find(o => o.date.startsWith(year)) ?? (metric.previous?.date.startsWith(year) ? metric.previous : undefined);
+  return point && Number.isFinite(point.value) ? point : undefined;
+}
+
+export function formatMetricValue(metric: CountyEconomicMetric) {
+  if (metric.valueKind === "percent") {
+    return `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }).format(metric.latest.value)}%`;
+  }
+  const value = metric.valueKind === "currency-thousands" ? metric.latest.value * 1_000 : metric.latest.value;
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    notation: metric.valueKind === "currency-thousands" ? "compact" : "standard",
+    maximumFractionDigits: metric.valueKind === "currency-thousands" ? 1 : 0,
+  }).format(value);
+}

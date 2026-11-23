@@ -23,6 +23,10 @@ export type WeatherForecastPeriod = {
   icon?: string;
 };
 
+export function weatherPeriodId(period: WeatherForecastPeriod, hourly = false) {
+  return `weather-${hourly ? "hour" : "period"}-${Date.parse(period.startTime)}`;
+}
+
 export type WeatherObservation = {
   stationId: string;
   stationName?: string;
@@ -198,7 +202,7 @@ const inFlightRequests = new Map<string, PendingRequest>();
 const DEFAULT_CACHE_TTL_SECONDS = 180;
 const MAX_CACHE_TTL_SECONDS = 60 * 60;
 
-export function fetchCountyWeather(stateSlug: string, countySlug: string, signal?: AbortSignal) {
+export function fetchCountyWeather(stateSlug: string, countySlug: string, signal?: AbortSignal, refresh = false) {
   const baseUrl = import.meta.env.VITE_NEWS_API_URL?.trim();
   if (!baseUrl) {
     return Promise.reject(
@@ -213,7 +217,7 @@ export function fetchCountyWeather(stateSlug: string, countySlug: string, signal
   const path = `v1/counties/${encodeURIComponent(stateSlug)}/${encodeURIComponent(countySlug)}/weather`;
   const url = new URL(path, base).toString();
   const cached = responseCache.get(url);
-  if (cached && cached.expiresAt > Date.now()) {
+  if (!refresh && cached && cached.expiresAt > Date.now()) {
     return withAbort(Promise.resolve(cached.value), signal);
   }
   if (cached) responseCache.delete(url);

@@ -9,6 +9,12 @@ npm install
 npm run dev
 ```
 
+### Ask Fetch in local development
+
+Open a loopback development URL such as `http://127.0.0.1:5180/texas/potter` and select **Ask Fetch** above **Jump to** in the lower right. The collie offers a guided tour, opens edition pages, and looks up content for a named county and state. See the [Fetch content map](docs/fetch-content.md) for sources, coverage, and search boundaries. County searches, shortcuts, and common requests run in the browser. The default production build excludes the guide.
+
+Fetch runs entirely through browser-side routing and the site’s public data clients. Opening the guide loads its Census place index. Readers can give a city and state, choose between places with the same name, or narrow a multi-county answer. Free-text discovery searches the edition’s feeds, site catalog, and published county Atlas. Live answers use the configured County Post services.
+
 ## Environment
 
 Copy `.env.example` to `.env` for local development only. Do not commit `.env`; it is ignored by git.

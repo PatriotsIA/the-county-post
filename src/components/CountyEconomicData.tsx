@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import type { CountySite } from "../data/counties";
 import {
   fetchCountyEconomicData,
+  formatMetricValue,
   type CountyEconomicData as CountyEconomicDataResponse,
   type CountyEconomicMetric,
   type FredObservation,
@@ -125,7 +126,7 @@ export function CountyEconomicData({ county }: { county: CountySite }) {
 
 function EconomicMetricCard({ metric }: { metric: CountyEconomicMetric }) {
   return (
-    <article className="economic-metric-card">
+    <article id={`econ-${metric.key}`} className="economic-metric-card">
       <div className="economic-metric-heading">
         <div>
           <p className="meta-label">{metric.frequency} · {metric.source}</p>
@@ -205,19 +206,6 @@ function useCountyEconomicData(county: CountySite): LoadState {
   }, [county.slug, county.state.slug]);
 
   return state;
-}
-
-function formatMetricValue(metric: CountyEconomicMetric) {
-  if (metric.valueKind === "percent") {
-    return `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }).format(metric.latest.value)}%`;
-  }
-  const value = metric.valueKind === "currency-thousands" ? metric.latest.value * 1_000 : metric.latest.value;
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    notation: metric.valueKind === "currency-thousands" ? "compact" : "standard",
-    maximumFractionDigits: metric.valueKind === "currency-thousands" ? 1 : 0,
-  }).format(value);
 }
 
 function formatMetricChange(metric: CountyEconomicMetric) {
