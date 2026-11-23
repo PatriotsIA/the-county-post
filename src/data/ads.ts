@@ -53,7 +53,6 @@ import classifiedsSquare from "../../ad-assets/county-post-classifieds-square.we
 import classifiedsBanner from "../../ad-assets/county-post-classifieds-banner.webp";
 import classifiedsLogo from "../assets/county-post-classifieds-logo-small.webp";
 import { panhandleLegendsAds } from "./panhandle-legends";
-import { abbottSquareAd, abbottBannerAd } from "./campaign-ads";
 
 export type AdSlotId = "inline" | "banner";
 
@@ -355,7 +354,6 @@ export const ads: AdCreative[] = [
     href: "https://piaevents.com/",
   },
   bookAd("founding-of-america", "inline"),
-  abbottSquareAd,
   {
     id: "guerrilla-gear-inline",
     slot: "inline",
@@ -550,7 +548,6 @@ export const ads: AdCreative[] = [
     mastheadSponsor: false,
   },
   bookAd("operation-show-up", "banner"),
-  abbottBannerAd,
   bookAd("women-who-guarded-the-bridge", "banner"),
 ];
 

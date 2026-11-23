@@ -50,7 +50,7 @@ test("rally article offers the full recording without downloading it before play
   await expect(page).toHaveURL(new RegExp(`${path}$`));
   await expect(page.locator('link[rel="canonical"]')).toHaveCount(1);
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", `https://thecountypost.com${path}`);
-  await expect(page.getByRole("link", { name: "Watch the full video and learn more", exact: true })).toHaveAttribute("href", "https://patriotsinaction.com/ken-paxton");
+  await expect(page.getByRole("link", { name: "Watch the full video and learn more", exact: true })).toHaveCount(0);
   await expect(page.locator("img[src*='ken-paxton']")).toHaveCount(0);
 
   // The optional media and heading support must not add a player to older columns.
